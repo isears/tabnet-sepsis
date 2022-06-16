@@ -1,0 +1,9 @@
+{
+    "exclude": [
+        "**/logs",
+        "**/__pycache__",
+        "mimiciv",
+        "mimictp",
+        "mimicts",
+    ]
+}
