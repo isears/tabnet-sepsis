@@ -1,5 +1,6 @@
 import pandas as pd
 from typing import List
+import matplotlib.pyplot as plt
 
 
 class Table1Generator(object):
@@ -57,7 +58,7 @@ class Table1Generator(object):
 
         return f"{n}, ({n / total * 100:.2f} %)"
 
-    def _pprint_median(self, values: pd.Series):
+    def _pprint_mean(self, values: pd.Series):
         return f"{values.mean():.2f} (median {values.median():.2f}, std {values.std():.2f})"
 
     def _tablegen_sepsis(self) -> None:
@@ -81,7 +82,7 @@ class Table1Generator(object):
 
         self._add_table_row(
             item="Average % of Length of Stay of Sepsis Onset",
-            value=self._pprint_median(sepsis_only["sepsis_percent_los"] * 100),
+            value=self._pprint_mean(sepsis_only["sepsis_percent_los"] * 100),
         )
 
         sepsis_only["sepsis_timedelta_hours"] = sepsis_only.apply(
@@ -92,7 +93,7 @@ class Table1Generator(object):
 
         self._add_table_row(
             item="Average Time of Sepsis Onset after ICU Admission (hrs)",
-            value=self._pprint_median(sepsis_only["sepsis_timedelta_hours"]),
+            value=self._pprint_mean(sepsis_only["sepsis_timedelta_hours"]),
         )
 
         self._add_table_row(
@@ -130,7 +131,7 @@ class Table1Generator(object):
 
         self._add_table_row(
             item="Average Age at ICU Admission",
-            value=self._pprint_median(self.all_df["age_at_intime"]),
+            value=self._pprint_mean(self.all_df["age_at_intime"]),
         )
 
     def populate(self) -> pd.DataFrame:
