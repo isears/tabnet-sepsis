@@ -11,16 +11,17 @@ from typing import List
 class FileBasedDataset(torch.utils.data.Dataset):
     def __init__(
         self,
-        labels: pd.DataFrame,
         processed_mimic_path: str,
         stay_ids: List[int] = None,
         feature_ids: List[int] = None,
+        labels: pd.DataFrame = None,
     ):
 
+        print(f"[{type(self).__name__}] Initializing dataset...")
         if stay_ids is None:
-            self.stay_ids = [
-                int(dirname) for dirname in os.listdir(processed_mimic_path)
-            ]
+            self.stay_ids = (
+                pd.read_csv("cache/included_stayids.csv").squeeze("columns").to_list()
+            )
         else:
             self.stay_ids = stay_ids
 
@@ -31,8 +32,23 @@ class FileBasedDataset(torch.utils.data.Dataset):
         else:
             self.feature_ids = feature_ids
 
-        self.labels = labels
+        if labels is None:
+            self.labels = pd.read_csv("cache/labels.csv", index_col=0)
+            self.labels = self.labels.reindex(self.stay_ids)
+        else:
+            self.labels = labels
+
+        assert not self.labels["label"].isna().any(), "[-] Labels had nan values"
+        assert len(self.labels) == len(
+            self.stay_ids
+        ), "[-] Mismatch between stay ids and labels"
+
+        print(f"\tStay IDs: {len(self.stay_ids)}")
+        print(f"\tFeatures: {len(self.feature_ids)}")
+
         self.processed_mimic_path = processed_mimic_path
+
+        print(f"[{type(self).__name__}] Dataset initialization complete")
 
     @staticmethod
     def truncate_collate(batch):
@@ -118,17 +134,7 @@ class FileBasedDataset(torch.utils.data.Dataset):
 
 
 if __name__ == "__main__":
-    import random
-
-    stay_ids = [int(dirname) for dirname in os.listdir("./cache/mimicts")]
-    labels = list()
-
-    for sid in stay_ids:
-        labels.append(random.random() > 0.5)
-
-    labels = pd.DataFrame(index=stay_ids, data={"label": labels})
-
-    ds = FileBasedDataset(labels, "./cache/mimicts")
+    ds = FileBasedDataset("./cache/mimicts")
 
     dl = torch.utils.data.DataLoader(
         ds, collate_fn=ds.padding_collate, num_workers=2, batch_size=4, pin_memory=True

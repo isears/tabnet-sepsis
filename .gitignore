@@ -5,3 +5,5 @@
 /.vscode
 /.idea
 /cache
+**/__pycache__
+**/*.egg-info
