@@ -6,6 +6,7 @@ import numpy as np
 from torch.nn.utils.rnn import pad_sequence
 from torch.nn.functional import pad
 from typing import List
+import json
 
 
 class FileBasedDataset(torch.utils.data.Dataset):
@@ -47,6 +48,23 @@ class FileBasedDataset(torch.utils.data.Dataset):
         print(f"\tFeatures: {len(self.feature_ids)}")
 
         self.processed_mimic_path = processed_mimic_path
+
+        try:
+            with open("cache/metadata.json", "r") as f:
+                self.max_len = int(json.load(f)["max_len"])
+        except FileNotFoundError:
+            print(
+                f"[{type(self).__name__}] Failed to load metadata. Computing maximum length, this may take some time..."
+            )
+            self.max_len = 0
+            for sid in self.stay_ids:
+                ce = pd.read_csv(
+                    f"{processed_mimic_path}/{sid}/chartevents_features.csv", nrows=1
+                )
+                seq_len = len(ce.columns) - 1
+
+                if seq_len > self.max_len:
+                    self.max_len = seq_len
 
         print(f"[{type(self).__name__}] Dataset initialization complete")
 
