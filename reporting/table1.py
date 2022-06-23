@@ -1,6 +1,8 @@
+from dataclasses import dataclass
 import pandas as pd
 from typing import List
 import matplotlib.pyplot as plt
+import json
 
 
 class Table1Generator(object):
@@ -24,6 +26,12 @@ class Table1Generator(object):
 
         self.all_df = self.all_df.merge(
             pd.read_csv("mimiciv/core/admissions.csv"),
+            how="left",
+            on=["hadm_id", "subject_id"],
+        )
+
+        self.all_df = self.all_df.merge(
+            pd.read_csv("mimiciv/hosp/diagnoses_icd.csv"),
             how="left",
             on=["hadm_id", "subject_id"],
         )
@@ -133,6 +141,41 @@ class Table1Generator(object):
             item="Average Age at ICU Admission",
             value=self._pprint_mean(self.all_df["age_at_intime"]),
         )
+
+    def _tablegen_comorbidities(self) -> None:
+        @dataclass
+        class icd_comorbidity:
+            name: str
+            codes: List[str]
+
+        cci = dict()
+        with open("reporting/cci.json", "r") as f:
+            cci = json.load(f)
+
+        comorbidities = [
+            icd_comorbidity(
+                name=key,
+                # Basically, treat all codes as startswith codes
+                codes=val["Match Codes"] + val["Startswith Codes"],
+            )
+            for key, val in cci.items()
+        ]
+
+        d_icd = pd.read_csv("mimiciv/hosp/d_icd_diagnoses.csv")
+
+        for c in comorbidities:
+            relevant_codes = d_icd[d_icd["icd_code"].str.startswith(tuple(c.codes))][
+                "icd_code"
+            ]
+
+            comorbid_diagnoses = self.all_df[
+                self.all_df["icd_code"].isin(relevant_codes)
+            ]
+            total_count = comorbid_diagnoses["stay_id"].nunique()
+
+            self._add_table_row(
+                f"[comorbidity] {c.name}", self._pprint_percent(total_count)
+            )
 
     def populate(self) -> pd.DataFrame:
         tablegen_methods = [m for m in dir(self) if m.startswith("_tablegen")]
