@@ -111,9 +111,36 @@ def save_comorbidity_codes():
 
     output = dict()
 
+    # Calculate points for each comorbidity: most +1
+    points = dict()
+    for key in mcodes.keys():
+        points[key] = 1
+
+        if key == "Moderate or severe liver disease":
+            points[key] = 3
+        elif key == "Diabetes without chronic complication":
+            points[key] = 2
+        elif key == "Hemiplegia or paraplegia":
+            points[key] = 2
+        elif key == "Renal disease":
+            points[key] = 2
+        elif key == "Metastatic solid tumour":
+            points[key] = 6
+        elif (
+            key
+            == "Any malignancy, including lymphoma and leukaemia, except malignant neoplasm of skin"
+        ):
+            points[key] = 2
+        elif key == "AIDS/HIV":
+            points[key] = 6
+
     # After the assert, we can just iterate through one set of keys
     for key in mcodes.keys():
-        output[key] = {"Match Codes": mcodes[key], "Startswith Codes": swcodes[key]}
+        output[key] = {
+            "Match Codes": mcodes[key],
+            "Startswith Codes": swcodes[key],
+            "Points": points[key],
+        }
 
     with open("reporting/cci.json", "w") as f:
         json.dump(output, f)

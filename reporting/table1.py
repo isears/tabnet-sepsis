@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from unicodedata import name
 import pandas as pd
 from typing import List
 import matplotlib.pyplot as plt
@@ -11,7 +12,7 @@ class Table1Generator(object):
         self.table1 = pd.DataFrame(columns=["Item", "Value"])
 
         self.all_df = pd.read_csv("mimiciv/icu/icustays.csv")
-        self.total_stays = len(self.all_df)
+        self.total_stays = len(self.all_df.index)
 
         # Create df with all demographic data
         self.all_df = self.all_df.merge(
@@ -30,10 +31,20 @@ class Table1Generator(object):
             on=["hadm_id", "subject_id"],
         )
 
+        diagnoses_icd = pd.read_csv("mimiciv/hosp/diagnoses_icd.csv")
+        diagnoses_icd = (
+            diagnoses_icd[["hadm_id", "icd_code"]]
+            .groupby("hadm_id")["icd_code"]
+            .apply(list)
+        )
+
         self.all_df = self.all_df.merge(
-            pd.read_csv("mimiciv/hosp/diagnoses_icd.csv"),
-            how="left",
-            on=["hadm_id", "subject_id"],
+            diagnoses_icd, how="left", left_on="hadm_id", right_index=True
+        )
+
+        # Replace nans
+        self.all_df["icd_code"] = self.all_df["icd_code"].apply(
+            lambda x: [] if type(x) != list else x
         )
 
         time_columns = [
@@ -55,7 +66,7 @@ class Table1Generator(object):
             self.all_df[tc] = pd.to_datetime(self.all_df[tc])
 
         # Make sure there's only one stay id per entry so we can confidently calculate statistics
-        assert self.all_df["stay_id"].nunique() == self.total_stays
+        assert len(self.all_df["stay_id"]) == self.all_df["stay_id"].nunique()
 
     def _add_table_row(self, item: str, value: str):
         self.table1.loc[len(self.table1.index)] = [item, value]
@@ -147,6 +158,10 @@ class Table1Generator(object):
         class icd_comorbidity:
             name: str
             codes: List[str]
+            points: int
+
+            def __eq__(self, __o: object) -> bool:
+                return self.name == __o.name and self.__class__ == __o.__class__
 
         cci = dict()
         with open("reporting/cci.json", "r") as f:
@@ -157,25 +172,45 @@ class Table1Generator(object):
                 name=key,
                 # Basically, treat all codes as startswith codes
                 codes=val["Match Codes"] + val["Startswith Codes"],
+                points=int(val["Points"]),
             )
             for key, val in cci.items()
         ]
 
-        d_icd = pd.read_csv("mimiciv/hosp/d_icd_diagnoses.csv")
+        def relevant_comorbidities(icd_code_list):
+            ret = list()
+            for c in comorbidities:
+                for code in icd_code_list:
+                    if len(list(filter(code.startswith, c.codes))) != 0:
+                        ret.append(c)
+
+            return ret
+
+        self.all_df["comorbidities"] = self.all_df["icd_code"].apply(
+            relevant_comorbidities
+        )
 
         for c in comorbidities:
-            relevant_codes = d_icd[d_icd["icd_code"].str.startswith(tuple(c.codes))][
-                "icd_code"
-            ]
-
-            comorbid_diagnoses = self.all_df[
-                self.all_df["icd_code"].isin(relevant_codes)
-            ]
-            total_count = comorbid_diagnoses["stay_id"].nunique()
+            comorbidity_count = len(
+                self.all_df[
+                    self.all_df["comorbidities"].apply(
+                        lambda comorbidity_list: c in comorbidity_list
+                    )
+                ].index
+            )
 
             self._add_table_row(
-                f"[comorbidity] {c.name}", self._pprint_percent(total_count)
+                f"[comorbidity] {c.name}", self._pprint_percent(comorbidity_count)
             )
+
+        self.all_df["cci_score"] = self.all_df["comorbidities"].apply(
+            lambda comorbidity_list: sum(c.points for c in comorbidity_list)
+        )
+
+        self._add_table_row(
+            item="[comorbidity] Average CCI",
+            value=self._pprint_mean(self.all_df["cci_score"]),
+        )
 
     def populate(self) -> pd.DataFrame:
         tablegen_methods = [m for m in dir(self) if m.startswith("_tablegen")]

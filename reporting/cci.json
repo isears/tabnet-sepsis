@@ -34,7 +34,8 @@
             "428",
             "I43",
             "I50"
-        ]
+        ],
+        "Points": 1
     },
     "Peripheral vascular disease": {
         "Match Codes": [
@@ -70,7 +71,8 @@
             "441",
             "I70",
             "I71"
-        ]
+        ],
+        "Points": 1
     },
     "Dementia": {
         "Match Codes": [
@@ -86,7 +88,8 @@
             "F02",
             "F03",
             "G30"
-        ]
+        ],
+        "Points": 1
     },
     "Chronic pulmonary disease": {
         "Match Codes": [
@@ -134,7 +137,8 @@
             "J65",
             "J66",
             "J67"
-        ]
+        ],
+        "Points": 1
     },
     "Rheumatic disease": {
         "Match Codes": [
@@ -160,7 +164,8 @@
             "M32",
             "M33",
             "M34"
-        ]
+        ],
+        "Points": 1
     },
     "Peptic ulcer disease": {
         "Match Codes": [],
@@ -173,7 +178,8 @@
             "K26",
             "K27",
             "K28"
-        ]
+        ],
+        "Points": 1
     },
     "Mild liver disease": {
         "Match Codes": [
@@ -213,7 +219,8 @@
             "B18",
             "K73",
             "K74"
-        ]
+        ],
+        "Points": 1
     },
     "Diabetes without chronic complication": {
         "Match Codes": [
@@ -249,7 +256,8 @@
             "E148",
             "E149"
         ],
-        "Startswith Codes": []
+        "Startswith Codes": [],
+        "Points": 2
     },
     "Diabetes with chronic complication": {
         "Match Codes": [
@@ -283,7 +291,8 @@
             "E145",
             "E147"
         ],
-        "Startswith Codes": []
+        "Startswith Codes": [],
+        "Points": 1
     },
     "Hemiplegia or paraplegia": {
         "Match Codes": [
@@ -312,7 +321,8 @@
             "343",
             "G81",
             "G82"
-        ]
+        ],
+        "Points": 2
     },
     "Renal disease": {
         "Match Codes": [
@@ -364,7 +374,8 @@
             "V56",
             "N18",
             "N19"
-        ]
+        ],
+        "Points": 2
     },
     "Any malignancy, including lymphoma and leukaemia, except malignant neoplasm of skin": {
         "Match Codes": [
@@ -518,7 +529,8 @@
             "C95",
             "C96",
             "C97"
-        ]
+        ],
+        "Points": 2
     },
     "Moderate or severe liver disease": {
         "Match Codes": [
@@ -544,7 +556,8 @@
             "K766",
             "K767"
         ],
-        "Startswith Codes": []
+        "Startswith Codes": [],
+        "Points": 3
     },
     "Metastatic solid tumour": {
         "Match Codes": [],
@@ -557,7 +570,8 @@
             "C78",
             "C79",
             "C80"
-        ]
+        ],
+        "Points": 6
     },
     "AIDS/HIV": {
         "Match Codes": [],
@@ -569,6 +583,7 @@
             "B21",
             "B22",
             "B24"
-        ]
+        ],
+        "Points": 6
     }
 }
