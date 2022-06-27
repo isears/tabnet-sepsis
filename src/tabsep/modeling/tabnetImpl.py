@@ -1,38 +1,26 @@
 from pytorch_tabnet.tab_model import TabNetClassifier
 import pandas as pd
 import torch
-from tabsep.dataProcessing.fileBasedDataset import FileBasedDataset
+from sklearn.model_selection import train_test_split
+from tabsep.dataProcessing.tabularDataset import TabularDataset
 
 if __name__ == "__main__":
-    all_stay_ids = (
-        pd.read_csv("cache/included_stayids.csv").squeeze("columns").sample(1000)
-    )
-    train_sids = all_stay_ids.iloc[0:900].to_list()
-    validation_sids = all_stay_ids.iloc[900:1000].to_list()
 
-    train_ds = FileBasedDataset("cache/mimicts", stay_ids=train_sids)
-    valid_ds = FileBasedDataset("cahce/mimicts", stay_ids=validation_sids)
+    just_cols = pd.read_csv("cache/combined_tailored.csv", nrows=1).columns
+    data_types = {col: "float" for col in just_cols}
+    data_types["stay_id"] = "int"
+    combined_data = pd.read_csv("cache/combined_tailored.csv", low_memory=False)
+    combined_data = combined_data.set_index("stay_id")
+    X = combined_data[[col for col in combined_data.columns if col != "label"]].values
+    y = combined_data["label"].values
 
-    train_dl = torch.utils.data.DataLoader(
-        train_ds,
-        batch_size=len(train_ds),
-        collate_fn=train_ds.padding_collate,
-        num_workers=16,
-        pin_memory=True,
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.10, random_state=42
     )
 
-    valid_dl = torch.utils.data.DataLoader(
-        valid_ds,
-        batch_size=len(valid_ds),
-        collate_fn=valid_ds.padding_collate,
-        num_workers=16,
-        pin_memory=True,
-    )
-
-    X_train, Y_train = next(iter(train_dl))
-    X_valid, Y_valid = next(iter(valid_dl))
-
+    print(f"Training size: {X_train.shape}")
+    print(f"Validation size: {X_test.shape}")
     clf = TabNetClassifier()
-    clf.fit(X_train, Y_train, eval_set=[(X_valid, Y_valid)])
+    clf.fit(X_train, y_train, eval_set=[(X_test, y_test)])
 
     print(clf)

@@ -1,44 +1,47 @@
 import dask.dataframe as dd
 import pandas as pd
+from tabsep.dataProcessing.util import all_inclusive_dtypes
 
 
 def generate_missingness(threshold: float) -> pd.Series:
-    events_dd = dd.read_csv(
+    out = pd.Series([], dtype="int")
+
+    for ds in [
         "mimiciv/icu/chartevents.csv",
-        assume_missing=True,
-        blocksize=100e6,
-        parse_dates=["charttime", "storetime"],
-        dtype={
-            "subject_id": "int",
-            "hadm_id": "int",
-            "stay_id": "int",
-            "charttime": "object",
-            "storetime": "object",
-            "itemid": "int",
-            "value": "object",
-            "valueuom": "object",
-            "warning": "object",
-            "valuenum": "float",
-        },
-    )
+        "mimiciv/icu/outputevents.csv",
+        "mimiciv/icu/inputevents.csv",
+    ]:
+        events_dd = dd.read_csv(
+            ds,
+            assume_missing=True,
+            blocksize=100e6,
+            usecols=["itemid", "stay_id"],
+            dtype=all_inclusive_dtypes,
+        )
 
-    total_hadms = events_dd["hadm_id"].nunique()
-    hadm_counts_by_itemid = (
-        events_dd.groupby("itemid")["hadm_id"].nunique().compute(scheduler="processes")
-    )
+        total_stays = events_dd["stay_id"].nunique()
+        stay_counts_by_itemid = (
+            events_dd.groupby("itemid")["stay_id"]
+            .nunique()
+            .compute(scheduler="processes")
+        )
 
-    hadm_counts_by_itemid = hadm_counts_by_itemid.reset_index()
-    hadm_counts_by_itemid = hadm_counts_by_itemid.rename(
-        columns={"hadm_id": "hadm_count"}
-    )
-    included_itemids = hadm_counts_by_itemid[
-        (hadm_counts_by_itemid["hadm_count"] / total_hadms) > threshold
-    ]
+        stay_counts_by_itemid = stay_counts_by_itemid.reset_index()
+        stay_counts_by_itemid = stay_counts_by_itemid.rename(
+            columns={"stay_id": "stay_count"}
+        )
+        included_itemids = stay_counts_by_itemid[
+            (stay_counts_by_itemid["stay_count"] / total_stays) > threshold
+        ]
 
-    print(
-        f"Dropped {len(hadm_counts_by_itemid) - len(included_itemids)} features that did not meet the missingness threshold ({threshold})"
-    )
-    included_itemids["itemid"].to_csv("cache/included_features.csv", index=False)
+        print(
+            f"Dropped {len(stay_counts_by_itemid) - len(included_itemids)} features that did not meet the missingness threshold ({threshold}) for datasource {ds}"
+        )
+
+        out = pd.concat([out, included_itemids["itemid"]])
+
+    print(f"Final feature count: {len(out)}")
+    out.to_csv("cache/included_features.csv", index=False)
 
 
 if __name__ == "__main__":

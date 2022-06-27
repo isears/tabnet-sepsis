@@ -1,4 +1,3 @@
-from math import comb
 import os.path
 import torch
 import pandas as pd
@@ -145,59 +144,7 @@ class FileBasedDataset(torch.utils.data.Dataset):
         )  # Need to add any itemids that are missing
         # TODO: could probably do imputation better (but maybe during preprocessing)
         combined_features = combined_features.fillna(0.0)
-
-        X = torch.tensor(combined_features.values)
-
-        return X, Y
-
-
-# TODO
-class TabularDataset(FileBasedDataset):
-    def __init__(
-        self,
-        processed_mimic_path: str,
-        stay_ids: List[int] = None,
-        feature_ids: List[int] = None,
-        labels: pd.DataFrame = None,
-    ):
-        super().__init__(processed_mimic_path, stay_ids, feature_ids, labels)
-
-    def __getitem__(self, index: int):
-        stay_id = self.stay_ids[index]
-
-        # Labels
-        Y = self.labels.loc[stay_id]
-        Y = torch.tensor(Y.values)
-
-        # Features
-        # Ensures every example has a sequence length of at least 1
-        combined_features = pd.DataFrame(columns=["feature_id", "0"])
-
-        for feature_file in [
-            "chartevents_features.csv",
-            "outputevents_features.csv",
-            "inputevent_features.csv",
-        ]:
-            full_path = f"{self.processed_mimic_path}/{stay_id}/{feature_file}"
-
-            if os.path.exists(full_path):
-                combined_features = pd.concat(
-                    [
-                        combined_features,
-                        pd.read_csv(full_path),
-                    ]
-                )
-
-        # Make sure all itemids are represented in order, add 0-tensors where missing
-        combined_features["feature_id"] = combined_features["feature_id"].astype(
-            "int32"
-        )
-        combined_features = combined_features.set_index("feature_id")
-        combined_features = combined_features.reindex(
-            self.feature_ids
-        )  # Need to add any itemids that are missing
-        # TODO: could probably do imputation better (but maybe during preprocessing)
-        combined_features = combined_features.fillna(0.0)
+        combined_features = combined_features.mean(axis=0)
 
         X = torch.tensor(combined_features.values)
 
