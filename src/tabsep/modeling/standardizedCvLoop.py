@@ -76,30 +76,16 @@ class ValidatingTabNetClf(TabNetClassifier):
         super().fit(X_train, y_train, eval_set=[(X_valid, y_valid)])
 
 
-if __name__ == "__main__":
+def evaluate_score(scores: np.array):
+    print(f"All scores: {scores}")
+    print(f"Score mean: {scores.mean()}")
+    print(f"Score std: {scores.std()}")
+    print(
+        f"95% CI: {st.t.interval(alpha=0.95, df=len(scores)-1, loc=scores.mean(), scale=st.sem(scores))}"
+    )
 
-    models = {
-        "tabnet": (ValidatingTabNetClf, dict(verbose=0)),
-        "tabnet_pretrain": (PretrainingTabNetClf, dict(verbose=0)),
-        "lr": (LogisticRegression, dict(max_iter=1e7)),
-        "rf": (RandomForestClassifier, dict()),
-    }
 
-    model_name = sys.argv[1]
-
-    if model_name in models:
-        clf_cls, kwargs = models[model_name]
-    else:
-        raise ValueError(f"No model named {sys.argv[1]}. Pick from {models.keys()}")
-
-    if model_name == "tabnet":
-        n_jobs = 1  # For some reason parallel runs of tabnet are non-deterministic
-    else:
-        n_jobs = -1
-
-    combined_data = load_from_disk()
-
-    scores = np.array([])
+def doCV(clf_cls, combined_data, n_jobs, **kwargs):
 
     clf = make_pipeline(StandardScaler(), clf_cls(random_state=0, **kwargs))
 
@@ -107,16 +93,37 @@ if __name__ == "__main__":
     y = combined_data["label"].values
 
     cv_splitter = StratifiedKFold(n_splits=10, shuffle=False)
-    curr_scores = cross_val_score(
+    scores = cross_val_score(
         clf, X, y, cv=cv_splitter, scoring="roc_auc", n_jobs=n_jobs
     )
 
-    scores = np.concatenate([scores, curr_scores])
+    return scores
 
-    print("Final results:")
-    print(f"All scores: {scores}")
-    print(f"Score mean: {scores.mean()}")
-    print(f"Score std: {scores.std()}")
-    print(
-        f"95% CI: {st.t.interval(alpha=0.95, df=len(scores)-1, loc=scores.mean(), scale=st.sem(scores))}"
-    )
+
+if __name__ == "__main__":
+    model_name = sys.argv[1]
+    models = {
+        "tabnet": (ValidatingTabNetClf, dict(verbose=0), 1),
+        "tabnet_pretrain": (PretrainingTabNetClf, dict(verbose=0), 1),
+        "lr": (LogisticRegression, dict(max_iter=1e7), -1),
+        "rf": (RandomForestClassifier, dict(), -1),
+    }
+
+    combined_data = load_from_disk()
+
+    if model_name == "all":
+        for model_name, (clf_cls, kwargs, n_jobs) in models.items():
+            first_cv_scores = doCV(clf_cls, combined_data, n_jobs, **kwargs)
+            second_cv_scores = doCV(clf_cls, combined_data, n_jobs, **kwargs)
+
+            # Determinism check
+            assert (first_cv_scores == second_cv_scores).all()
+
+            print(f"Scores for {model_name}:")
+            evaluate_score(first_cv_scores)
+
+    elif model_name in models:
+        clf_cls, kwargs, n_jobs = models[model_name]
+        doCV(clf_cls, combined_data, n_jobs, **kwargs)
+    else:
+        raise ValueError(f"No model named {sys.argv[1]}. Pick from {models.keys()}")

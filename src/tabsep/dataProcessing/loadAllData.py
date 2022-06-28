@@ -23,7 +23,7 @@ class megaloader:
         print("Randomizing cut times before processing")
         icustays = pd.read_csv(
             "mimiciv/icu/icustays.csv",
-            usecols=["stay_id", "intime", "outtime"],
+            usecols=["stay_id", "hadm_id", "subject_id", "intime", "outtime"],
             parse_dates=["intime", "outtime"],
         )
 
@@ -125,13 +125,12 @@ class megaloader:
 
         # Add in labels
         combined_vals = combined_vals.merge(
-            self.icustays[["stay_id", "label", "cut_los"]],
+            self.icustays[["stay_id"]],
             how="left",
             left_index=True,
             right_on="stay_id",
         )
 
-        assert not combined_vals["label"].isna().any()
         return combined_vals
 
     def load_chartevents(self):
@@ -170,6 +169,70 @@ class megaloader:
 
         return self.load_it_all(inputevents, "mean")
 
+    def load_procedureevents(self):
+        procedureevents = dd.read_csv(
+            "mimiciv/icu/procedureevents.csv",
+            dtype=all_inclusive_dtypes,
+            usecols=["stay_id", "itemid", "starttime", "value"],
+            parse_dates=["starttime"],
+        )
+
+        procedureevents = procedureevents.rename(
+            columns={"value": "valuenum", "starttime": "charttime"}
+        )
+
+        return self.load_it_all(procedureevents, "sum")
+
+    def load_static(self):
+        admissions = pd.read_csv("mimiciv/core/admissions.csv")
+
+        static_df = self.icustays[["stay_id", "hadm_id"]].merge(
+            admissions[
+                [
+                    "hadm_id",
+                    "admission_type",
+                    "admission_location",
+                    "insurance",
+                    "language",
+                    "marital_status",
+                    "ethnicity",
+                ]
+            ],
+            how="left",
+            on="hadm_id",
+        )
+
+        static_df = static_df.drop(columns=["hadm_id"]).set_index("stay_id")
+        static_df = pd.get_dummies(static_df)
+
+        # Just extract age from patients
+        patients_df = pd.read_csv("mimiciv/core/patients.csv")
+        other_static = self.icustays.merge(
+            patients_df[["anchor_age", "anchor_year", "subject_id", "gender"]],
+            how="left",
+            on="subject_id",
+        )
+
+        other_static["age_on_admission"] = other_static.apply(
+            lambda row: row["intime"].year - row["anchor_year"] + row["anchor_age"],
+            axis=1,
+        )
+
+        other_static["gender"] = other_static["gender"].apply(
+            lambda x: 1.0 if x == "M" else 0.0
+        )
+
+        other_static = other_static.set_index("stay_id")
+
+        static_df = static_df.merge(
+            other_static[["gender", "age_on_admission"]],
+            how="left",
+            left_index=True,
+            right_index=True,
+        )
+
+        return static_df
+
 
 def load_from_disk() -> pd.DataFrame:
     df_out = pd.read_csv(
@@ -180,6 +243,8 @@ def load_from_disk() -> pd.DataFrame:
         "cache/processed_chartevents.csv",
         "cache/processed_inputevents.csv",
         "cache/processed_outputevents.csv",
+        "cache/processed_procedureevents.csv",
+        "cache/processed_static.csv",
     ]:
         df = pd.read_csv(csv, index_col="stay_id", low_memory=False)
         df_out = df_out.merge(df, how="left", left_index=True, right_index=True)
@@ -197,3 +262,9 @@ if __name__ == "__main__":
 
     # processed_chartevents = ml.load_chartevents()
     # processed_chartevents.to_csv("cache/processed_chartevents.csv", index=False)
+
+    # processed_procedureevents = ml.load_procedureevents()
+    # processed_procedureevents.to_csv("cache/processed_procedureevents.csv", index=False)
+
+    static = ml.load_static()
+    static.to_csv("cache/processed_static.csv")

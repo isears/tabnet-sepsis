@@ -10,6 +10,7 @@ def generate_missingness(threshold: float) -> pd.Series:
         "mimiciv/icu/chartevents.csv",
         "mimiciv/icu/outputevents.csv",
         "mimiciv/icu/inputevents.csv",
+        "mimiciv/icu/procedureevents.csv",
     ]:
         events_dd = dd.read_csv(
             ds,
