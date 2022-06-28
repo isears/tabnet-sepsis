@@ -1,16 +1,13 @@
+from pyparsing import col
 from pytorch_tabnet.tab_model import TabNetClassifier
 import pandas as pd
 import torch
 from sklearn.model_selection import train_test_split
-from tabsep.dataProcessing.tabularDataset import TabularDataset
+from tabsep.dataProcessing.loadAllData import load_from_disk
 
 if __name__ == "__main__":
+    combined_data = load_from_disk()
 
-    just_cols = pd.read_csv("cache/combined_tailored.csv", nrows=1).columns
-    data_types = {col: "float" for col in just_cols}
-    data_types["stay_id"] = "int"
-    combined_data = pd.read_csv("cache/combined_tailored.csv", low_memory=False)
-    combined_data = combined_data.set_index("stay_id")
     X = combined_data[[col for col in combined_data.columns if col != "label"]].values
     y = combined_data["label"].values
 
