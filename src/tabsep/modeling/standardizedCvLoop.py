@@ -22,15 +22,46 @@ import scipy.stats as st
 
 
 class PretrainingTabNetClf(TabNetClassifier):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, verbose, random_state):
+        self.random_state = random_state
+
+        super().__init__(
+            optimizer_fn=torch.optim.Adam,
+            optimizer_params=dict(lr=2e-2),
+            scheduler_params={
+                "step_size": 10,  # how to use learning rate scheduler
+                "gamma": 0.9,
+            },
+            scheduler_fn=torch.optim.lr_scheduler.StepLR,
+            mask_type="sparsemax",
+            verbose=verbose,
+            seed=random_state,
+        )
 
     def fit(self, X, y):
-        print("Running unsupervised pretraining...")
-        unsupervised = TabNetPretrainer()
-        unsupervised.fit(X)
-        print("Pretraining complete, moving onto supervised training")
-        super().fit(X, y, from_unsupervised=unsupervised)
+        X_train, X_valid, y_train, y_valid = train_test_split(
+            X, y, test_size=0.10, stratify=y, random_state=42
+        )
+
+        unsupervised_model = TabNetPretrainer(
+            optimizer_fn=torch.optim.Adam,
+            optimizer_params=dict(lr=2e-2),
+            mask_type="sparsemax",  # "entmax"
+            verbose=0,
+            seed=self.random_state,
+        )
+
+        unsupervised_model.fit(
+            X_train, eval_set=[X_valid], pretraining_ratio=0.8, patience=15
+        )
+
+        super().fit(
+            X_train,
+            y_train,
+            eval_set=[(X_valid, y_valid)],
+            patience=15,
+            from_unsupervised=unsupervised_model,
+        )
 
 
 class ValidatingTabNetClf(TabNetClassifier):
@@ -49,6 +80,7 @@ if __name__ == "__main__":
 
     models = {
         "tabnet": (ValidatingTabNetClf, dict(verbose=0)),
+        "tabnet_pretrain": (PretrainingTabNetClf, dict(verbose=0)),
         "lr": (LogisticRegression, dict(solver="sag", max_iter=1e7)),
         "rf": (RandomForestClassifier, dict()),
     }
