@@ -12,6 +12,7 @@ class Table1Generator(object):
         self.table1 = pd.DataFrame(columns=["Item", "Value"])
 
         self.all_df = pd.read_csv("mimiciv/icu/icustays.csv")
+        self.all_df = self.all_df[self.all_df["stay_id"].isin(self.stay_ids)]
         self.total_stays = len(self.all_df.index)
 
         # Create df with all demographic data
