@@ -81,7 +81,7 @@ if __name__ == "__main__":
     models = {
         "tabnet": (ValidatingTabNetClf, dict(verbose=0)),
         "tabnet_pretrain": (PretrainingTabNetClf, dict(verbose=0)),
-        "lr": (LogisticRegression, dict(solver="sag", max_iter=1e7)),
+        "lr": (LogisticRegression, dict(max_iter=1e7)),
         "rf": (RandomForestClassifier, dict()),
     }
 
@@ -101,20 +101,17 @@ if __name__ == "__main__":
 
     scores = np.array([])
 
-    for seed in range(0, 5):
-        clf = make_pipeline(StandardScaler(), clf_cls(random_state=seed, **kwargs))
+    clf = make_pipeline(StandardScaler(), clf_cls(random_state=0, **kwargs))
 
-        X = combined_data[
-            [col for col in combined_data.columns if col != "label"]
-        ].values
-        y = combined_data["label"].values
+    X = combined_data[[col for col in combined_data.columns if col != "label"]].values
+    y = combined_data["label"].values
 
-        cv_splitter = StratifiedKFold(n_splits=5, shuffle=False)
-        curr_scores = cross_val_score(
-            clf, X, y, cv=cv_splitter, scoring="roc_auc", n_jobs=n_jobs
-        )
+    cv_splitter = StratifiedKFold(n_splits=10, shuffle=False)
+    curr_scores = cross_val_score(
+        clf, X, y, cv=cv_splitter, scoring="roc_auc", n_jobs=n_jobs
+    )
 
-        scores = np.concatenate([scores, curr_scores])
+    scores = np.concatenate([scores, curr_scores])
 
     print("Final results:")
     print(f"All scores: {scores}")
