@@ -18,6 +18,7 @@ from sklearn.pipeline import make_pipeline
 from tabsep.dataProcessing.loadAllData import load_from_disk
 import sys
 import numpy as np
+import pandas as pd
 import scipy.stats as st
 
 
@@ -110,7 +111,7 @@ if __name__ == "__main__":
         "rf": (RandomForestClassifier, dict(), -1),
     }
 
-    combined_data = load_from_disk()
+    combined_data = pd.read_csv("cache/processed_combined.csv", index_col="stay_id")
 
     if model_name == "all":
         for model_name, (clf_cls, kwargs, n_jobs) in models.items():

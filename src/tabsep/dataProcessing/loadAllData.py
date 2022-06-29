@@ -86,11 +86,8 @@ class BaseAggregator:
         assert (icustays["cut_time"] < icustays["sepsis_time"]).all()
         assert (icustays["cut_time"] > icustays["intime"] + self.minimum_cut).all()
 
-        icustays[["stay_id", "cut_los", "label"]].to_csv(
-            "cache/processed_metadata.csv", index=False
-        )
-
         self.icustays = icustays
+        self.metadata = icustays[["stay_id", "cut_los", "label"]]
         self.sample_stay_ids = sample_stay_ids
         self.included_features = included_features
         print("[+] Cut times randomized, running processor...")
@@ -139,7 +136,7 @@ class BaseAggregator:
 
         # Add in labels
         combined_vals = combined_vals.merge(
-            self.icustays[["stay_id"]],
+            self.metadata,
             how="left",
             left_index=True,
             right_on="stay_id",
@@ -200,7 +197,8 @@ class BaseAggregator:
     def agg_static(self):
         admissions = pd.read_csv("mimiciv/core/admissions.csv")
 
-        static_df = self.icustays[["stay_id", "hadm_id"]].merge(
+        # Need label for non-unique stayid merging
+        static_df = self.icustays[["stay_id", "hadm_id", "label", "cut_los"]].merge(
             admissions[
                 [
                     "hadm_id",
@@ -216,7 +214,7 @@ class BaseAggregator:
             on="hadm_id",
         )
 
-        static_df = static_df.drop(columns=["hadm_id"]).set_index("stay_id")
+        static_df = static_df.drop(columns=["hadm_id"])
         static_df = pd.get_dummies(static_df)
 
         # Just extract age from patients
@@ -236,13 +234,10 @@ class BaseAggregator:
             lambda x: 1.0 if x == "M" else 0.0
         )
 
-        other_static = other_static.set_index("stay_id")
-
         static_df = static_df.merge(
-            other_static[["gender", "age_on_admission"]],
+            other_static[["gender", "stay_id", "age_on_admission"]],
             how="left",
-            left_index=True,
-            right_index=True,
+            on="stay_id",
         )
 
         return static_df
@@ -357,15 +352,16 @@ def meta_loader() -> pd.DataFrame:
         static = curr_aggregator.agg_static()
         all_static.append(static)
 
-    # pd.concat(all_ie).to_csv("cache/processed_inputevents.csv", index=False)
-    # pd.concat(all_ce).to_csv("cache/processed_chartevents.csv", index=False)
-    # pd.concat(all_pe).to_csv("cache/processed_procedureevents.csv", index=False)
-    # pd.concat(all_static).to_csv("cache/processed_static.csv", index=False)
-
     combined_df = pd.concat(all_ie)
-    combined_df = combined_df.merge(pd.concat(all_ce), how="left", on="stay_id")
-    combined_df = combined_df.merge(pd.concat(all_pe), how="left", on="stay_id")
-    combined_df = combined_df.merge(pd.concat(all_static), how="left", on="stay_id")
+    combined_df = combined_df.merge(
+        pd.concat(all_ce), how="left", on=["stay_id", "cut_los", "label"]
+    )
+    combined_df = combined_df.merge(
+        pd.concat(all_pe), how="left", on=["stay_id", "cut_los", "label"]
+    )
+    combined_df = combined_df.merge(
+        pd.concat(all_static), how="left", on=["stay_id", "cut_los", "label"]
+    )
 
     combined_df = combined_df.fillna(0.0)
     combined_df.to_csv("cache/processed_combined.csv", index=False)
