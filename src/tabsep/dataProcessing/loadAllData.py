@@ -7,18 +7,33 @@ import dask.dataframe as dd
 from tabsep.dataProcessing.util import all_inclusive_dtypes
 import datetime
 import random
+from typing import List
+from dask.diagnostics import ProgressBar
 
 
-class megaloader:
-    def __init__(self) -> None:
+class BaseAggregator:
+    def _cut(self):
+        raise NotImplemented
+
+    def _select_sample(self, labeled_icustays: pd.DataFrame) -> List[int]:
+        raise NotImplemented
+
+    def _label(self, df_to_label: pd.DataFrame) -> pd.DataFrame:
+        raise NotImplemented
+
+    def __init__(self, prediction_window=12) -> None:
         dask.config.set(scheduler="processes")
         random.seed(42)
+        self.minimum_cut = datetime.timedelta(hours=6)
+        self.prediction_window = prediction_window
 
         included_stay_ids = pd.read_csv("cache/included_stayids.csv").squeeze("columns")
         included_features = pd.read_csv("cache/included_features.csv").squeeze(
             "columns"
         )
-        print(f"Initiated data loading with {len(included_stay_ids)} ICU stays")
+        print(
+            f"Initiated data loading with {len(included_stay_ids)} ICU stays in inclusion criteria"
+        )
 
         print("Randomizing cut times before processing")
         icustays = pd.read_csv(
@@ -37,6 +52,7 @@ class megaloader:
             ],
         )
 
+        # Filter by inclusion criteria
         icustays = icustays[icustays["stay_id"].isin(included_stay_ids)]
         sepsis_df = sepsis_df[sepsis_df["stay_id"].isin(included_stay_ids)]
 
@@ -50,41 +66,39 @@ class megaloader:
             sepsis_df[["stay_id", "sepsis_time", "sepsis3"]], how="left", on="stay_id"
         )
 
-        # Add labels
-        icustays = icustays.rename(columns={"sepsis3": "label"})
-        icustays["label"] = icustays["label"].fillna(0.0)
+        icustays["sepsis3"] = icustays["sepsis3"].fillna(0.0)
 
-        def generate_random_cut_time(row):
-            if row["sepsis_time"] is not pd.NaT:
-                return row["sepsis_time"] - datetime.timedelta(hours=12)
-            else:
-                delta = row["outtime"] - row["intime"]
-                # Always ensure at least 6 hours of ICU time (6 * 60 * 60 = )
-                random_index_second = random.randrange(21600, delta.total_seconds())
-                return row["intime"] + datetime.timedelta(seconds=random_index_second)
+        sample_stay_ids = self._select_sample(icustays)
 
-        icustays["cut_time"] = icustays.apply(generate_random_cut_time, axis=1)
+        # Filter by sample
+        icustays = icustays[icustays["stay_id"].isin(sample_stay_ids)]
+
+        print(f"[{self.__class__.__name__}] Sampling {len(icustays)}")
+
+        icustays["cut_time"] = icustays.apply(self._cut, axis=1)
         icustays["cut_los"] = icustays["cut_time"] - icustays["intime"]
         icustays["cut_los"] = icustays["cut_los"].apply(lambda x: x.total_seconds())
+
+        icustays = self._label(icustays)
 
         # Check work
         icustays["sepsis_time"] = icustays["sepsis_time"].fillna(datetime.datetime.max)
         assert (icustays["cut_time"] < icustays["sepsis_time"]).all()
-        assert (icustays["cut_time"] > icustays["intime"]).all()
+        assert (icustays["cut_time"] > icustays["intime"] + self.minimum_cut).all()
 
         icustays[["stay_id", "cut_los", "label"]].to_csv(
             "cache/processed_metadata.csv", index=False
         )
 
         self.icustays = icustays
-        self.included_stay_ids = included_stay_ids
+        self.sample_stay_ids = sample_stay_ids
         self.included_features = included_features
         print("[+] Cut times randomized, running processor...")
 
-    def load_it_all(self, df_in, agg_fn: str):
+    def agg_general(self, df_in, agg_fn: str):
 
         # filter inclusion criteria
-        df_in = df_in[df_in["stay_id"].isin(self.included_stay_ids)]
+        df_in = df_in[df_in["stay_id"].isin(self.sample_stay_ids)]
         df_in = df_in[df_in["itemid"].isin(self.included_features)]
         df_in = df_in.dropna(how="any")
 
@@ -133,7 +147,7 @@ class megaloader:
 
         return combined_vals
 
-    def load_chartevents(self):
+    def agg_chartevents(self):
         chartevents = dd.read_csv(
             "mimiciv/icu/chartevents.csv",
             dtype=all_inclusive_dtypes,
@@ -141,9 +155,9 @@ class megaloader:
             parse_dates=["charttime"],
         )
 
-        return self.load_it_all(chartevents, "mean")
+        return self.agg_general(chartevents, "mean")
 
-    def load_outputevents(self):
+    def agg_outputevents(self):
         outputevents = dd.read_csv(
             "mimiciv/icu/outputevents.csv",
             dtype=all_inclusive_dtypes,
@@ -153,9 +167,9 @@ class megaloader:
 
         outputevents = outputevents.rename(columns={"value": "valuenum"})
 
-        return self.load_it_all(outputevents, "sum")
+        return self.agg_general(outputevents, "sum")
 
-    def load_inputevents(self):
+    def agg_inputevents(self):
         inputevents = dd.read_csv(
             "mimiciv/icu/inputevents.csv",
             dtype=all_inclusive_dtypes,
@@ -167,9 +181,9 @@ class megaloader:
             columns={"rate": "valuenum", "starttime": "charttime"}
         )
 
-        return self.load_it_all(inputevents, "mean")
+        return self.agg_general(inputevents, "mean")
 
-    def load_procedureevents(self):
+    def agg_procedureevents(self):
         procedureevents = dd.read_csv(
             "mimiciv/icu/procedureevents.csv",
             dtype=all_inclusive_dtypes,
@@ -181,9 +195,9 @@ class megaloader:
             columns={"value": "valuenum", "starttime": "charttime"}
         )
 
-        return self.load_it_all(procedureevents, "sum")
+        return self.agg_general(procedureevents, "sum")
 
-    def load_static(self):
+    def agg_static(self):
         admissions = pd.read_csv("mimiciv/core/admissions.csv")
 
         static_df = self.icustays[["stay_id", "hadm_id"]].merge(
@@ -233,6 +247,129 @@ class megaloader:
 
         return static_df
 
+    def agg_all(self):
+        # TODO: replace load_from_disk
+        raise NotImplemented
+
+
+class NoSepsisAggregator(BaseAggregator):
+    """
+    Selects a sample of icu stays with no sepsis, and then,
+    within that, selects a random truncation point in the icu stay
+    """
+
+    def _select_sample(self, labeled_icustays: pd.DataFrame) -> List[int]:
+        sepsis_count = int(labeled_icustays["sepsis3"].sum())
+        no_sepsis_stays = labeled_icustays[labeled_icustays["sepsis3"] == 0]
+        # Balance non-septic icu stays with septic icu stays
+        return (
+            no_sepsis_stays["stay_id"].sample(n=sepsis_count, random_state=42).to_list()
+        )
+
+    def _cut(self, row):
+        delta = row["outtime"] - row["intime"]
+        # Always ensure at least min_cut (e.g. 6 hours) of ICU time
+        random_index_second = random.randrange(
+            self.minimum_cut.total_seconds(), delta.total_seconds()
+        )
+        return row["intime"] + datetime.timedelta(seconds=random_index_second)
+
+    def _label(self, df_to_label: pd.DataFrame) -> pd.DataFrame:
+        df_to_label["label"] = 0.0
+        return df_to_label
+
+    def __init__(self) -> None:
+        super().__init__()
+
+
+class SepsisPosAggregator(BaseAggregator):
+    """
+    Selects a sample of icu stays with sepsis and then truncates icu stay 12 hrs. before sepsis onset
+    """
+
+    def _select_sample(self, labeled_icustays: pd.DataFrame) -> List[int]:
+        sepsis_stays = labeled_icustays[labeled_icustays["sepsis3"] == 1]
+        # Balance non-septic icu stays with septic icu stays
+        return sepsis_stays["stay_id"].to_list()
+
+    def _cut(self, row):
+        return row["sepsis_time"] - datetime.timedelta(hours=self.prediction_window)
+
+    def _label(self, df_to_label: pd.DataFrame) -> pd.DataFrame:
+        df_to_label["label"] = 1.0  # All cases will be positive
+        return df_to_label
+
+    def __init__(self) -> None:
+        super().__init__()
+
+
+class SepsisNegAggregator(SepsisPosAggregator):
+    """
+    Selects a sample of icu stays with sepsis then truncates icu stay between
+    6hrs. after beginning of stay to  11 hrs. before sepsis onset
+    """
+
+    def _cut(self, row):
+        delta = (
+            # Give 1 hr. before the prediction window to differentiate a bit
+            row["sepsis_time"]
+            - datetime.timedelta(hours=self.prediction_window - 1)
+        ) - row["intime"]
+
+        random_index_second = random.randrange(
+            self.minimum_cut.total_seconds(), delta.total_seconds()
+        )
+        return row["intime"] + datetime.timedelta(seconds=random_index_second)
+
+    def _label(self, df_to_label: pd.DataFrame) -> pd.DataFrame:
+        df_to_label["label"] = 0.0
+        return df_to_label
+
+    def __init__(self) -> None:
+        super().__init__()
+
+
+def meta_loader() -> pd.DataFrame:
+    # TODO: could clean this up a bit
+    ProgressBar().register()
+
+    all_ie = list()
+    all_ce = list()
+    all_pe = list()
+    all_static = list()
+
+    for agg_cls in [NoSepsisAggregator, SepsisPosAggregator, SepsisNegAggregator]:
+        curr_aggregator = agg_cls()
+
+        print("Agg'ing inputevents")
+        processed_inputevents = curr_aggregator.agg_inputevents()
+        all_ie.append(processed_inputevents)
+
+        print("Agg'ing chartevents")
+        processed_chartevents = curr_aggregator.agg_chartevents()
+        all_ce.append(processed_chartevents)
+
+        print("Agg'ing procedureevents")
+        processed_procedureevents = curr_aggregator.agg_procedureevents()
+        all_pe.append(processed_procedureevents)
+
+        print("Agg'ing static")
+        static = curr_aggregator.agg_static()
+        all_static.append(static)
+
+    # pd.concat(all_ie).to_csv("cache/processed_inputevents.csv", index=False)
+    # pd.concat(all_ce).to_csv("cache/processed_chartevents.csv", index=False)
+    # pd.concat(all_pe).to_csv("cache/processed_procedureevents.csv", index=False)
+    # pd.concat(all_static).to_csv("cache/processed_static.csv", index=False)
+
+    combined_df = pd.concat(all_ie)
+    combined_df = combined_df.merge(pd.concat(all_ce), how="left", on="stay_id")
+    combined_df = combined_df.merge(pd.concat(all_pe), how="left", on="stay_id")
+    combined_df = combined_df.merge(pd.concat(all_static), how="left", on="stay_id")
+
+    combined_df = combined_df.fillna(0.0)
+    combined_df.to_csv("cache/processed_combined.csv", index=False)
+
 
 def load_from_disk() -> pd.DataFrame:
     df_out = pd.read_csv(
@@ -255,16 +392,4 @@ def load_from_disk() -> pd.DataFrame:
 
 
 if __name__ == "__main__":
-    ml = megaloader()
-
-    # processed_inputevents = ml.load_inputevents()
-    # processed_inputevents.to_csv("cache/processed_inputevents.csv", index=False)
-
-    # processed_chartevents = ml.load_chartevents()
-    # processed_chartevents.to_csv("cache/processed_chartevents.csv", index=False)
-
-    # processed_procedureevents = ml.load_procedureevents()
-    # processed_procedureevents.to_csv("cache/processed_procedureevents.csv", index=False)
-
-    static = ml.load_static()
-    static.to_csv("cache/processed_static.csv")
+    meta_loader()

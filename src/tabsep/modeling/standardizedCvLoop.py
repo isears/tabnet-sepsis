@@ -92,7 +92,8 @@ def doCV(clf_cls, combined_data, n_jobs, **kwargs):
     X = combined_data[[col for col in combined_data.columns if col != "label"]].values
     y = combined_data["label"].values
 
-    cv_splitter = StratifiedKFold(n_splits=10, shuffle=False)
+    # Shuffling is now mandatory b/c data processor most likely returns sorted results
+    cv_splitter = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
     scores = cross_val_score(
         clf, X, y, cv=cv_splitter, scoring="roc_auc", n_jobs=n_jobs
     )
@@ -124,6 +125,7 @@ if __name__ == "__main__":
 
     elif model_name in models:
         clf_cls, kwargs, n_jobs = models[model_name]
-        doCV(clf_cls, combined_data, n_jobs, **kwargs)
+        score = doCV(clf_cls, combined_data, n_jobs, **kwargs)
+        evaluate_score(score)
     else:
         raise ValueError(f"No model named {sys.argv[1]}. Pick from {models.keys()}")
