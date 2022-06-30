@@ -9,6 +9,7 @@ import datetime
 import random
 from typing import List
 from dask.diagnostics import ProgressBar
+import sys
 
 
 class BaseAggregator:
@@ -324,7 +325,7 @@ class SepsisNegAggregator(SepsisPosAggregator):
         super().__init__()
 
 
-def meta_loader() -> pd.DataFrame:
+def meta_loader(version_name: str) -> pd.DataFrame:
     # TODO: could clean this up a bit
     ProgressBar().register()
 
@@ -364,7 +365,7 @@ def meta_loader() -> pd.DataFrame:
     )
 
     combined_df = combined_df.fillna(0.0)
-    combined_df.to_csv("cache/processed_combined.csv", index=False)
+    combined_df.to_csv(f"cache/{version_name}.csv", index=False)
 
 
 def load_from_disk() -> pd.DataFrame:
@@ -388,4 +389,9 @@ def load_from_disk() -> pd.DataFrame:
 
 
 if __name__ == "__main__":
-    meta_loader()
+    if len(sys.argv) > 1:
+        version_name = sys.argv[1]
+    else:
+        version_name = "processed_combined"
+
+    meta_loader(version_name)

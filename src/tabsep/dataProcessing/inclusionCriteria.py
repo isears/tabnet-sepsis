@@ -42,6 +42,15 @@ class InclusionCriteria:
             )
         ]
 
+    def _exclude_long_stays(self, time_hours=(24 * 21)):
+        self.all_stays = self.all_stays[
+            self.all_stays.apply(
+                lambda row: (row["outtime"] - row["intime"])
+                < datetime.timedelta(hours=time_hours),
+                axis=1,
+            )
+        ]
+
     def _exclude_early_sepsis(self, time_hours=24):
         """
         Exclude patients that arrive to the ICU qualifying for sepsis3
@@ -79,6 +88,7 @@ class InclusionCriteria:
         order = [
             self._exclude_nodata,
             self._exclude_short_stays,
+            self._exclude_long_stays,
             self._exclude_early_sepsis,
         ]
 

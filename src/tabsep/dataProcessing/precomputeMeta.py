@@ -3,13 +3,14 @@ Pre compute metadata so that we don't have to during runtime
 
 For now, just maximum sequence length
 """
-import os
 import pandas as pd
 import json
 
 
 def compute_max_seq_len() -> int:
-    stay_ids = [int(dirname) for dirname in os.listdir("cache/mimicts")]
+    sample_cuts = pd.read_csv("cache/sample_cuts.csv")
+    stay_ids = sample_cuts["stay_id"].to_list()
+
     max_len = 0
     for sid in stay_ids:
         ce = pd.read_csv(f"cache/mimicts/{sid}/chartevents_features.csv", nrows=1)

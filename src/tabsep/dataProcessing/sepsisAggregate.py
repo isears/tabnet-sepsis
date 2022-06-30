@@ -2,6 +2,7 @@ from mimic2ts import BaseAggregator, all_inclusive_dtypes
 import dask.dataframe as dd
 from typing import List
 import pandas as pd
+import numpy as np
 
 
 class SepsisAggregator(BaseAggregator):
@@ -19,6 +20,7 @@ class SepsisAggregator(BaseAggregator):
             assume_missing=True,
             blocksize=blocksize,
             dtype=all_inclusive_dtypes,
+            parse_dates=["sofa_time", "suspected_infection_time"],
         )
 
         self.sepsis_feature_id = 77700
@@ -32,19 +34,14 @@ class SepsisAggregator(BaseAggregator):
             "sepsis3",
         )
 
-    def _stime_parser(self, row):
-        # Return latest of sofa and infection
-        infection_time = pd.to_datetime(row["suspected_infection_time"])
-        sofa_time = pd.to_datetime(row["sofa_time"])
-        if infection_time > sofa_time:
-            return row["suspected_infection_time"]
-        elif sofa_time > infection_time:
-            return row["sofa_time"]
+    def _parse_dates(self):
+        def get_sepsis_onset(row):
+            if row["suspected_infection_time"] > row["sofa_time"]:
+                return int(row["suspected_infection_time"].timestamp())
+            else:
+                return int(row["sofa_time"].timestamp())
 
-    def _etime_parser(self, row):
-        # No information about when sepsis is "over"
-        # Will probably clip timesries just before sepsis onset in dataset
-        return self._stime_parser(row)
+        self.data["event_epoch_time"] = self.data.apply(get_sepsis_onset, axis=1)
 
     def _value_parser(self, row):
         # If entry exists, there's sepsis
@@ -55,14 +52,17 @@ class SepsisAggregator(BaseAggregator):
         # Convention to start derived feature ids with 777
         return self.sepsis_feature_id
 
+    def _feature_combiner(self, tidx_group: pd.DataFrame):
+        return tidx_group.max()
+
 
 if __name__ == "__main__":
-    # TODO: replace this with inclusion criteria
-    stay_ids = pd.read_csv("./mimiciv/icu/icustays.csv")["stay_id"].to_list()
+    stay_ids = pd.read_csv("cache/included_stayids.csv")["stay_id"].to_list()
     se = SepsisAggregator(
         "./mimiciv",
         "./cache/mimicts",
         stay_ids,
+        timestep_seconds=21600,
     )
 
     se.do_agg()

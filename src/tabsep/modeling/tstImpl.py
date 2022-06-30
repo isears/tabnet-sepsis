@@ -10,7 +10,7 @@ from torch.nn.modules import (
 )
 import pandas as pd
 from tabsep.modeling import EarlyStopping
-from tabsep.modeling.cvLoop import do_cv
+from tabsep.modeling.transformerCV import do_cv
 
 
 # Could also be learnable:
@@ -243,7 +243,7 @@ def model_factory(max_seq_len):
     num_classes = 1
 
     transformer_model = TSTransformerEncoderClassiregressor(
-        feat_dim=506,  # TODO: generate this dynamically?
+        feat_dim=621,  # TODO: generate this dynamically?
         d_model=d_model,
         dim_feedforward=dim_feedforward,
         max_len=max_seq_len,
@@ -261,13 +261,10 @@ if __name__ == "__main__":
     criterion = torch.nn.BCELoss()
     early_stopping = EarlyStopping()
 
-    stay_ids = pd.read_csv("cache/included_stayids.csv").squeeze("columns")
-
     do_cv(
         model_factory,
         early_stopping=early_stopping,
         criterion=criterion,
         name="TimeSeriesTransformer",
-        stay_ids=stay_ids,
         batch_size=8,
     )
