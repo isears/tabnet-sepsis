@@ -47,9 +47,9 @@ def do_cv(
 ):
     torch.manual_seed(42)
 
-    # TODO: stratify?
-    cv = KFold(n_splits=5, shuffle=True, random_state=42)
+    cv = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
     cut_sample = pd.read_csv("cache/sample_cuts.csv")
+    cut_sample = cut_sample.sample(frac=1, random_state=42).reset_index(drop=True)
 
     all_folds_scores = list()
 
@@ -57,7 +57,9 @@ def do_cv(
     this_run_save_path = f"cache/models/{name}_{run_time}"
     os.mkdir(this_run_save_path)
 
-    for cv_idx, (train, test) in enumerate(cv.split(cut_sample)):
+    for cv_idx, (train, test) in enumerate(
+        cv.split(cut_sample.index, cut_sample["label"])
+    ):
         print(f"===== Starting CV fold {cv_idx} =====")
 
         train_ds = FileBasedDataset("cache/mimicts", cut_sample=cut_sample.iloc[train])
