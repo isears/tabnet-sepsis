@@ -76,9 +76,9 @@ if __name__ == "__main__":
     print(f"\t{len(nonseptic_icustays)} non-septic stays")
     print(f"\t{len(inclusion_sids)} total stays in inclusion criteria")
 
-    # print(f"[*] Sampling {len(septic_icustays)} non-septic stays for balanced data...")
-    # nonseptic_sample = nonseptic_icustays.sample(len(septic_icustays), random_state=42)
-    nonseptic_sample = nonseptic_icustays
+    print(f"[*] Sampling {len(septic_icustays)} non-septic stays for balanced data...")
+    nonseptic_sample = nonseptic_icustays.sample(len(septic_icustays), random_state=42)
+    # nonseptic_sample = nonseptic_icustays
     print(f"[*] Applying random cut to non-septic sample")
     nonseptic_sample["cutidx"] = nonseptic_sample["stay_id"].apply(do_random_cut)
     nonseptic_sample["label"] = 0.0
