@@ -30,8 +30,8 @@ class SepsisAggregator(BaseAggregator):
             dst_path,
             stay_ids,
             self.sepsis_feature_id,
-            timestep_seconds,
-            "sepsis3",
+            timestep_seconds=timestep_seconds,
+            name="sepsis3",
         )
 
     def _parse_dates(self):

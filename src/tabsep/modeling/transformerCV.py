@@ -142,17 +142,10 @@ def do_cv(
     print(f"Cross validation complete")
 
     # TODO: revert to single label
-    # for label_name in all_folds_scores[0].keys():
-    #     this_label_scores = [x[label_name] for x in all_folds_scores]
+    aucs = [x["auc_avg"] for x in all_folds_scores]
 
-    #     avg = np.average(this_label_scores)
-    #     ci_lower = avg - 1.96 * np.std(this_label_scores, ddof=1) / np.sqrt(
-    #         len(this_label_scores)
-    #     )
-    #     ci_upper = avg + 1.96 * np.std(this_label_scores, ddof=1) / np.sqrt(
-    #         len(this_label_scores)
-    #     )
+    avg = np.average(aucs)
+    ci_lower = avg - 1.96 * np.std(aucs, ddof=1) / np.sqrt(len(aucs))
+    ci_upper = avg + 1.96 * np.std(aucs, ddof=1) / np.sqrt(len(aucs))
 
-    #     print(
-    #         f"\t{label_name} average AUC (95% ci): {avg:.3f} ({ci_lower:.3f} - {ci_upper:.3f})"
-    #     )
+    print(f"Average AUC (95% ci): {avg:.3f} ({ci_lower:.3f} - {ci_upper:.3f})")

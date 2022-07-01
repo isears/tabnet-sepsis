@@ -266,5 +266,6 @@ if __name__ == "__main__":
         early_stopping=early_stopping,
         criterion=criterion,
         name="TimeSeriesTransformer",
-        batch_size=8,
+        batch_size=16,
+        num_epochs=100,
     )

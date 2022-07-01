@@ -42,7 +42,7 @@ class InclusionCriteria:
             )
         ]
 
-    def _exclude_long_stays(self, time_hours=(24 * 21)):
+    def _exclude_long_stays(self, time_hours=(24 * 30)):
         self.all_stays = self.all_stays[
             self.all_stays.apply(
                 lambda row: (row["outtime"] - row["intime"])
