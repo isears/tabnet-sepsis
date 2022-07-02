@@ -1,7 +1,9 @@
+from cmath import e
 import os
 import pandas as pd
 from typing import Tuple
 import random
+import sys
 
 
 PREDICTION_WINDOWS = 2
@@ -53,6 +55,15 @@ def do_sepsis_neg_cut(stay_id: int) -> int:
 
 
 if __name__ == "__main__":
+
+    if len(sys.argv) > 1:
+        if sys.argv[1] == "balanced":
+            balanced = True
+        elif sys.argv[1] == "unbalanced":
+            balanced = False
+    else:
+        balanced = False
+
     random.seed(42)
     icustays = pd.read_csv("mimiciv/icu/icustays.csv")
     sepsis3 = pd.read_csv("mimiciv/derived/sepsis3.csv")
@@ -76,9 +87,16 @@ if __name__ == "__main__":
     print(f"\t{len(nonseptic_icustays)} non-septic stays")
     print(f"\t{len(inclusion_sids)} total stays in inclusion criteria")
 
-    print(f"[*] Sampling {len(septic_icustays)} non-septic stays for balanced data...")
-    nonseptic_sample = nonseptic_icustays.sample(len(septic_icustays), random_state=42)
-    # nonseptic_sample = nonseptic_icustays
+    if balanced:
+        print(
+            f"[*] Sampling {len(septic_icustays)} non-septic stays for balanced data..."
+        )
+        nonseptic_sample = nonseptic_icustays.sample(
+            len(septic_icustays), random_state=42
+        )
+    else:
+        nonseptic_sample = nonseptic_icustays
+
     print(f"[*] Applying random cut to non-septic sample")
     nonseptic_sample["cutidx"] = nonseptic_sample["stay_id"].apply(do_random_cut)
     nonseptic_sample["label"] = 0.0
