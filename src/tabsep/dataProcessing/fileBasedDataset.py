@@ -63,7 +63,18 @@ class FileBasedDataset(torch.utils.data.Dataset):
         X = torch.stack([X for X, _, _ in batch], dim=0)
         y = torch.stack([Y for _, Y, _ in batch], dim=0)
         pad_mask = torch.stack([pad_mask for _, _, pad_mask in batch], dim=0)
+
+        raise NotImplemented
         return X.float(), y.float(), pad_mask.int()
+
+    def maxlen_padmask_collate_nopadret(self, batch):
+        """
+        For compatibility with scikit learn
+        * If using this method, remember to remove the padmask from X in model
+        """
+        X, y, pad_mask = self.maxlen_padmask_collate(batch)
+        X_and_pad = torch.cat((X, torch.unsqueeze(pad_mask, dim=-1)), dim=-1)
+        return X_and_pad, y
 
     def __len__(self):
         return len(self.cut_sample)
@@ -103,7 +114,20 @@ class FileBasedDataset(torch.utils.data.Dataset):
 
         X = torch.tensor(combined_features.values)
 
-        return X, Y
+        # Pad to maxlen
+        actual_len = X.shape[1]
+        assert actual_len < self.max_len
+        pad_mask = torch.ones(actual_len)
+        # TODO: transform here b/c the way TST expects it isn't the typical convention
+        X_mod = pad(X, (self.max_len - actual_len, 0), mode="constant", value=0.0).T
+        pad_mask = pad(
+            pad_mask, (self.max_len - actual_len, 0), mode="constant", value=0.0
+        )
+
+        # Put pad as last "feature" in X for compatibility w/scikit
+        X_and_pad = torch.cat((X_mod, torch.unsqueeze(pad_mask, dim=-1)), dim=-1)
+
+        return X_and_pad.float(), Y.float()
 
 
 def demo(dl):

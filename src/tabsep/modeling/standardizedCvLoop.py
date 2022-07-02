@@ -7,7 +7,6 @@ import torch
 
 torch.use_deterministic_algorithms(True)
 
-from matplotlib.pyplot import vlines
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
@@ -20,6 +19,7 @@ import sys
 import numpy as np
 import pandas as pd
 import scipy.stats as st
+from xgboost import XGBClassifier
 
 
 class PretrainingTabNetClf(TabNetClassifier):
@@ -109,6 +109,7 @@ if __name__ == "__main__":
         "tabnet_pretrain": (PretrainingTabNetClf, dict(verbose=0), 1),
         "lr": (LogisticRegression, dict(max_iter=1e7), -1),
         "rf": (RandomForestClassifier, dict(), -1),
+        "xgboost": (XGBClassifier, dict(), -1),
     }
 
     combined_data = pd.read_csv("cache/processed_combined.csv", index_col="stay_id")
