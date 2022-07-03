@@ -92,7 +92,7 @@ class TstWrapper(BaseEstimator, ClassifierMixin):
         self,
         # Fit params
         max_epochs=7,  # This is not specified by paper, depends on dataset size
-        batch_size=64,  # Should be 128, but gpu can't handle it
+        batch_size=8,  # Should be 128, but gpu can't handle it
         optimizer_cls=AdamW,
         # TST params
         d_model=128,
@@ -161,7 +161,7 @@ class TstWrapper(BaseEstimator, ClassifierMixin):
 
             for batch_idx, (bX, by, bpadding_masks) in enumerate(gpuLoader):
                 outputs = model.forward(bX.to("cuda"), bpadding_masks.to("cuda"))
-                loss = criterion(outputs, by.to("cuda"))
+                loss = criterion(outputs, torch.unsqueeze(by, 1).to("cuda"))
                 loss.backward()
                 # TODO: what's the significance of this?
                 torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=4.0)
@@ -176,8 +176,13 @@ class TstWrapper(BaseEstimator, ClassifierMixin):
         with torch.no_grad():
             # TODO: assuming validation set small enough to fit into gpu mem w/out batching?
             # Also, can the TST model handle a new shape?
+            self.model.to("cpu")
             X_unpacked, padding_masks = TstWrapper._unwrap_X_padmask(X)
-            y_pred = self.model(X_unpacked.to("cuda"), padding_masks.to("cuda"))
+            y_pred = self.model(X_unpacked, padding_masks)
+
+            # send model to cpu at end so that it's not taking up GPU space
+            print("[*] Fold done, sending model to CPU")
+
             return torch.squeeze(y_pred).to("cpu")  # sklearn needs to do cpu ops
 
 
@@ -207,16 +212,13 @@ def print_score(scores: np.array):
 
 
 def doCV(clf):
-
-    # clf = make_pipeline(StandardScaler(), clf)
-    batch_size = 8
     cut_sample = pd.read_csv("cache/sample_cuts.csv")
-    cut_sample = cut_sample.sample(frac=1, random_state=42).reset_index(drop=True)
+    cut_sample = cut_sample.sample(frac=0.5, random_state=42).reset_index(drop=True)
 
     ds = FileBasedDataset(processed_mimic_path="./cache/mimicts", cut_sample=cut_sample)
     dl = torch.utils.data.DataLoader(
         ds,
-        batch_size=batch_size,
+        batch_size=256,
         num_workers=multiprocessing.cpu_count(),
         pin_memory=True,
     )
