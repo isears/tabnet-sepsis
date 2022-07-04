@@ -3,6 +3,7 @@ import dask.dataframe as dd
 from typing import List
 import pandas as pd
 import numpy as np
+from dask.diagnostics import ProgressBar
 
 
 class SepsisAggregator(BaseAggregator):
@@ -12,7 +13,7 @@ class SepsisAggregator(BaseAggregator):
         dst_path: str,
         stay_ids: List[int],
         timestep_seconds: int = 3600,
-        blocksize=10e6,
+        blocksize=25e6,
     ):
 
         self.data = dd.read_csv(
@@ -34,6 +35,8 @@ class SepsisAggregator(BaseAggregator):
             name="sepsis3",
         )
 
+        ProgressBar(dt=60).register()
+
     def _parse_dates(self):
         def get_sepsis_onset(row):
             if row["suspected_infection_time"] > row["sofa_time"]:
@@ -41,7 +44,9 @@ class SepsisAggregator(BaseAggregator):
             else:
                 return int(row["sofa_time"].timestamp())
 
-        self.data["event_epoch_time"] = self.data.apply(get_sepsis_onset, axis=1)
+        self.data["event_epoch_time"] = self.data.apply(
+            get_sepsis_onset, axis=1, meta=pd.Series([0])
+        )
 
     def _value_parser(self, row):
         # If entry exists, there's sepsis

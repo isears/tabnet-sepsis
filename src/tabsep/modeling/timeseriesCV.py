@@ -15,6 +15,9 @@ from sklearn.model_selection import StratifiedKFold, cross_val_score
 from tabsep.modeling.tstImpl import TSTransformerEncoderClassiregressor, AdamW
 from sklearn.linear_model import LogisticRegression
 from xgboost import XGBClassifier
+import os
+
+CORES_AVAILABLE = len(os.sched_getaffinity(0))
 
 
 class FeatureScaler(StandardScaler):
@@ -92,7 +95,7 @@ class TstWrapper(BaseEstimator, ClassifierMixin):
         self,
         # Fit params
         max_epochs=7,  # This is not specified by paper, depends on dataset size
-        batch_size=8,  # Should be 128, but gpu can't handle it
+        batch_size=128,  # Should be 128, but gpu can't handle it
         optimizer_cls=AdamW,
         # TST params
         d_model=128,
@@ -150,7 +153,7 @@ class TstWrapper(BaseEstimator, ClassifierMixin):
         gpuLoader = torch.utils.data.DataLoader(
             TensorBasedDataset(X_unpacked, y, padding_masks),
             batch_size=self.batch_size,
-            num_workers=multiprocessing.cpu_count(),
+            num_workers=CORES_AVAILABLE,
             pin_memory=True,
             drop_last=False,
         )
@@ -176,12 +179,12 @@ class TstWrapper(BaseEstimator, ClassifierMixin):
         with torch.no_grad():
             # TODO: assuming validation set small enough to fit into gpu mem w/out batching?
             # Also, can the TST model handle a new shape?
-            self.model.to("cpu")
             X_unpacked, padding_masks = TstWrapper._unwrap_X_padmask(X)
-            y_pred = self.model(X_unpacked, padding_masks)
+            y_pred = self.model(X_unpacked.to("cuda"), padding_masks.to("cuda"))
 
             # send model to cpu at end so that it's not taking up GPU space
             print("[*] Fold done, sending model to CPU")
+            self.model.to("cpu")
 
             return torch.squeeze(y_pred).to("cpu")  # sklearn needs to do cpu ops
 
@@ -219,7 +222,7 @@ def doCV(clf):
     dl = torch.utils.data.DataLoader(
         ds,
         batch_size=256,
-        num_workers=multiprocessing.cpu_count(),
+        num_workers=CORES_AVAILABLE,
         pin_memory=True,
     )
 
