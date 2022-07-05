@@ -1,6 +1,5 @@
 import sys
 import json
-from tkinter import N
 import torch
 import numpy as np
 import pandas as pd
@@ -216,7 +215,7 @@ def print_score(scores: np.array):
 
 def doCV(clf):
     cut_sample = pd.read_csv("cache/sample_cuts.csv")
-    cut_sample = cut_sample.sample(frac=0.5, random_state=42).reset_index(drop=True)
+    cut_sample = cut_sample.sample(frac=1, random_state=42).reset_index(drop=True)
 
     ds = FileBasedDataset(processed_mimic_path="./cache/mimicts", cut_sample=cut_sample)
     dl = torch.utils.data.DataLoader(
@@ -228,9 +227,11 @@ def doCV(clf):
 
     X, y = load_to_mem(dl)
 
-    cv_splitter = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+    cv_splitter = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
 
-    scores = cross_val_score(clf, X, y, cv=cv_splitter, scoring="roc_auc", n_jobs=1)
+    scores = cross_val_score(
+        clf, X, y, cv=cv_splitter, scoring="roc_auc", n_jobs=-1, verbose=1
+    )
 
     return scores
 
@@ -245,7 +246,7 @@ if __name__ == "__main__":
         "lr": make_pipeline(
             FeatureScaler(), Ts2TabTransformer(), LogisticRegression(max_iter=1e7)
         ),
-        "xgboost": XGBClassifier(),
+        # "xgboost": XGBClassifier(),
         "tst": TstWrapper(),
     }
 
