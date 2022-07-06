@@ -4,6 +4,7 @@ Train single transformer model for downstream analysis
 
 import torch
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import roc_auc_score
 from tabsep.modeling.timeseriesCV import TstWrapper, load_to_mem
 import pandas as pd
 from tabsep.dataProcessing.fileBasedDataset import FileBasedDataset
@@ -30,10 +31,26 @@ if __name__ == "__main__":
 
     X, y = load_to_mem(dl)
 
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.1, random_state=42
+    )
+
     print("[+] Data loaded, training...")
     tst = TstWrapper()
-    tst.fit(X, y)
+    tst.fit(X_train, y_train)
 
     save_path = f"cache/models/singleTst_{start_time_str}"
     print(f"[+] Training complete, saving to {save_path}")
-    torch.save(tst.model.state_dict(), save_path)
+
+    os.mkdir(save_path)
+    torch.save(tst.model.state_dict(), f"{save_path}/model.pt")
+    torch.save(X_test, f"{save_path}/X_test.pt")
+    torch.save(y_test, f"{save_path}/y_test.pt")
+
+    preds = tst.decision_function(X_test)
+    score = roc_auc_score(y_test, preds)
+    print(f"Validation score: {score}")
+
+    with open(f"{save_path}/roc_auc_score.txt", "w") as f:
+        f.write(str(score))
+        f.write("\n")
