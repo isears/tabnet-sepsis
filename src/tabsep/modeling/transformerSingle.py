@@ -48,6 +48,7 @@ if __name__ == "__main__":
     torch.save(y_test, f"{save_path}/y_test.pt")
 
     preds = tst.decision_function(X_test)
+    torch.save(preds, f"{save_path}/preds.pt")
     score = roc_auc_score(y_test, preds)
     print(f"Validation score: {score}")
 

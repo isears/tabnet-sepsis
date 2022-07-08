@@ -8,6 +8,21 @@ from typing import List
 import json
 
 
+def get_feature_labels():
+    """
+    Returns feature labels in-order of their appearance in X
+    """
+    feature_ids = (
+        pd.read_csv("cache/included_features.csv").squeeze("columns").to_list()
+    )
+    d_items = pd.read_csv("mimiciv/icu/d_items.csv", index_col="itemid")
+    d_items = d_items.reindex(feature_ids)
+
+    assert len(d_items) == len(feature_ids)
+
+    return d_items["label"].to_list()
+
+
 class FileBasedDataset(torch.utils.data.Dataset):
     def __init__(self, processed_mimic_path: str, cut_sample: pd.DataFrame):
 
@@ -111,7 +126,6 @@ class FileBasedDataset(torch.utils.data.Dataset):
         )  # Need to add any itemids that are missing
         # TODO: could probably do imputation better (but maybe during preprocessing)
         combined_features = combined_features.fillna(0.0)
-
         X = torch.tensor(combined_features.values)
 
         # Pad to maxlen

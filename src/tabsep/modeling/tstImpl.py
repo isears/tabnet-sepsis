@@ -234,6 +234,19 @@ class AdamW(torch.optim.Optimizer):
         return loss
 
 
+class TstOneInput(TSTransformerEncoderClassiregressor):
+    def forward(self, X):
+        X_unpacked, padding_masks = (
+            X[:, :, 0:-1],
+            X[:, :, -1] == 1,
+        )
+
+        return super().forward(X_unpacked, padding_masks)
+
+    # def __call__(self, X):
+    #     return self.forward(X)
+
+
 def model_factory(max_seq_len):
     # Other options (for now defaults from paper)
     d_model = 64  # Should be 64, but gpu mem can't handle it
