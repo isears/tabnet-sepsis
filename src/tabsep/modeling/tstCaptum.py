@@ -84,6 +84,7 @@ if __name__ == "__main__":
     )
 
     attributions_list = list()
+    pad_mask_list = list()
 
     for xbatch, _ in dl:
         xbatch = xbatch.to(device)
@@ -99,8 +100,10 @@ if __name__ == "__main__":
         ig = InputXGradient(model)  # TODO: are there more modern methods?
         attributions = ig.attribute(xbatch, additional_forward_args=pad_masks, target=0)
         attributions_list.append(attributions.cpu())
+        pad_mask_list.append(pad_masks.cpu())
 
     attributions_all = torch.concat(attributions_list, dim=0)
+    pad_masks_all = torch.concat(pad_mask_list, dim=0)
     print("Got attributions")
 
     ##########
@@ -147,19 +150,48 @@ if __name__ == "__main__":
     ##########
     # Local attribution of first sepsis patient (idx 49 is longest ICU stay)
     ##########
-    sample_idx = 49
+    preds = torch.load(f"cache/models/{model_id}/preds.pt")
+
+    # # First septic stay w/length > 10 indices
+    # sample_idx = np.argmax(
+    #     torch.logical_and(y_test == 1, torch.sum(X_test[:, :, -1], dim=1) > 10)
+    # )
+
+    # # Most confident predictions
+    # sample_idx = torch.argmax(preds)
+
+    # First septic stay w/length > 5, but less than 15 and predicted correctly
+    # TODO: we can do better than nested ands...
+    sample_idx = np.argmax(
+        torch.logical_and(
+            torch.logical_and(y_test == 1, torch.sum(X_test[:, :, -1], dim=1) > 3,),
+            torch.logical_and(torch.sum(X_test[:, :, -1], dim=1) < 25, preds > 0.5,),
+        )
+    )
+
+    print(f"Analyzing local importance of idx {sample_idx}")
     sample_case = pd.DataFrame(attributions_all[sample_idx].cpu().detach().numpy())
 
     sample_case.columns = get_feature_labels()
     # Truncate by padding mask
-    sample_case = sample_case[pad_masks[sample_idx].tolist()]
-    max_absolute_attribution = sample_case.abs().apply(lambda col: col.max())
+    sample_case = sample_case[pad_masks_all[sample_idx].tolist()]
+    max_absolute_attribution = sample_case.abs().apply(lambda col: col.sum())
     top_n_features = max_absolute_attribution.nlargest(n=20).index
 
     sample_case = sample_case.drop(
         columns=[c for c in sample_case.columns if c not in top_n_features]
     )
 
-    ax = sns.heatmap(sample_case)
+    sample_case.index = (
+        sample_case.index * 6
+    )  # TODO: this will change if timestep changes
+
+    sample_case.index.name = "Time in ICU (hrs.)"
+
+    ax = sns.heatmap(sample_case, linewidths=0.01, linecolor="black")
     ax.set_xticklabels(ax.get_xticklabels(), rotation=40, ha="right")
+    ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
+    ax.set_title(
+        f"Validation set idx {sample_idx} prediction {preds[sample_idx]:.2f} actual {y_test[sample_idx]:.2f}"
+    )
     plt.savefig("results/local_importance.png", bbox_inches="tight")
