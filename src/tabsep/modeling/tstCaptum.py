@@ -40,8 +40,13 @@ class TensorBasedDataset(torch.utils.data.Dataset):
 
 
 if __name__ == "__main__":
-    model_id = "singleTst_2022-07-06_11:24:45"
-    device = "cpu"
+    model_id = "singleTst_2022-07-09_08:26:13"
+
+    if torch.cuda.is_available():
+        print("Detected GPU, using cuda")
+        device = "cuda"
+    else:
+        device = "cpu"
 
     # TODO: sync these params up with trainer
     model = TSTransformerEncoderClassiregressor(
@@ -63,27 +68,39 @@ if __name__ == "__main__":
     model.eval()
     model.zero_grad()
 
-    X_test = torch.load(f"cache/models/{model_id}/X_test.pt").to(device)
-    y_test = torch.load(f"cache/models/{model_id}/y_test.pt").to(device)
+    X_test = torch.load(f"cache/models/{model_id}/X_test.pt")
+    y_test = torch.load(f"cache/models/{model_id}/y_test.pt")
 
     # # Pos examples only
     # X_test = X_test[y_test == 1]
     # y_test = y_test[y_test == 1]
 
-    pad_masks = X_test[:, :, -1] == 1
-    X_test = X_test[:, :, :-1]
+    dl = torch.utils.data.DataLoader(
+        TensorBasedDataset(X_test, y_test),
+        batch_size=256,
+        num_workers=CORES_AVAILABLE,
+        pin_memory=True,
+        drop_last=False,
+    )
 
-    # TODO: use everything
-    # X_test = X_test[0:1024]
-    # pad_masks = pad_masks[0:1024]
+    attributions_list = list()
 
-    X_test.requires_grad = True
+    for xbatch, _ in dl:
+        xbatch = xbatch.to(device)
 
-    ig = InputXGradient(model)  # TODO: are there more modern methods?
-    attributions = ig.attribute(X_test, additional_forward_args=pad_masks, target=0)
+        pad_masks = xbatch[:, :, -1] == 1
+        xbatch = xbatch[:, :, :-1]
 
-    # ig = IntegratedGradients(model.forward)
-    # attributions = ig.attribute(X_test, additional_forward_args=pad_masks)
+        xbatch.requires_grad = True
+
+        # ig = IntegratedGradients(model.forward)
+        # attributions = ig.attribute(X_test, additional_forward_args=pad_masks)
+
+        ig = InputXGradient(model)  # TODO: are there more modern methods?
+        attributions = ig.attribute(xbatch, additional_forward_args=pad_masks, target=0)
+        attributions_list.append(attributions.cpu())
+
+    attributions_all = torch.concat(attributions_list, dim=0)
     print("Got attributions")
 
     ##########
@@ -91,8 +108,8 @@ if __name__ == "__main__":
     ##########
 
     # Max over time series dimension, average over batch dimension
-    max_attributions = torch.amax(attributions, dim=1)
-    min_attributions = torch.amin(attributions, dim=1)
+    max_attributions = torch.amax(attributions_all, dim=1)
+    min_attributions = torch.amin(attributions_all, dim=1)
     min_mask = (
         torch.max(torch.abs(max_attributions), torch.abs(min_attributions))
         > max_attributions
@@ -131,7 +148,7 @@ if __name__ == "__main__":
     # Local attribution of first sepsis patient (idx 49 is longest ICU stay)
     ##########
     sample_idx = 49
-    sample_case = pd.DataFrame(attributions[sample_idx].cpu().detach().numpy())
+    sample_case = pd.DataFrame(attributions_all[sample_idx].cpu().detach().numpy())
 
     sample_case.columns = get_feature_labels()
     # Truncate by padding mask

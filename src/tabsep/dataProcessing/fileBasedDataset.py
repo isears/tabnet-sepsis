@@ -133,9 +133,9 @@ class FileBasedDataset(torch.utils.data.Dataset):
         assert actual_len < self.max_len
         pad_mask = torch.ones(actual_len)
         # TODO: transform here b/c the way TST expects it isn't the typical convention
-        X_mod = pad(X, (self.max_len - actual_len, 0), mode="constant", value=0.0).T
+        X_mod = pad(X, (0, self.max_len - actual_len), mode="constant", value=0.0).T
         pad_mask = pad(
-            pad_mask, (self.max_len - actual_len, 0), mode="constant", value=0.0
+            pad_mask, (0, self.max_len - actual_len), mode="constant", value=0.0
         )
 
         # Put pad as last "feature" in X for compatibility w/scikit
