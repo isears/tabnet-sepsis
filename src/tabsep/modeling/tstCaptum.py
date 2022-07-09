@@ -17,6 +17,9 @@ import matplotlib.pyplot as plt
 
 torch.manual_seed(42)
 np.random.seed(42)
+torch.use_deterministic_algorithms(True)
+os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
+
 
 CORES_AVAILABLE = len(os.sched_getaffinity(0))
 
@@ -38,6 +41,7 @@ class TensorBasedDataset(torch.utils.data.Dataset):
 
 if __name__ == "__main__":
     model_id = "singleTst_2022-07-06_11:24:45"
+    device = "cpu"
 
     # TODO: sync these params up with trainer
     model = TSTransformerEncoderClassiregressor(
@@ -48,31 +52,30 @@ if __name__ == "__main__":
         n_heads=16,
         num_classes=1,
         num_layers=3,
-    ).to("cpu")
+    ).to(device)
 
     model.load_state_dict(
         torch.load(
-            f"cache/models/{model_id}/model.pt",
-            map_location=torch.device("cpu"),
+            f"cache/models/{model_id}/model.pt", map_location=torch.device(device),
         )
     )
 
     model.eval()
     model.zero_grad()
 
-    X_test = torch.load(f"cache/models/{model_id}/X_test.pt")
-    y_test = torch.load(f"cache/models/{model_id}/y_test.pt")
+    X_test = torch.load(f"cache/models/{model_id}/X_test.pt").to(device)
+    y_test = torch.load(f"cache/models/{model_id}/y_test.pt").to(device)
 
-    # Pos examples only
-    X_test = X_test[y_test == 1]
-    y_test = y_test[y_test == 1]
+    # # Pos examples only
+    # X_test = X_test[y_test == 1]
+    # y_test = y_test[y_test == 1]
 
     pad_masks = X_test[:, :, -1] == 1
     X_test = X_test[:, :, :-1]
 
     # TODO: use everything
-    # X_test = X_test[0:32]
-    # pad_masks = pad_masks[0:32]
+    # X_test = X_test[0:1024]
+    # pad_masks = pad_masks[0:1024]
 
     X_test.requires_grad = True
 
@@ -106,7 +109,9 @@ if __name__ == "__main__":
     importances = pd.DataFrame(
         data={
             "Feature": get_feature_labels(),
-            "Average Max Absolute Attribution": max_absolute_attributions_avg.detach().numpy(),
+            "Average Max Absolute Attribution": max_absolute_attributions_avg.to("cpu")
+            .detach()
+            .numpy(),
         }
     )
 
@@ -126,7 +131,7 @@ if __name__ == "__main__":
     # Local attribution of first sepsis patient (idx 49 is longest ICU stay)
     ##########
     sample_idx = 49
-    sample_case = pd.DataFrame(attributions[sample_idx].detach().numpy())
+    sample_case = pd.DataFrame(attributions[sample_idx].cpu().detach().numpy())
 
     sample_case.columns = get_feature_labels()
     # Truncate by padding mask
