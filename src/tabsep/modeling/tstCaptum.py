@@ -1,4 +1,9 @@
-from captum.attr import IntegratedGradients, InputXGradient
+from captum.attr import (
+    IntegratedGradients,
+    InputXGradient,
+    GuidedGradCam,
+    GuidedBackprop,
+)
 import torch
 import os
 from tabsep.modeling.tstImpl import TstOneInput, TSTransformerEncoderClassiregressor
@@ -65,12 +70,17 @@ if __name__ == "__main__":
     pad_masks = X_test[:, :, -1] == 1
     X_test = X_test[:, :, :-1]
 
-    ig = InputXGradient(model.forward)  # TODO: are there more modern methods?
-    attributions = ig.attribute(
-        X_test,
-        additional_forward_args=pad_masks,
-    )
+    # TODO: use everything
+    # X_test = X_test[0:32]
+    # pad_masks = pad_masks[0:32]
 
+    X_test.requires_grad = True
+
+    ig = InputXGradient(model)  # TODO: are there more modern methods?
+    attributions = ig.attribute(X_test, additional_forward_args=pad_masks, target=0)
+
+    # ig = IntegratedGradients(model.forward)
+    # attributions = ig.attribute(X_test, additional_forward_args=pad_masks)
     print("Got attributions")
 
     ##########
@@ -113,19 +123,21 @@ if __name__ == "__main__":
     plt.savefig("results/importances.png")
 
     ##########
-    # Local attribution of first sepsis patient
+    # Local attribution of first sepsis patient (idx 49 is longest ICU stay)
     ##########
-    sample_case = pd.DataFrame(attributions[0].detach().numpy())
+    sample_idx = 49
+    sample_case = pd.DataFrame(attributions[sample_idx].detach().numpy())
 
     sample_case.columns = get_feature_labels()
+    # Truncate by padding mask
+    sample_case = sample_case[pad_masks[sample_idx].tolist()]
     max_absolute_attribution = sample_case.abs().apply(lambda col: col.max())
-    top_n_features = max_absolute_attribution.nlargest(n=10).index
+    top_n_features = max_absolute_attribution.nlargest(n=20).index
 
     sample_case = sample_case.drop(
         columns=[c for c in sample_case.columns if c not in top_n_features]
     )
 
-    sample_case = sample_case.groupby(np.arange(len(sample_case)) // 10).max()
-
-    sns.heatmap(sample_case)
-    plt.savefig("results/local_importance.png")
+    ax = sns.heatmap(sample_case)
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=40, ha="right")
+    plt.savefig("results/local_importance.png", bbox_inches="tight")
