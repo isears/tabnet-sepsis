@@ -15,6 +15,8 @@ from tabsep.modeling.tstImpl import TSTransformerEncoderClassiregressor, AdamW
 from sklearn.linear_model import LogisticRegression
 from xgboost import XGBClassifier
 import os
+from sklearn.metrics import roc_auc_score, log_loss
+
 
 CORES_AVAILABLE = len(os.sched_getaffinity(0))
 
@@ -126,7 +128,7 @@ class TstWrapper(BaseEstimator, ClassifierMixin):
 
         return X, padding_masks
 
-    def fit(self, X, y):
+    def fit(self, X, y, use_es=False, X_valid=None, y_valid=None):
         # scikit boilerplate
         self.classes_ = np.array([0.0, 1.0])
         # original_y_shape = y.shape
@@ -145,7 +147,11 @@ class TstWrapper(BaseEstimator, ClassifierMixin):
 
         optimizer = self.optimizer_cls(model.parameters())
         criterion = torch.nn.BCELoss()
-        es = EarlyStopping()  # TODO: maybe split data to take advantage of this
+        # TODO: eventually may have to do two types of early stopping implementations:
+        # One "fair" early stopping for comparison w/LR
+        # One "optimistic" early stopping for single fold model building
+        # Current impl is optimistic but does not run under CV
+        es = EarlyStopping()
 
         X_unpacked, padding_masks = TstWrapper._unwrap_X_padmask(X)
 
@@ -157,17 +163,57 @@ class TstWrapper(BaseEstimator, ClassifierMixin):
             drop_last=False,
         )
 
+        if use_es:
+            assert X_valid is not None and y_valid is not None
+            X_valid_unpacked, pm_valid = TstWrapper._unwrap_X_padmask(X_valid)
+
+            validGpuLoader = torch.utils.data.DataLoader(
+                TensorBasedDataset(X_valid_unpacked, y_valid, pm_valid),
+                batch_size=self.batch_size,
+                num_workers=CORES_AVAILABLE,
+                pin_memory=True,
+                drop_last=False,
+            )
+
         for epoch_idx in range(0, self.max_epochs):
             model.train()
             optimizer.zero_grad()
 
-            for batch_idx, (bX, by, bpadding_masks) in enumerate(gpuLoader):
-                outputs = model.forward(bX.to("cuda"), bpadding_masks.to("cuda"))
-                loss = criterion(outputs, torch.unsqueeze(by, 1).to("cuda"))
+            for batch_idx, (batch_X, batch_y, batch_padding_masks) in enumerate(
+                gpuLoader
+            ):
+                outputs = model.forward(
+                    batch_X.to("cuda"), batch_padding_masks.to("cuda")
+                )
+                loss = criterion(outputs, torch.unsqueeze(batch_y, 1).to("cuda"))
                 loss.backward()
                 # TODO: what's the significance of this?
                 torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=4.0)
                 optimizer.step()
+
+            # Do early stopping
+            if use_es:
+                model.eval()
+                y_pred = torch.Tensor().to("cuda")
+                y_actual = torch.Tensor().to("cuda")
+
+                for bXv, byv, pmv in validGpuLoader:
+                    this_y_pred = model(bXv.to("cuda"), pmv.to("cuda"))
+                    y_pred = torch.cat((y_pred, this_y_pred))
+                    y_actual = torch.cat((y_actual, byv.to("cuda")))
+
+                validation_loss = log_loss(
+                    y_actual.detach().to("cpu"), y_pred.detach().to("cpu")
+                )
+
+                es(validation_loss, model.state_dict())
+
+                if es.early_stop:
+                    print(f"Stopped training @ epoch {epoch_idx}")
+                    break
+
+        if es.saved_best_weights:
+            model.load_state_dict(es.saved_best_weights)
 
         self.model = model
 
@@ -219,10 +265,7 @@ def doCV(clf):
 
     ds = FileBasedDataset(processed_mimic_path="./cache/mimicts", cut_sample=cut_sample)
     dl = torch.utils.data.DataLoader(
-        ds,
-        batch_size=256,
-        num_workers=CORES_AVAILABLE,
-        pin_memory=True,
+        ds, batch_size=256, num_workers=CORES_AVAILABLE, pin_memory=True,
     )
 
     X, y = load_to_mem(dl)

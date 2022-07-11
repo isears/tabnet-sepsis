@@ -23,10 +23,7 @@ if __name__ == "__main__":
 
     ds = FileBasedDataset(processed_mimic_path="./cache/mimicts", cut_sample=cut_sample)
     dl = torch.utils.data.DataLoader(
-        ds,
-        batch_size=256,
-        num_workers=CORES_AVAILABLE,
-        pin_memory=True,
+        ds, batch_size=256, num_workers=CORES_AVAILABLE, pin_memory=True,
     )
 
     X, y = load_to_mem(dl)
@@ -36,8 +33,8 @@ if __name__ == "__main__":
     )
 
     print("[+] Data loaded, training...")
-    tst = TstWrapper()
-    tst.fit(X_train, y_train)
+    tst = TstWrapper(max_epochs=100)  # To allow early stopper to do its thing
+    tst.fit(X_train, y_train, use_es=True, X_valid=X_test, y_valid=y_test)
 
     save_path = f"cache/models/singleTst_{start_time_str}"
     print(f"[+] Training complete, saving to {save_path}")
