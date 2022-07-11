@@ -144,6 +144,7 @@ if __name__ == "__main__":
     print(topn)
     ax = sns.barplot(x="Feature", y="Average Max Absolute Attribution", data=topn)
     ax.set_xticklabels(ax.get_xticklabels(), rotation=40, ha="right")
+    ax.set_title("Global Feature Importance")
     plt.tight_layout()
     plt.savefig("results/importances.png")
 
