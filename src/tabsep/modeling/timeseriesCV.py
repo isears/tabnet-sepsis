@@ -19,6 +19,10 @@ from sklearn.metrics import roc_auc_score, log_loss
 
 
 CORES_AVAILABLE = len(os.sched_getaffinity(0))
+torch.manual_seed(42)
+np.random.seed(42)
+torch.use_deterministic_algorithms(True)
+os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
 
 
 class FeatureScaler(StandardScaler):
