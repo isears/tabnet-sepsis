@@ -66,7 +66,7 @@ if __name__ == "__main__":
     )
 
     model.eval()
-    model.zero_grad()
+    # model.zero_grad()
 
     X_test = torch.load(f"cache/models/{model_id}/X_test.pt")
     y_test = torch.load(f"cache/models/{model_id}/y_test.pt")
@@ -77,7 +77,7 @@ if __name__ == "__main__":
 
     dl = torch.utils.data.DataLoader(
         TensorBasedDataset(X_test, y_test),
-        batch_size=256,
+        batch_size=8,
         num_workers=CORES_AVAILABLE,
         pin_memory=True,
         drop_last=False,
@@ -97,7 +97,7 @@ if __name__ == "__main__":
         # ig = IntegratedGradients(model.forward)
         # attributions = ig.attribute(X_test, additional_forward_args=pad_masks)
 
-        ig = InputXGradient(model)  # TODO: are there more modern methods?
+        ig = IntegratedGradients(model)  # TODO: are there more modern methods?
         attributions = ig.attribute(xbatch, additional_forward_args=pad_masks, target=0)
         attributions_list.append(attributions.cpu())
         pad_mask_list.append(pad_masks.cpu())
