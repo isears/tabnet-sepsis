@@ -125,24 +125,28 @@ if __name__ == "__main__":
         max_attributions * max_mask.int() + min_attributions * min_mask.int()
     )
 
-    max_absolute_attributions_avg = torch.mean(max_absolute_attributions, dim=0)
+    max_absolute_attributions_avg = torch.median(
+        max_absolute_attributions, dim=0
+    ).values
     importances = pd.DataFrame(
         data={
             "Feature": get_feature_labels(),
-            "Average Max Absolute Attribution": max_absolute_attributions_avg.to("cpu")
+            "Median Max Absolute Attribution": max_absolute_attributions_avg.to("cpu")
             .detach()
             .numpy(),
         }
     )
 
     # Just temporary for topn calculation
-    importances["abs"] = importances["Average Max Absolute Attribution"].apply(np.abs)
+    importances["abs"] = importances["Median Max Absolute Attribution"].apply(np.abs)
 
     topn = importances.nlargest(20, columns="abs")
     topn = topn.drop(columns="abs")
 
     print(topn)
-    ax = sns.barplot(x="Feature", y="Average Max Absolute Attribution", data=topn)
+    ax = sns.barplot(
+        x="Feature", y="Median Max Absolute Attribution", data=topn, color="blue"
+    )
     ax.set_xticklabels(ax.get_xticklabels(), rotation=40, ha="right")
     ax.set_title("Global Feature Importance")
     plt.tight_layout()
