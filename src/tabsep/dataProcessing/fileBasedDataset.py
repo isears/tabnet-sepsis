@@ -167,7 +167,7 @@ def get_label_prevalence(dl):
 
 if __name__ == "__main__":
     sample_cuts = pd.read_csv("cache/sample_cuts.csv")
-    ds = FileBasedDataset("./cache/mimicts", cut_sample=sample_cuts)
+    ds = FileBasedDataset("./mimicts", cut_sample=sample_cuts)
 
     dl = torch.utils.data.DataLoader(
         ds,

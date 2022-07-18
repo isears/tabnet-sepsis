@@ -13,6 +13,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+from tabsep import config
 
 
 torch.manual_seed(42)
@@ -188,7 +189,7 @@ if __name__ == "__main__":
     )
 
     sample_case.index = (
-        sample_case.index * 6
+        sample_case.index * config.prediction_timesteps
     )  # TODO: this will change if timestep changes
 
     sample_case.index.name = "Time in ICU (hrs.)"

@@ -4,6 +4,7 @@ from typing import List
 import pandas as pd
 import numpy as np
 from dask.diagnostics import ProgressBar
+from tabsep import config
 
 
 class SepsisAggregator(BaseAggregator):
@@ -64,10 +65,7 @@ class SepsisAggregator(BaseAggregator):
 if __name__ == "__main__":
     stay_ids = pd.read_csv("cache/included_stayids.csv")["stay_id"].to_list()
     se = SepsisAggregator(
-        "./mimiciv",
-        "./cache/mimicts",
-        stay_ids,
-        timestep_seconds=21600,
+        "./mimiciv", "./mimicts", stay_ids, timestep_seconds=config.timestep_seconds,
     )
 
     se.do_agg()

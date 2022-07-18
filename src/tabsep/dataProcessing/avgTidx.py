@@ -19,7 +19,7 @@ if __name__ == "__main__":
 
     cut_sample = pd.read_csv("cache/sample_cuts.csv")
 
-    ds = FileBasedDataset(processed_mimic_path="./cache/mimicts", cut_sample=cut_sample)
+    ds = FileBasedDataset(processed_mimic_path="./mimicts", cut_sample=cut_sample)
     dl = torch.utils.data.DataLoader(
         ds, batch_size=256, num_workers=CORES_AVAILABLE, pin_memory=True,
     )

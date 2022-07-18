@@ -1,20 +1,15 @@
-from cmath import e
 import os
 import pandas as pd
 from typing import Tuple
 import random
 import sys
-
-
-PREDICTION_WINDOWS = 2
+from tabsep import config
 
 
 def do_random_cut(stay_id: int) -> int:
     # Don't cut within first two timesteps
     ce_df = pd.read_csv(
-        f"cache/mimicts/{stay_id}/chartevents_features.csv",
-        nrows=1,
-        index_col="feature_id",
+        f"mimicts/{stay_id}/chartevents_features.csv", nrows=1, index_col="feature_id",
     )
     cutidx = random.randint(2, len(ce_df.columns) - 1)
 
@@ -23,14 +18,14 @@ def do_random_cut(stay_id: int) -> int:
 
 def do_sepsis_pos_cut(stay_id: int) -> int:
     sepsis_df = pd.read_csv(
-        f"cache/mimicts/{stay_id}/sepsis3_features.csv", index_col="feature_id"
+        f"mimicts/{stay_id}/sepsis3_features.csv", index_col="feature_id"
     )
     row = sepsis_df.iloc[0]
     sepsis_idx = int(row[row == 1].index[0])
     # This should be guaranteed by inclusion criteria
     assert sepsis_idx > 1
     # Predict ahead by a certain window
-    cutidx = sepsis_idx - PREDICTION_WINDOWS
+    cutidx = sepsis_idx - config.prediction_timesteps
 
     assert cutidx >= 2
 
@@ -39,14 +34,14 @@ def do_sepsis_pos_cut(stay_id: int) -> int:
 
 def do_sepsis_neg_cut(stay_id: int) -> int:
     sepsis_df = pd.read_csv(
-        f"cache/mimicts/{stay_id}/sepsis3_features.csv", index_col="feature_id"
+        f"mimicts/{stay_id}/sepsis3_features.csv", index_col="feature_id"
     )
     row = sepsis_df.iloc[0]
     sepsis_idx = int(row[row == 1].index[0])
     # This should be guaranteed by inclusion criteria
     assert sepsis_idx > 1
     # Predict ahead by a certain window
-    pos_cutidx = sepsis_idx - PREDICTION_WINDOWS
+    pos_cutidx = sepsis_idx - config.prediction_timesteps
     neg_cut_limit = pos_cutidx - 1
     assert neg_cut_limit >= 1
     cutidx = random.randint(1, neg_cut_limit)

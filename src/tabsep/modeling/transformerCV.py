@@ -62,8 +62,8 @@ def do_cv(
     ):
         print(f"===== Starting CV fold {cv_idx} =====")
 
-        train_ds = FileBasedDataset("cache/mimicts", cut_sample=cut_sample.iloc[train])
-        test_ds = FileBasedDataset("cache/mimicts", cut_sample=cut_sample.iloc[test])
+        train_ds = FileBasedDataset("./mimicts", cut_sample=cut_sample.iloc[train])
+        test_ds = FileBasedDataset("./mimicts", cut_sample=cut_sample.iloc[test])
 
         # TODO: do better at this (overriding max_length in test dataset to match train dataset)
         test_ds.max_len = train_ds.max_len
