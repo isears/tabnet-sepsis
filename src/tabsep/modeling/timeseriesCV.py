@@ -13,7 +13,6 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import StratifiedKFold, cross_val_score
 from tabsep.modeling.tstImpl import TSTransformerEncoderClassiregressor, AdamW
 from sklearn.linear_model import LogisticRegression
-from xgboost import XGBClassifier
 import os
 from sklearn.metrics import roc_auc_score, log_loss
 
@@ -100,7 +99,7 @@ class TstWrapper(BaseEstimator, ClassifierMixin):
         self,
         # Fit params
         max_epochs=7,  # This is not specified by paper, depends on dataset size
-        batch_size=128,  # Should be 128, but gpu can't handle it
+        batch_size=8,  # Should be 128, but gpu can't handle it
         optimizer_cls=AdamW,
         # TST params
         d_model=128,
@@ -135,12 +134,43 @@ class TstWrapper(BaseEstimator, ClassifierMixin):
     def fit(self, X, y, use_es=False, X_valid=None, y_valid=None):
         # scikit boilerplate
         self.classes_ = np.array([0.0, 1.0])
-        # original_y_shape = y.shape
-        # self.classes_, y = np.unique(y, return_inverse=True)
-        # y = torch.reshape(torch.tensor(y), original_y_shape).float()  # re-torch y
+
+        X_unpacked, padding_masks = TstWrapper._unwrap_X_padmask(X)
+        ds = TensorBasedDataset(X_unpacked, y, padding_masks)
+
+        if use_es:
+            assert X_valid is not None and y_valid is not None
+            X_valid_unpacked, pm_valid = TstWrapper._unwrap_X_padmask(X_valid)
+
+            valid_ds = TensorBasedDataset(X_valid_unpacked, y_valid, pm_valid)
+
+            return self._fitdl(ds, use_es=use_es, valid_dl=valid_ds)
+
+        return self._fitdl(ds, use_es=use_es)
+
+    def _fitdl(self, ds, use_es=False, valid_ds=None):
+
+        gpuLoader = torch.utils.data.DataLoader(
+            ds,
+            batch_size=self.batch_size,
+            num_workers=CORES_AVAILABLE,
+            pin_memory=True,
+            drop_last=False,
+        )
+
+        if use_es:
+            assert valid_ds is not None
+
+            validGpuLoader = torch.utils.data.DataLoader(
+                valid_ds,
+                batch_size=self.batch_size,
+                num_workers=CORES_AVAILABLE,
+                pin_memory=True,
+                drop_last=False,
+            )
 
         model = TSTransformerEncoderClassiregressor(
-            feat_dim=X.shape[-1] - 1,  # -1 for padding mask
+            feat_dim=len(ds.dataset.feature_ids),  # -1 for padding mask
             d_model=self.d_model,
             dim_feedforward=self.dim_feedforward,
             max_len=self.max_len,
@@ -157,28 +187,6 @@ class TstWrapper(BaseEstimator, ClassifierMixin):
         # Current impl is optimistic but does not run under CV
         es = EarlyStopping()
 
-        X_unpacked, padding_masks = TstWrapper._unwrap_X_padmask(X)
-
-        gpuLoader = torch.utils.data.DataLoader(
-            TensorBasedDataset(X_unpacked, y, padding_masks),
-            batch_size=self.batch_size,
-            num_workers=CORES_AVAILABLE,
-            pin_memory=True,
-            drop_last=False,
-        )
-
-        if use_es:
-            assert X_valid is not None and y_valid is not None
-            X_valid_unpacked, pm_valid = TstWrapper._unwrap_X_padmask(X_valid)
-
-            validGpuLoader = torch.utils.data.DataLoader(
-                TensorBasedDataset(X_valid_unpacked, y_valid, pm_valid),
-                batch_size=self.batch_size,
-                num_workers=CORES_AVAILABLE,
-                pin_memory=True,
-                drop_last=False,
-            )
-
         for epoch_idx in range(0, self.max_epochs):
             model.train()
             optimizer.zero_grad()
@@ -189,7 +197,7 @@ class TstWrapper(BaseEstimator, ClassifierMixin):
                 outputs = model.forward(
                     batch_X.to("cuda"), batch_padding_masks.to("cuda")
                 )
-                loss = criterion(outputs, torch.unsqueeze(batch_y, 1).to("cuda"))
+                loss = criterion(outputs, batch_y.to("cuda"))
                 loss.backward()
                 # TODO: what's the significance of this?
                 torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=4.0)

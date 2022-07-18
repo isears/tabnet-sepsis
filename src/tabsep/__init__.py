@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import os
 
 
 @dataclass
@@ -7,6 +8,8 @@ class Config:
     timestep_seconds: int
     # Number of timesteps before sepsis onset
     prediction_timesteps: int
+    # Cores available for use (slurm)
+    cores_available: int
 
 
 with open("mimicts/readme.txt", "r") as f:
@@ -17,4 +20,8 @@ with open("mimicts/readme.txt", "r") as f:
             timestep_seconds = int(line.split("=")[-1])
 
 
-config = Config(timestep_seconds=timestep_seconds, prediction_timesteps=6)
+config = Config(
+    timestep_seconds=timestep_seconds,
+    prediction_timesteps=6,
+    cores_available=len(os.sched_getaffinity(0)),
+)
