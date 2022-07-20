@@ -1,9 +1,10 @@
+import pickle
+from dataclasses import dataclass
 import sys
-import json
+from typing import Callable
 import torch
 import numpy as np
 import pandas as pd
-import multiprocessing
 import scipy.stats as st
 from tabsep.dataProcessing.fileBasedDataset import FileBasedDataset
 from tabsep.modeling import EarlyStopping
@@ -15,7 +16,7 @@ from tabsep.modeling.tstImpl import TSTransformerEncoderClassiregressor, AdamW
 from sklearn.linear_model import LogisticRegression
 from xgboost import XGBClassifier
 import os
-from sklearn.metrics import roc_auc_score, log_loss
+from sklearn.metrics import roc_auc_score, log_loss, roc_curve, make_scorer
 
 
 CORES_AVAILABLE = len(os.sched_getaffinity(0))
@@ -23,6 +24,49 @@ torch.manual_seed(42)
 np.random.seed(42)
 torch.use_deterministic_algorithms(True)
 os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
+
+
+@dataclass
+class SingleCVResult:
+    fpr: np.ndarray
+    tpr: np.ndarray
+    thresholds: np.ndarray
+    auc: float
+
+
+class CVResults:
+    @classmethod
+    def load(cls, filename) -> "CVResults":
+        with open(filename, "rb") as f:
+            return pickle.load(f)
+
+    def __init__(self, clf_name) -> None:
+        self.results = list()
+        self.clf_name = clf_name
+
+    def add_result(self, y_true, y_score) -> float:
+        fpr, tpr, thresholds = roc_curve(y_true, y_score)
+        auc = roc_auc_score(y_true, y_score)
+        self.results.append(SingleCVResult(fpr, tpr, thresholds, auc))
+
+        # For compatibility w/sklearn scorers
+        return auc
+
+    def get_scorer(self) -> Callable:
+        metric = lambda y_t, y_s: self.add_result(y_t, y_s)
+        return make_scorer(metric)
+
+    def print_report(self) -> None:
+        aucs = np.array([res.auc for res in self.results])
+        print(f"All scores: {aucs}")
+        print(f"Score mean: {aucs.mean()}")
+        print(f"Score std: {aucs.std()}")
+        print(
+            f"95% CI: {st.t.interval(alpha=0.95, df=len(aucs)-1, loc=aucs.mean(), scale=st.sem(aucs))}"
+        )
+
+        with open(f"results/{self.clf_name}.cvresult", "wb") as f:
+            pickle.dump(self, f)
 
 
 class FeatureScaler(StandardScaler):
@@ -237,6 +281,9 @@ class TstWrapper(BaseEstimator, ClassifierMixin):
 
             return torch.squeeze(y_pred).to("cpu")  # sklearn needs to do cpu ops
 
+    def predict(self, X):
+        return self.decision_function(X)
+
 
 def load_to_mem(dl: torch.utils.data.DataLoader):
     """
@@ -254,18 +301,9 @@ def load_to_mem(dl: torch.utils.data.DataLoader):
     return X_all, torch.squeeze(y_all)
 
 
-def print_score(scores: np.array):
-    print(f"All scores: {scores}")
-    print(f"Score mean: {scores.mean()}")
-    print(f"Score std: {scores.std()}")
-    print(
-        f"95% CI: {st.t.interval(alpha=0.95, df=len(scores)-1, loc=scores.mean(), scale=st.sem(scores))}"
-    )
-
-
-def doCV(clf):
+def doCV(clf, n_jobs=-1):
     cut_sample = pd.read_csv("cache/sample_cuts.csv")
-    cut_sample = cut_sample.sample(frac=1, random_state=42).reset_index(drop=True)
+    cut_sample = cut_sample.sample(frac=0.01, random_state=42).reset_index(drop=True)
 
     ds = FileBasedDataset(processed_mimic_path="./mimicts", cut_sample=cut_sample)
     dl = torch.utils.data.DataLoader(
@@ -274,43 +312,49 @@ def doCV(clf):
 
     X, y = load_to_mem(dl)
 
-    cv_splitter = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
+    cv_splitter = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
 
-    scores = cross_val_score(
-        clf, X, y, cv=cv_splitter, scoring="roc_auc", n_jobs=-1, verbose=1
+    cv_res = CVResults(clf.__class__.__name__)
+
+    # Too many jobs results in OOM for TST
+    cross_val_score(
+        clf,
+        X,
+        y,
+        cv=cv_splitter,
+        scoring=cv_res.get_scorer(),
+        n_jobs=n_jobs,
+        verbose=1,
     )
 
-    return scores
+    cv_res.print_report()
+
+    return cv_res
 
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         model_name = sys.argv[1]
     else:
-        model_name = "lr"
+        model_name = "TST"
 
     models = {
-        "lr": make_pipeline(
+        "LR": make_pipeline(
             FeatureScaler(), Ts2TabTransformer(), LogisticRegression(max_iter=1e7)
         ),
         # "xgboost": XGBClassifier(),
-        "tst": TstWrapper(),
+        "TST": TstWrapper(),
     }
 
+    job_config = {"LR": -1, "TST": 1, "XGBOOST": -1}
+
     if model_name == "all":
-        for model_name, clf in models.items():
-            first_cv_scores = doCV(clf)
-            second_cv_scores = doCV(clf)
 
-            # Determinism check
-            assert (first_cv_scores == second_cv_scores).all()
-
-            print(f"Scores for {model_name}:")
-            print_score(first_cv_scores)
+        for idx, (model_name, clf) in enumerate(models.items()):
+            doCV(clf, job_config[model_name])
 
     elif model_name in models:
         clf = models[model_name]
-        scores = doCV(clf)
-        print_score(scores)
+        doCV(clf, job_config[model_name])
     else:
         raise ValueError(f"No model named {sys.argv[1]}. Pick from {models.keys()}")

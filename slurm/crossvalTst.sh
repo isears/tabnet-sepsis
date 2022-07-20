@@ -4,7 +4,7 @@
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64G
-#SBATCH --time=00:30:00
+#SBATCH --time=02:00:00
 #SBATCH --output ./logs/cvTst-%j.log
 
 module load cuda/11.3.1
@@ -13,4 +13,4 @@ nvidia-smi
 
 export PYTHONUNBUFFERED=TRUE
 
-python3 src/tabsep/modeling/timeseriesCV.py tst
+python3 src/tabsep/modeling/timeseriesCV.py TST
