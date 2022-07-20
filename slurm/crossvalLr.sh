@@ -2,7 +2,7 @@
 #SBATCH -n 1
 #SBATCH -p batch
 #SBATCH --cpus-per-task=2
-#SBATCH --mem=32G
+#SBATCH --mem=64G
 #SBATCH --time=48:00:00
 #SBATCH --output ./logs/cvLr-%j.log
 
