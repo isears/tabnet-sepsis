@@ -52,7 +52,7 @@ if __name__ == "__main__":
             tprs_lower,
             tprs_upper,
             color=colors[idx],
-            alpha=0.05,
+            alpha=0.1,
             label=r"$\pm$ 1 std. dev.",
         )
 

@@ -54,7 +54,7 @@ class CVResults:
 
     def get_scorer(self) -> Callable:
         metric = lambda y_t, y_s: self.add_result(y_t, y_s)
-        return make_scorer(metric)
+        return make_scorer(metric, needs_proba=True)
 
     def print_report(self) -> None:
         aucs = np.array([res.auc for res in self.results])
@@ -303,7 +303,7 @@ def load_to_mem(dl: torch.utils.data.DataLoader):
 
 def doCV(clf, n_jobs=-1):
     cut_sample = pd.read_csv("cache/sample_cuts.csv")
-    cut_sample = cut_sample.sample(frac=0.01, random_state=42).reset_index(drop=True)
+    cut_sample = cut_sample.sample(frac=1, random_state=42).reset_index(drop=True)
 
     ds = FileBasedDataset(processed_mimic_path="./mimicts", cut_sample=cut_sample)
     dl = torch.utils.data.DataLoader(
@@ -312,11 +312,11 @@ def doCV(clf, n_jobs=-1):
 
     X, y = load_to_mem(dl)
 
-    cv_splitter = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
+    cv_splitter = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
 
     cv_res = CVResults(clf.__class__.__name__)
 
-    # Too many jobs results in OOM for TST
+    # TODO: CVResults gets copied when n_jobs > 1, breaks everything
     cross_val_score(
         clf,
         X,
@@ -336,7 +336,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         model_name = sys.argv[1]
     else:
-        model_name = "TST"
+        model_name = "LR"
 
     models = {
         "LR": make_pipeline(
@@ -346,7 +346,7 @@ if __name__ == "__main__":
         "TST": TstWrapper(),
     }
 
-    job_config = {"LR": -1, "TST": 1, "XGBOOST": -1}
+    job_config = {"LR": 1, "TST": 1, "XGBOOST": -1}
 
     if model_name == "all":
 

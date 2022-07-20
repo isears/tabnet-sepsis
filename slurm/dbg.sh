@@ -10,8 +10,7 @@
 
 module load python/3.9.0
 export PYTHONUNBUFFERED=TRUE
-# source /gpfs/runtime/opt/anaconda/3-5.2.0/bin/activate /users/isears1/anaconda/rnaseq
-source ~/.virtualenvs/tabsep/bin/activate
+source /gpfs/runtime/opt/anaconda/3-5.2.0/bin/activate sepsis
 echo $1
 
 echo "Establishing connection back to $SLURM_SUBMIT_HOST:51277"
