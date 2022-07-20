@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH -n 1
-#SBATCH -p bigmem
+#SBATCH -p batch
 #SBATCH --cpus-per-task=2
-#SBATCH --mem=512G
+#SBATCH --mem=32G
 #SBATCH --time=48:00:00
 #SBATCH --output ./logs/cvLr-%j.log
 
