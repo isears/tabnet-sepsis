@@ -84,12 +84,18 @@ class InclusionCriteria:
             ~self.all_stays["stay_id"].isin(early_sepsis_stays)
         ]
 
+    def _exclude_nosepsis(self):
+        sepsis_df = pd.read_csv("mimiciv/derived/sepsis3.csv")
+
+        self.all_stays = pd.merge(
+            self.all_stays, sepsis_df[["stay_id"]], how="inner", on="stay_id"
+        )
+
     def get_included(self):
         order = [
             self._exclude_nodata,
-            self._exclude_short_stays,
             self._exclude_long_stays,
-            self._exclude_early_sepsis,
+            self._exclude_nosepsis,
         ]
 
         for func in order:
