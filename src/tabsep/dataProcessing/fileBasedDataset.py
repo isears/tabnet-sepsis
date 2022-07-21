@@ -24,7 +24,7 @@ def get_feature_labels():
 
 
 class FileBasedDataset(torch.utils.data.Dataset):
-    def __init__(self, processed_mimic_path: str, cut_sample: pd.DataFrame):
+    def __init__(self, processed_mimic_path: str, sample: pd.DataFrame):
 
         print(f"[{type(self).__name__}] Initializing dataset...")
 
@@ -32,9 +32,9 @@ class FileBasedDataset(torch.utils.data.Dataset):
             pd.read_csv("cache/included_features.csv").squeeze("columns").to_list()
         )
 
-        self.cut_sample = cut_sample
+        self.sample = sample
 
-        print(f"\tExamples: {len(self.cut_sample)}")
+        print(f"\tExamples: {len(self.sample)}")
         print(f"\tFeatures: {len(self.feature_ids)}")
 
         self.processed_mimic_path = processed_mimic_path
@@ -42,12 +42,13 @@ class FileBasedDataset(torch.utils.data.Dataset):
         try:
             with open("cache/metadata.json", "r") as f:
                 self.max_len = int(json.load(f)["max_len"])
+                self.max_len += 1  # TODO: this shouldn't be necessary, fix metadata
         except FileNotFoundError:
             print(
                 f"[{type(self).__name__}] Failed to load metadata. Computing maximum length, this may take some time..."
             )
             self.max_len = 0
-            for sid in self.cut_sample["stay_id"].to_list():
+            for sid in self.sample["stay_id"].to_list():
                 ce = pd.read_csv(
                     f"{processed_mimic_path}/{sid}/chartevents_features.csv", nrows=1
                 )
@@ -92,13 +93,12 @@ class FileBasedDataset(torch.utils.data.Dataset):
         return X_and_pad, y
 
     def __len__(self):
-        return len(self.cut_sample)
+        return len(self.sample)
 
     def __getitem__(self, index: int):
-        stay_id = self.cut_sample["stay_id"].iloc[index]
-        Y = torch.tensor(self.cut_sample["label"].iloc[index])
+        stay_id = self.sample["stay_id"].iloc[index]
+        Y = torch.tensor(self.sample["label"].iloc[index])
         Y = torch.unsqueeze(Y, 0)
-        cutidx = self.cut_sample["cutidx"].iloc[index]
 
         # Features
         # Ensures every example has a sequence length of at least 1
@@ -112,12 +112,7 @@ class FileBasedDataset(torch.utils.data.Dataset):
             full_path = f"{self.processed_mimic_path}/{stay_id}/{feature_file}"
 
             if os.path.exists(full_path):
-                curr_features = pd.read_csv(
-                    full_path,
-                    usecols=list(range(0, cutidx + 1)),
-                    index_col="feature_id",
-                )
-
+                curr_features = pd.read_csv(full_path, index_col="feature_id",)
                 combined_features = pd.concat([combined_features, curr_features])
 
         # Make sure all itemids are represented in order, add 0-tensors where missing
@@ -130,7 +125,9 @@ class FileBasedDataset(torch.utils.data.Dataset):
 
         # Pad to maxlen
         actual_len = X.shape[1]
-        assert actual_len < self.max_len
+        assert (
+            actual_len <= self.max_len
+        ), f"Length assertion failed for {stay_id}: {actual_len} > {self.max_len}"
         pad_mask = torch.ones(actual_len)
         # TODO: transform here b/c the way TST expects it isn't the typical convention
         X_mod = pad(X, (0, self.max_len - actual_len), mode="constant", value=0.0).T
@@ -159,22 +156,16 @@ def demo(dl):
 
 def get_label_prevalence(dl):
     y_tot = torch.tensor(0.0)
-    for batchnum, (X, Y, pad_mask) in enumerate(dl):
+    for batchnum, (X, Y) in enumerate(dl):
         y_tot += torch.sum(Y)
 
     print(f"Postivie Ys: {y_tot / (batchnum * dl.batch_size)}")
 
 
 if __name__ == "__main__":
-    sample_cuts = pd.read_csv("cache/sample_cuts.csv")
-    ds = FileBasedDataset("./mimicts", cut_sample=sample_cuts)
+    sample = pd.read_csv("cache/ihm_sample.csv")
+    ds = FileBasedDataset("./mimicts", sample)
 
-    dl = torch.utils.data.DataLoader(
-        ds,
-        collate_fn=ds.maxlen_padmask_collate,
-        num_workers=16,
-        batch_size=4,
-        pin_memory=True,
-    )
+    dl = torch.utils.data.DataLoader(ds, num_workers=16, batch_size=4, pin_memory=True,)
 
     get_label_prevalence(dl)
