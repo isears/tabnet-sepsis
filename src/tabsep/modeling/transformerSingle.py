@@ -18,10 +18,10 @@ if __name__ == "__main__":
     start_time_str = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
 
     print("[*] Loading data to memory")
-    cut_sample = pd.read_csv("cache/sample_cuts.csv")
-    cut_sample = cut_sample.sample(frac=1, random_state=42).reset_index(drop=True)
+    sample = pd.read_csv("cache/ihm_sample.csv")
+    sample = sample.sample(frac=1, random_state=42).reset_index(drop=True)
 
-    ds = FileBasedDataset(processed_mimic_path="./mimicts", cut_sample=cut_sample)
+    ds = FileBasedDataset("./mimicts", sample)
     dl = torch.utils.data.DataLoader(
         ds, batch_size=256, num_workers=CORES_AVAILABLE, pin_memory=True,
     )

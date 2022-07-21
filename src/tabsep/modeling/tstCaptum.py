@@ -41,7 +41,7 @@ class TensorBasedDataset(torch.utils.data.Dataset):
 
 
 if __name__ == "__main__":
-    model_id = "singleTst_2022-07-09_08:26:13"
+    model_id = "singleTst_2022-07-21_11:58:07"
 
     if torch.cuda.is_available():
         print("Detected GPU, using cuda")
@@ -54,7 +54,7 @@ if __name__ == "__main__":
         feat_dim=621,
         d_model=128,
         dim_feedforward=256,
-        max_len=120,
+        max_len=121,  # TODO: do better
         n_heads=16,
         num_classes=1,
         num_layers=3,
