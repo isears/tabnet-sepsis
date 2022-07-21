@@ -10,7 +10,6 @@ from torch.nn.modules import (
 )
 import pandas as pd
 from tabsep.modeling import EarlyStopping
-from tabsep.modeling.transformerCV import do_cv
 
 
 # Could also be learnable:
@@ -271,14 +270,4 @@ def model_factory(max_seq_len):
 
 
 if __name__ == "__main__":
-    criterion = torch.nn.BCELoss()
-    early_stopping = EarlyStopping()
-
-    do_cv(
-        model_factory,
-        early_stopping=early_stopping,
-        criterion=criterion,
-        name="TimeSeriesTransformer",
-        batch_size=16,
-        num_epochs=100,
-    )
+    pass

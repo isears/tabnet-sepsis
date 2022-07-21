@@ -54,7 +54,7 @@ class CVResults:
 
     def get_scorer(self) -> Callable:
         metric = lambda y_t, y_s: self.add_result(y_t, y_s)
-        return make_scorer(metric, needs_proba=True)
+        return make_scorer(metric)
 
     def print_report(self) -> None:
         aucs = np.array([res.auc for res in self.results])
@@ -149,7 +149,7 @@ class TstWrapper(BaseEstimator, ClassifierMixin):
         # TST params
         d_model=128,
         dim_feedforward=256,
-        max_len=120,
+        max_len=121,
         n_heads=16,
         num_classes=1,
         num_layers=3,
@@ -284,6 +284,9 @@ class TstWrapper(BaseEstimator, ClassifierMixin):
     def predict(self, X):
         return self.decision_function(X)
 
+    def predict_proba(self, X):
+        return self.decision_function(X)
+
 
 def load_to_mem(dl: torch.utils.data.DataLoader):
     """
@@ -302,10 +305,10 @@ def load_to_mem(dl: torch.utils.data.DataLoader):
 
 
 def doCV(clf, n_jobs=-1):
-    cut_sample = pd.read_csv("cache/sample_cuts.csv")
-    cut_sample = cut_sample.sample(frac=1, random_state=42).reset_index(drop=True)
+    sample = pd.read_csv("cache/ihm_sample.csv")
+    sample = sample.sample(frac=1, random_state=42).reset_index(drop=True)
 
-    ds = FileBasedDataset(processed_mimic_path="./mimicts", cut_sample=cut_sample)
+    ds = FileBasedDataset("./mimicts", sample)
     dl = torch.utils.data.DataLoader(
         ds, batch_size=256, num_workers=CORES_AVAILABLE, pin_memory=True,
     )
