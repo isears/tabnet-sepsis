@@ -36,7 +36,7 @@ if __name__ == "__main__":
         columns=[c for c in sample_case.columns if c not in top_n_features]
     )
 
-    sample_case.index = sample_case.index * config.prediction_timesteps
+    sample_case.index = sample_case.index * (config.timestep_seconds / (60 * 60))
 
     sample_case.index.name = "Time in ICU (hrs.)"
 
