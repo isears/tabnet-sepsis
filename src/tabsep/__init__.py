@@ -7,6 +7,8 @@ class Config:
     timestep_seconds: int
     # Number of timesteps before sepsis onset
     prediction_timesteps: int
+    # Path to TST model to use in results generation
+    model_path: str
 
 
 with open("mimicts/readme.txt", "r") as f:
@@ -17,4 +19,8 @@ with open("mimicts/readme.txt", "r") as f:
             timestep_seconds = int(line.split("=")[-1])
 
 
-config = Config(timestep_seconds=timestep_seconds, prediction_timesteps=1)
+config = Config(
+    timestep_seconds=timestep_seconds,
+    prediction_timesteps=1,
+    model_path="cache/models/singleTst_2022-07-09_08:26:13",
+)
