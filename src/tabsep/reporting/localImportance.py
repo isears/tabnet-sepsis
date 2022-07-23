@@ -19,7 +19,7 @@ if __name__ == "__main__":
     sample_idx = np.argmax(
         torch.logical_and(
             torch.logical_and(y_test == 1, torch.sum(X_test[:, :, -1], dim=1) > 3,),
-            torch.logical_and(torch.sum(X_test[:, :, -1], dim=1) < 25, preds > 0.5,),
+            torch.logical_and(torch.sum(X_test[:, :, -1], dim=1) < 40, preds > 0.65,),
         )
     )
 
@@ -30,7 +30,7 @@ if __name__ == "__main__":
     # Truncate by padding mask
     sample_case = sample_case[pad_masks[sample_idx].tolist()]
     max_absolute_attribution = sample_case.abs().apply(lambda col: col.sum())
-    top_n_features = max_absolute_attribution.nlargest(n=20).index
+    top_n_features = max_absolute_attribution.nlargest(n=10).index
 
     sample_case = sample_case.drop(
         columns=[c for c in sample_case.columns if c not in top_n_features]
