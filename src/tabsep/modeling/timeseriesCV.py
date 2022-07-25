@@ -339,14 +339,15 @@ if __name__ == "__main__":
         model_name = "LR"
 
     models = {
-        "LR": make_pipeline(
+        "LR Scaled": make_pipeline(
             FeatureScaler(), Ts2TabTransformer(), LogisticRegression(max_iter=1e7)
         ),
-        # "xgboost": XGBClassifier(),
+        "LR": make_pipeline(Ts2TabTransformer(), LogisticRegression()),
+        "XGBOOST": XGBClassifier(),
         "TST": TstWrapper(),
     }
 
-    job_config = {"LR": 1, "TST": 1, "XGBOOST": -1}
+    job_config = {"LR": 1, "TST": 1, "XGBOOST": 11}
 
     if model_name == "all":
 
