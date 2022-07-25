@@ -1,3 +1,4 @@
+from distutils.fancy_getopt import fancy_getopt
 from sklearn.metrics import auc as auc_fn
 from glob import glob
 import matplotlib.pyplot as plt
@@ -6,6 +7,10 @@ from tabsep.modeling.timeseriesCV import CVResults, SingleCVResult
 
 
 if __name__ == "__main__":
+    fancy_names = {
+        "Pipeline": "Logistic Regression",
+        "TstWrapper": "Time Series Transformer",
+    }
 
     colors = ["b", "g", "c", "m", "y"]
 
@@ -16,6 +21,10 @@ if __name__ == "__main__":
 
     for idx, fname in enumerate(glob("results/*.cvresult")):
         name = fname.split("/")[-1].split(".")[0]
+
+        if name in fancy_names.keys():
+            name = fancy_names[name]
+
         print(f"Generating ROC curves for model {name} from {fname}")
 
         mean_fpr = np.linspace(0, 1, 100)
