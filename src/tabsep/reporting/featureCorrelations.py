@@ -24,10 +24,11 @@ class FeatureCorrelator:
             raise ValueError(f"{self.feature} not found, check format")
 
         self.feature_idx = self.feature_labels.index(feature)
+        self.correlation_attribs = None
 
     def direct_comparison(self):
         """
-        Matches feature vals with other features only at that specific point in time
+        Matches feature attribs with other features only at that specific point in time
 
         Drawback: if feature x correlates w/feature y, 
         but only some time before feature y is recorded, the correlation will be missed 
@@ -59,11 +60,31 @@ class FeatureCorrelator:
 
         return correlation_attribs
 
+    def absolute_max_comparison(self):
+        """
+        Matches max of absolute feature attribution with other features' max of absolute attributions
+        """
+        maximums = np.max(self.attributions, axis=1)
+        minimums = np.min(self.attributions, axis=1)
+
+        # Select by highest absolute value
+        max_mask = maximums > np.abs(minimums)
+        min_mask = np.logical_not(max_mask)
+        correlation_attribs = maximums * max_mask + minimums * min_mask
+
+        # Drop anything within one standard deviation of 0.0
+        std_dev = correlation_attribs[:, self.feature_idx].std()
+        correlation_attribs = correlation_attribs[
+            ~np.isclose(correlation_attribs[:, self.feature_idx], 0.0, atol=std_dev * 2)
+        ]
+
+        return correlation_attribs
+
 
 if __name__ == "__main__":
-    fc = FeatureCorrelator("Height (cm)")
+    fc = FeatureCorrelator("Platelet Count")
 
-    correlation_attribs = fc.direct_comparison()
+    correlation_attribs = fc.absolute_max_comparison()
 
     rvals = list()
     yvals = list()
@@ -75,8 +96,8 @@ if __name__ == "__main__":
     for idx in range(0, correlation_attribs.shape[1]):
         if idx == fc.feature_idx:  # Correlating feature w/itself will obviously be best
             continue
-        x = correlation_attribs[fc.feature_idx]
-        y = correlation_attribs[idx]
+        x = correlation_attribs[:, fc.feature_idx]
+        y = correlation_attribs[:, idx]
         slope, intercept, r_value, p_value, std_err = scipy.stats.linregress(x, y)
 
         rvals.append(r_value)
@@ -90,9 +111,10 @@ if __name__ == "__main__":
         index=feature_indices,
     )
 
-    topn = df.nlargest(columns="Rval", n=20)
+    topn = df.nlargest(columns="Rval", n=10)
     print(topn)
 
+    plt.figure()
     ax = sns.barplot(x="Feature", y="Rval", data=topn, color="blue")
     ax.set_xticklabels(ax.get_xticklabels(), rotation=40, ha="right")
     ax.set_title(f"Top features correlating with: {fc.feature}")
@@ -101,5 +123,12 @@ if __name__ == "__main__":
     plt.savefig(f"results/correlations.png")
     plt.clf()
 
-    plt.scatter(x, topn.iloc[0]["Yvals"], s=1)
+    plt.figure()
+    ax = sns.regplot(x=x, y=topn.iloc[0]["Yvals"])
+    ax.set_title(
+        f"Attribution Correlation between {fc.feature} and\n{topn.iloc[0]['Feature']}"
+    )
+    ax.set_xlabel(fc.feature)
+    ax.set_ylabel(topn.iloc[0]["Feature"])
+    plt.tight_layout()
     plt.savefig(f"results/top_correlation.png")
