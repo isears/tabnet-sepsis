@@ -43,6 +43,8 @@ if __name__ == "__main__":
     torch.save(tst.model.state_dict(), f"{save_path}/model.pt")
     torch.save(X_test, f"{save_path}/X_test.pt")
     torch.save(y_test, f"{save_path}/y_test.pt")
+    torch.save(X_train, f"{save_path}/X_train.pt")
+    torch.save(y_train, f"{save_path}/y_train.pt")
 
     preds = tst.decision_function(X_test)
     torch.save(preds, f"{save_path}/preds.pt")

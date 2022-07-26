@@ -36,8 +36,8 @@ def revise_pad(pm):
 if __name__ == "__main__":
 
     attributions = torch.load(f"{config.model_path}/attributions.pt").detach()
-    X_test = torch.load(f"{config.model_path}/X_test.pt").detach()
-    pad_masks = X_test[:, :, -1]
+    X = torch.load(f"{config.model_path}/X_train.pt").detach()
+    pad_masks = X[:, :, -1]
 
     titles = ["all", "early", "late"]
 

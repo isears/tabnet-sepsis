@@ -63,12 +63,12 @@ if __name__ == "__main__":
 
     model.eval()
 
-    X_test = torch.load(f"{config.model_path}/X_test.pt")
-    y_test = torch.load(f"{config.model_path}/y_test.pt")
+    X_test = torch.load(f"{config.model_path}/X_train.pt")
+    y_test = torch.load(f"{config.model_path}/y_train.pt")
 
     dl = torch.utils.data.DataLoader(
         TensorBasedDataset(X_test, y_test),
-        batch_size=8,
+        batch_size=16,
         num_workers=CORES_AVAILABLE,
         pin_memory=True,
         drop_last=False,
@@ -77,17 +77,31 @@ if __name__ == "__main__":
     attributions_list = list()
     pad_mask_list = list()
 
-    for xbatch, _ in dl:
-        xbatch = xbatch.to(device)
+    for batch_idx, (xbatch, _) in enumerate(dl):
+        with torch.no_grad():
+            xbatch = xbatch.to(device)
 
-        pad_masks = xbatch[:, :, -1] == 1
-        xbatch = xbatch[:, :, :-1]
+            pad_masks = xbatch[:, :, -1] == 1
+            xbatch = xbatch[:, :, :-1]
 
-        xbatch.requires_grad = True
+            xbatch.requires_grad = True
 
-        ig = IntegratedGradients(model)
-        attributions = ig.attribute(xbatch, additional_forward_args=pad_masks, target=0)
-        attributions_list.append(attributions.cpu())
+            ig = IntegratedGradients(model)
+            attributions = ig.attribute(
+                xbatch, additional_forward_args=pad_masks, target=0
+            )
+            attributions_list.append(attributions.cpu())
+
+            before_mem = torch.cuda.memory_allocated(device) / 2 ** 30
+            del attributions
+            del pad_masks
+            del xbatch
+            torch.cuda.empty_cache()
+            after_mem = torch.cuda.memory_allocated(device) / 2 ** 30
+
+            print(
+                f"batch # {batch_idx} purged memory {before_mem:.4f} -> {after_mem:.4f}"
+            )
 
     attributions_all = torch.concat(attributions_list, dim=0)
     print(f"Saving attributions to {config.model_path}/attributions.pt")
