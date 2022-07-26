@@ -199,7 +199,7 @@ class TstWrapper(BaseEstimator, ClassifierMixin):
         # One "fair" early stopping for comparison w/LR
         # One "optimistic" early stopping for single fold model building
         # Current impl is optimistic but does not run under CV
-        es = EarlyStopping()
+        es = EarlyStopping(patience=5)
 
         X_unpacked, padding_masks = TstWrapper._unwrap_X_padmask(X)
 
