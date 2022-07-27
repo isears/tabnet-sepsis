@@ -8,10 +8,8 @@
 #SBATCH --output ./logs/debug-%j.log
 
 
-module load python/3.9.0
 export PYTHONUNBUFFERED=TRUE
-source /gpfs/runtime/opt/anaconda/3-5.2.0/bin/activate sepsis
-echo $1
+source /gpfs/home/isears1/anaconda3/bin/activate /users/isears1/anaconda/lsepsis
 
 echo "Establishing connection back to $SLURM_SUBMIT_HOST:51277"
-python -m debugpy --connect $SLURM_SUBMIT_HOST:51277 --wait-for-client $1
+python3 -m debugpy --connect $SLURM_SUBMIT_HOST:51277 --wait-for-client $1
