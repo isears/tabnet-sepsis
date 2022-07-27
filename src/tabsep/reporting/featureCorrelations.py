@@ -15,8 +15,8 @@ class FeatureCorrelator:
         self.attributions = (
             torch.load(f"{config.model_path}/attributions.pt").detach().numpy()
         )
-        X_test = torch.load(f"{config.model_path}/X_test.pt").numpy()
-        self.pad_masks = X_test[:, :, -1]
+        X = torch.load(f"{config.model_path}/X_test.pt").numpy()
+        self.pad_masks = X[:, :, -1]
 
         self.feature_labels = get_feature_labels()
 
@@ -25,6 +25,16 @@ class FeatureCorrelator:
 
         self.feature_idx = self.feature_labels.index(feature)
         self.correlation_attribs = None
+
+    def _std_dev_clip(self, x: np.ndarray, n_stdevs: int):
+        std_dev = x[:, self.feature_idx].std()
+        ret = x[
+            ~np.isclose(
+                correlation_attribs[:, self.feature_idx], 0.0, atol=std_dev * n_stdevs
+            )
+        ]
+
+        return ret
 
     def direct_comparison(self):
         """
@@ -73,16 +83,20 @@ class FeatureCorrelator:
         correlation_attribs = maximums * max_mask + minimums * min_mask
 
         # Drop anything within one standard deviation of 0.0
+        before_size = correlation_attribs.shape[0]
         std_dev = correlation_attribs[:, self.feature_idx].std()
         correlation_attribs = correlation_attribs[
-            ~np.isclose(correlation_attribs[:, self.feature_idx], 0.0, atol=std_dev * 2)
+            ~np.isclose(correlation_attribs[:, self.feature_idx], 0.0, atol=std_dev * 1)
         ]
+        after_size = correlation_attribs.shape[0]
+
+        print(f"[*] Filtered {before_size - after_size}, final size {after_size}")
 
         return correlation_attribs
 
 
 if __name__ == "__main__":
-    fc = FeatureCorrelator("Platelet Count")
+    fc = FeatureCorrelator("Spont Vt")
 
     correlation_attribs = fc.absolute_max_comparison()
 
@@ -98,7 +112,12 @@ if __name__ == "__main__":
             continue
         x = correlation_attribs[:, fc.feature_idx]
         y = correlation_attribs[:, idx]
-        slope, intercept, r_value, p_value, std_err = scipy.stats.linregress(x, y)
+
+        try:
+            slope, intercept, r_value, p_value, std_err = scipy.stats.linregress(x, y)
+        except ValueError:  # If we filter out all examples by mistake
+            slope, intercept, r_value, std_err = [0.0] * 4
+            p_value = 1.0
 
         rvals.append(r_value)
         yvals.append(y)
@@ -112,6 +131,7 @@ if __name__ == "__main__":
     )
 
     topn = df.nlargest(columns="Rval", n=10)
+
     print(topn)
 
     plt.figure()
