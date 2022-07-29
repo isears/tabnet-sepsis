@@ -1,7 +1,6 @@
 ##########
 # Get top 20 features w/maximum attribution at any point during icustay
 ##########
-from operator import neg
 import torch
 import numpy as np
 import pandas as pd
@@ -119,8 +118,13 @@ def max_median_importances(att):
 if __name__ == "__main__":
 
     attributions = torch.load(f"{config.model_path}/attributions.pt").detach()
-    X_test = torch.load(f"{config.model_path}/X_test.pt").detach()
-    pad_masks = X_test[:, :, -1]
+    X_test = torch.load(f"{config.model_path}/X_test.pt")
+    X_train = torch.load(f"{config.model_path}/X_train.pt")
+    X_combined = torch.cat((X_test, X_train), 0).detach()
+
+    print("Loaded data")
+
+    pad_masks = X_combined[:, :, -1]
 
     titles = ["all", "early", "late"]
 

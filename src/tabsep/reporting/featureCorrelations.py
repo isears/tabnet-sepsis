@@ -15,7 +15,10 @@ class FeatureCorrelator:
         self.attributions = (
             torch.load(f"{config.model_path}/attributions.pt").detach().numpy()
         )
-        X = torch.load(f"{config.model_path}/X_test.pt").numpy()
+
+        X_test = torch.load(f"{config.model_path}/X_test.pt")
+        X_train = torch.load(f"{config.model_path}/X_train.pt")
+        X = torch.cat((X_test, X_train), 0).detach().numpy()
         self.pad_masks = X[:, :, -1]
 
         self.feature_labels = get_feature_labels()
@@ -96,7 +99,7 @@ class FeatureCorrelator:
 
 
 if __name__ == "__main__":
-    fc = FeatureCorrelator("Spont Vt")
+    fc = FeatureCorrelator("Foley")
 
     correlation_attribs = fc.absolute_max_comparison()
 
