@@ -4,7 +4,7 @@ Parses from raw text copied from: https://cran.r-project.org/web/packages/comorb
 import json
 
 # Replaces hyphen with literal range of codes
-def _range_expander(unexpanded: list):
+def _range_expander(unexpanded: list, category: str):
     ret = list()
     for entry in unexpanded:
         if "-" in entry:
@@ -35,7 +35,7 @@ def _range_expander(unexpanded: list):
 
             # Assuming inclusive ranges here
             print(
-                f"[*] Including range: {start_alpha_prefix}{start_numeric_part} -> {end_alpha_prefix}{end_numeric_part}"
+                f"[{category}] Including range: {start_alpha_prefix}{start_numeric_part} -> {end_alpha_prefix}{end_numeric_part}"
             )
             ret += [
                 start_alpha_prefix + str(idx)
@@ -52,7 +52,7 @@ def get_labeled_comorbidity_codes():
     startswith_codes_by_category = dict()
     match_codes_by_category = dict()
 
-    with open("reporting/raw_cci_codes.txt", "r") as f:
+    with open("src/tabsep/reporting/raw_cci_codes.txt", "r") as f:
         for line in f.readlines():
             if line == "":
                 continue
@@ -66,7 +66,7 @@ def get_labeled_comorbidity_codes():
                 for c in raw_codes.split(",")
                 if ".x" not in c
             ]
-            match_codes = _range_expander(match_codes)
+            match_codes = _range_expander(match_codes, category)
 
             # Codes with 'x' will be matched with any code that starts with the digits before the '.x'
             startswith_codes = [
@@ -74,7 +74,7 @@ def get_labeled_comorbidity_codes():
                 for c in raw_codes.split(",")
                 if ".x" in c
             ]
-            startswith_codes = _range_expander(startswith_codes)
+            startswith_codes = _range_expander(startswith_codes, category)
 
             if category not in match_codes_by_category:
                 match_codes_by_category[category] = list()
@@ -137,12 +137,9 @@ def save_comorbidity_codes():
             "Points": points[key],
         }
 
-    with open("reporting/cci.json", "w") as f:
+    with open("src/tabsep/reporting/cci.json", "w") as f:
         json.dump(output, f)
 
 
 if __name__ == "__main__":
     save_comorbidity_codes()
-    # a, b = get_comorbidity_codes()
-    # print(len(a))
-    # print(len(b))
