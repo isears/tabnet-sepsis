@@ -49,8 +49,6 @@ def _range_expander(unexpanded: list):
 
 
 def get_labeled_comorbidity_codes():
-    dropped_categories = ["Myocardial infarction", "Cerebrovascular disease"]
-
     startswith_codes_by_category = dict()
     match_codes_by_category = dict()
 
@@ -61,9 +59,6 @@ def get_labeled_comorbidity_codes():
 
             line = line.strip()
             category, raw_codes = line.split(":")
-
-            if category in dropped_categories:
-                continue
 
             # Codes with no '.x' are easy: just have to match them exactly
             match_codes = [
