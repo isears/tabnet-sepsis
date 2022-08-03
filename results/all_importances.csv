@@ -1,0 +1,41 @@
+Feature,Direction,Summed Attributions
+Foley,Positive,2016.771477212844
+Void,Positive,805.2477340062715
+Tidal Volume (observed),Positive,1549.1410522561887
+Ventilator Tank #1,Positive,1124.405957962438
+Ventilator Tank #2,Positive,911.2523280939856
+Platelet Count,Positive,781.227444208276
+Non Invasive Blood Pressure systolic,Positive,581.4236610892852
+Temperature Fahrenheit,Positive,502.56623456440843
+Non Invasive Blood Pressure mean,Positive,493.8094712683484
+Tidal Volume (set),Positive,601.1898032310894
+Height (cm),Positive,1244.8254714468949
+Glucose (serum),Positive,594.9512925741539
+Sodium (serum),Positive,457.3145983371795
+O2 saturation pulseoxymetry,Positive,317.5931084308503
+Vti High,Positive,466.01184250854186
+Heart rate Alarm - High,Positive,363.4679927361944
+Tidal Volume (spontaneous),Positive,616.6412299517813
+Non Invasive Blood Pressure diastolic,Positive,385.25136427252437
+O2 Saturation Pulseoxymetry Alarm - High,Positive,260.7045534139372
+Glucose finger stick (range 70-100),Positive,500.22753080223333
+Foley,Negative,2553.7950960535854
+Void,Negative,1854.624936045002
+Tidal Volume (observed),Negative,1063.13829407344
+Ventilator Tank #1,Negative,969.0650570604904
+Ventilator Tank #2,Negative,839.5352780219126
+Platelet Count,Negative,739.9678436016892
+Non Invasive Blood Pressure systolic,Negative,896.9788533675547
+Temperature Fahrenheit,Negative,951.5333485025491
+Non Invasive Blood Pressure mean,Negative,909.0597906214025
+Tidal Volume (set),Negative,744.7067902724377
+Height (cm),Negative,24.523707430198314
+Glucose (serum),Negative,627.4154225674432
+Sodium (serum),Negative,633.482949027738
+O2 saturation pulseoxymetry,Negative,770.722767415029
+Vti High,Negative,596.4507957843322
+Heart rate Alarm - High,Negative,698.3918089465438
+Tidal Volume (spontaneous),Negative,421.1793678548858
+Non Invasive Blood Pressure diastolic,Negative,544.5077965552629
+O2 Saturation Pulseoxymetry Alarm - High,Negative,635.4916869630032
+Glucose finger stick (range 70-100),Negative,388.1757161471473

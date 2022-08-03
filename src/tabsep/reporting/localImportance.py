@@ -19,7 +19,7 @@ if __name__ == "__main__":
     sample_idx = np.argmax(
         torch.logical_and(
             torch.logical_and(y_test == 1, torch.sum(X_test[:, :, -1], dim=1) > 3,),
-            torch.logical_and(torch.sum(X_test[:, :, -1], dim=1) < 40, preds > 0.65,),
+            torch.logical_and(torch.sum(X_test[:, :, -1], dim=1) < 40, preds > 0.8,),
         )
     )
 
@@ -40,7 +40,7 @@ if __name__ == "__main__":
 
     sample_case.index.name = "Time in ICU (hrs.)"
 
-    ax = sns.heatmap(sample_case, linewidths=0.01, linecolor="black")
+    ax = sns.heatmap(sample_case.transpose(), linewidths=0.01, linecolor="black")
     ax.set_xticklabels(ax.get_xticklabels(), rotation=40, ha="right")
     ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
     ax.set_title(

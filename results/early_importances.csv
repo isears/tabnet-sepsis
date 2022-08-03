@@ -1,0 +1,41 @@
+Feature,Direction,Summed Attributions
+Foley,Positive,1032.978904516887
+Tidal Volume (observed),Positive,665.1503147492576
+Height (cm),Positive,1217.3978895464782
+Ventilator Tank #1,Positive,641.844556210044
+Void,Positive,489.3428514767559
+Ventilator Tank #2,Positive,442.0398634492275
+Tidal Volume (set),Positive,264.42884489423903
+Platelet Count,Positive,499.2946363691021
+Glucose (serum),Positive,256.35385877868134
+Non Invasive Blood Pressure systolic,Positive,330.3980367198226
+Admission Weight (lbs.),Positive,93.2975615894199
+Heart rate Alarm - High,Positive,198.9158213132681
+Temperature Fahrenheit,Positive,320.6811328676331
+Non Invasive Blood Pressure mean,Positive,331.8550664184997
+Vti High,Positive,240.74425782091967
+Sodium (serum),Positive,212.78761175944163
+Tidal Volume (spontaneous),Positive,271.16556019051006
+Arterial O2 pressure,Positive,108.61346648080395
+Non-Invasive Blood Pressure Alarm - High,Positive,288.6293335924025
+O2 saturation pulseoxymetry,Positive,163.95343430142023
+Foley,Negative,1155.2279933428363
+Tidal Volume (observed),Negative,756.2300236663174
+Height (cm),Negative,23.7844593495836
+Ventilator Tank #1,Negative,528.8911617349004
+Void,Negative,621.6555407589655
+Ventilator Tank #2,Negative,547.5293093690999
+Tidal Volume (set),Negative,598.5089981306601
+Platelet Count,Negative,335.6701298719232
+Glucose (serum),Negative,391.45266975010315
+Non Invasive Blood Pressure systolic,Negative,303.79712612033063
+Admission Weight (lbs.),Negative,538.0719094050198
+Heart rate Alarm - High,Negative,423.08279962014376
+Temperature Fahrenheit,Negative,293.93219392148404
+Non Invasive Blood Pressure mean,Negative,258.03986868626583
+Vti High,Negative,310.46495852296823
+Sodium (serum),Negative,337.1591371716551
+Tidal Volume (spontaneous),Negative,224.1480759453474
+Arterial O2 pressure,Negative,335.65696457185214
+Non-Invasive Blood Pressure Alarm - High,Negative,135.96405894923882
+O2 saturation pulseoxymetry,Negative,259.3470685904867

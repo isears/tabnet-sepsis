@@ -51,27 +51,27 @@ def summative_importances(att):
     importances = pd.DataFrame(
         data={
             "Feature": get_feature_labels(),
-            "Sum Positive Attributions": sum_pos_attrs.to("cpu").detach().numpy(),
-            "Sum Negative Attributions": sum_neg_attr.to("cpu").detach().numpy(),
+            "Positive": sum_pos_attrs.to("cpu").detach().numpy(),
+            "Negative": sum_neg_attr.to("cpu").detach().numpy(),
         }
     )
 
-    importances["total_importance"] = (
-        importances["Sum Positive Attributions"]
-        + importances["Sum Negative Attributions"]
-    )
+    importances["total_importance"] = importances["Positive"] + importances["Negative"]
 
     topn = importances.nlargest(20, columns="total_importance")
     topn = topn.drop(columns="total_importance")
 
-    topn = pd.melt(topn, id_vars="Feature", var_name="Parity")
-    ax = sns.barplot(x="Feature", y="value", data=topn, hue="Parity")
-    ax.set_xticklabels(ax.get_xticklabels(), rotation=40, ha="right")
+    topn = pd.melt(topn, id_vars="Feature", var_name="Direction")
+    topn = topn.rename(columns={"value": "Summed Attributions"})
+    ax = sns.barplot(
+        x="Summed Attributions", y="Feature", data=topn, hue="Direction", orient="h"
+    )
     ax.set_title(f"Global Feature Importance ({title})")
     plt.tight_layout()
     plt.savefig(f"results/{title}_importances.png")
     plt.clf()
 
+    topn.to_csv(f"results/{title}_importances.csv", index=False)
     return topn
 
 
