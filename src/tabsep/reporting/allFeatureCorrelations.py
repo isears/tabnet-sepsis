@@ -13,9 +13,6 @@ if __name__ == "__main__":
     attributions = torch.load(f"{config.model_path}/attributions.pt").detach().numpy()
     labels = get_feature_labels()
 
-    # TODO: debug only
-    # attributions = attributions[0:1000]
-
     # Sum of absolute values of attributions over entire time series
     # Output is of shape (# icustays, # features)
     abssum_attrs = np.sum(np.abs(attributions), axis=1)
