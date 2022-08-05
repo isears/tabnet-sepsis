@@ -56,15 +56,16 @@ def summative_importances(att):
         }
     )
 
-    importances["total_importance"] = importances["Positive"] + importances["Negative"]
+    importances["Summed Absolute Attributions"] = (
+        importances["Positive"] + importances["Negative"]
+    )
 
-    topn = importances.nlargest(20, columns="total_importance")
-    topn = topn.drop(columns="total_importance")
+    topn = importances.nlargest(20, columns="Summed Absolute Attributions")
 
-    topn = pd.melt(topn, id_vars="Feature", var_name="Direction")
-    topn = topn.rename(columns={"value": "Summed Attributions"})
+    sns.set_theme()
+
     ax = sns.barplot(
-        x="Summed Attributions", y="Feature", data=topn, hue="Direction", orient="h"
+        x="Summed Absolute Attributions", y="Feature", data=topn, orient="h", color="b"
     )
     ax.set_title(f"Global Feature Importance ({title})")
     plt.tight_layout()
