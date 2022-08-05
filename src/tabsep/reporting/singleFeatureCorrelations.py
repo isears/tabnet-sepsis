@@ -41,9 +41,10 @@ if __name__ == "__main__":
     ax = sns.barplot(
         x="Mutual Information", y="Feature", data=topn, orient="h", color="b"
     )
-    ax.set_title(f"Top features correlating with: {feature}")
+    ax.set_title(f"Top features correlating with: {feature}", wrap=True)
 
     plt.axvline(x=mi_std, color="r", linestyle="dotted")
+    plt.axvline(x=mi_std * 2, color="r", linestyle="dotted")
     plt.tight_layout()
     plt.savefig(f"results/correlations.png")
     plt.clf()
