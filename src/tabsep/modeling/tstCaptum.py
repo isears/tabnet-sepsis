@@ -3,6 +3,7 @@ from captum.attr import (
     InputXGradient,
     GuidedGradCam,
     GuidedBackprop,
+    ShapleyValueSampling,
 )
 import torch
 import os
@@ -73,7 +74,7 @@ if __name__ == "__main__":
 
     dl = torch.utils.data.DataLoader(
         TensorBasedDataset(X_combined, y_combined),
-        batch_size=32,
+        batch_size=1024,
         num_workers=CORES_AVAILABLE,
         pin_memory=True,
         drop_last=False,
@@ -91,8 +92,8 @@ if __name__ == "__main__":
 
             xbatch.requires_grad = True
 
-            ig = IntegratedGradients(model)
-            attributions = ig.attribute(
+            attributor = ShapleyValueSampling(model)
+            attributions = attributor.attribute(
                 xbatch, additional_forward_args=pad_masks, target=0
             )
             attributions_list.append(attributions.cpu())
@@ -111,3 +112,4 @@ if __name__ == "__main__":
     attributions_all = torch.concat(attributions_list, dim=0)
     print(f"Saving attributions to {config.model_path}/attributions.pt")
     torch.save(attributions_all, f"{config.model_path}/attributions.pt")
+    torch.save(X_combined, f"{config.model_path}/X_combined.pt")
