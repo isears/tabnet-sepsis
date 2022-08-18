@@ -21,40 +21,33 @@ if __name__ == "__main__":
     att = torch.load(f"{config.model_path}/attributions.pt").detach().numpy()
     X_test = torch.load(f"{config.model_path}/X_test.pt")
     X_train = torch.load(f"{config.model_path}/X_train.pt")
-    X_combined = torch.cat((X_test, X_train), 0)
-    pad_masks = X_combined[:, :, -1].detach().numpy()
+    # shape: # icu stays, seq_len, # features
+    X_combined = torch.cat((X_test, X_train), 0).detach().numpy()
+    pad_masks = X_combined[:, :, -1]
+    X_combined = X_combined[:, :, :-1]
     feature_labels = get_feature_labels()
 
-    pm, early_pm, late_pm = revise_pad(pad_masks)
+    # Crude check for static variables
+    delete_indices = list()
+    for idx, fl in enumerate(feature_labels):
+        this_feature_only_vals = X_combined[:, :, idx]
+        has_at_least_one_mask = np.logical_not(
+            np.all(this_feature_only_vals == 0.0, axis=-1)
+        )
+        assert len(has_at_least_one_mask) == X_combined.shape[0]
+        stays_with_at_least_one = this_feature_only_vals[has_at_least_one_mask]
 
+        num_nonzero = np.sum((stays_with_at_least_one != 0.0).astype("int"), axis=1)
+        median_nonzero = np.median(num_nonzero)
+
+        if median_nonzero < 3:
+            print(f"Detected static feature: {fl}")
+            delete_indices.append(idx)
+
+    att = np.delete(att, delete_indices, axis=-1)
+
+    pm, early_pm, late_pm = revise_pad(pad_masks)
     early_importances = sum_attrs(att, early_pm)
     late_importances = sum_attrs(att, late_pm)
 
     print(spearmanr(early_importances, late_importances))
-
-    # s_correlations = list()
-    # s_pvals = list()
-    # for idx, fname in enumerate(feature_labels):
-    #     coeff, pvalue = spearmanr(early_importances[:, idx], late_importances[:, idx])
-    #     s_correlations.append(coeff)
-    #     s_pvals.append(pvalue)
-
-    # spearman_df = pd.DataFrame(
-    #     data={
-    #         "Feature": feature_labels,
-    #         "Spearman Correlation": s_correlations,
-    #         "P Value": s_pvals,
-    #     }
-    # )
-
-    # spearman_df = spearman_df.dropna()
-    # spearman_df = spearman_df.sort_values(by="Spearman Correlation")
-
-    # print("Top 20 negative coefficients:")
-    # print(spearman_df.head(20))
-    # print("Top 20 positive coefficients:")
-    # print(spearman_df.tail(20))
-
-    # spearman_df.head(20).to_csv("results/spearman_top_neg.csv", index=False)
-    # spearman_df.tail(20).to_csv("results/spearman_top_pos.csv", index=False)
-
