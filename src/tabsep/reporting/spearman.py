@@ -40,7 +40,7 @@ if __name__ == "__main__":
         num_nonzero = np.sum((stays_with_at_least_one != 0.0).astype("int"), axis=1)
         median_nonzero = np.median(num_nonzero)
 
-        if median_nonzero < 3:
+        if median_nonzero < 2:
             print(f"Detected static feature: {fl}")
             delete_indices.append(idx)
 
