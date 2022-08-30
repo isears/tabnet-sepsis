@@ -1,6 +1,6 @@
-##########
-# Get top 20 features w/maximum attribution at any point during icustay
-##########
+"""
+Find top features by magnitude of change in attribution
+"""
 import torch
 import numpy as np
 import pandas as pd
