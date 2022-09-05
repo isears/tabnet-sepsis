@@ -92,7 +92,7 @@ if __name__ == "__main__":
 
             xbatch.requires_grad = True
 
-            attributor = ShapleyValueSampling(model)
+            attributor = IntegratedGradients(model)
             attributions = attributor.attribute(
                 xbatch, additional_forward_args=pad_masks, target=0
             )

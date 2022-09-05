@@ -24,6 +24,6 @@ with open("mimicts/readme.txt", "r") as f:
 config = Config(
     timestep_seconds=timestep_seconds,
     prediction_timesteps=1,
-    model_path="/gpfs/home/isears1/Repos/tabnet-sepsis/cache/models/singleTst_2022-07-29_14:10:48",
+    model_path="/gpfs/home/isears1/Repos/tabnet-sepsis/cache/models/singleTst_2022-08-30_19:55:07",
     cores_available=len(os.sched_getaffinity(0)),
 )
