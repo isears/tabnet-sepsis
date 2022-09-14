@@ -4,7 +4,7 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=16G
 #SBATCH --time=1:00:00
-#SBATCH --output ./logs/unifiedPostProcessing-%j.log
+#SBATCH --output ./logs/unifiedPostProcessing.log
 
 export PYTHONUNBUFFERED=TRUE
 

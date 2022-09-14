@@ -4,7 +4,7 @@
 #SBATCH --cpus-per-task=2
 #SBATCH --mem=64G
 #SBATCH --time=48:00:00
-#SBATCH --output ./logs/cvLr-%j.log
+#SBATCH --output ./logs/cvLr.log
 
 export PYTHONUNBUFFERED=TRUE
 
