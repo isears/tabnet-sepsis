@@ -54,7 +54,7 @@ class CVResults:
 
     def get_scorer(self) -> Callable:
         metric = lambda y_t, y_s: self.add_result(y_t, y_s)
-        return make_scorer(metric, needs_proba=True)
+        return make_scorer(metric, needs_proba=False)
 
     def print_report(self) -> None:
         aucs = np.array([res.auc for res in self.results])
@@ -279,9 +279,12 @@ class TstWrapper(BaseEstimator, ClassifierMixin):
             print("[*] Fold done, sending model to CPU")
             self.model.to("cpu")
 
-            return torch.squeeze(y_pred).to("cpu")  # sklearn needs to do cpu ops
+            return y_pred.to("cpu")  # sklearn needs to do cpu ops
 
     def predict(self, X):
+        return self.decision_function(X)
+
+    def predict_proba(self, X):
         return self.decision_function(X)
 
 
