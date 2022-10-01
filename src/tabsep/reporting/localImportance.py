@@ -19,7 +19,7 @@ if __name__ == "__main__":
     sample_idx = np.argmax(
         torch.logical_and(
             torch.logical_and(y_test == 1, torch.sum(X_test[:, :, -1], dim=1) > 7,),
-            torch.logical_and(torch.sum(X_test[:, :, -1], dim=1) < 30, preds > 0.6),
+            torch.logical_and(torch.sum(X_test[:, :, -1], dim=1) < 40, preds > 0.7),
         )
     )
 
@@ -54,12 +54,12 @@ if __name__ == "__main__":
 
     sample_case_attrs.index.name = "Time in ICU (hrs.)"
 
-    fig, ax = plt.subplots(figsize=(20, 20))
+    fig, ax = plt.subplots(figsize=(15, 15))
     sns.heatmap(
         sample_case_attrs.transpose(),
         linewidths=0.01,
         linecolor="black",
-        annot=sample_case_values.transpose(),
+        # annot=sample_case_values.transpose(),
         ax=ax,
     )
     ax.set_xticklabels(ax.get_xticklabels(), rotation=40, ha="right")
