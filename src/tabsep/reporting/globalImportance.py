@@ -60,60 +60,7 @@ def summative_importances(att):
         importances["Positive"] + importances["Negative"]
     )
 
-    topn = importances.nlargest(20, columns="Summed Absolute Attributions")
-
-    sns.set_theme()
-
-    ax = sns.barplot(
-        x="Summed Absolute Attributions", y="Feature", data=topn, orient="h", color="b"
-    )
-    ax.set_title(f"Global Feature Importance ({title})")
-    plt.tight_layout()
-    plt.savefig(f"results/{title}_importances.png")
-    plt.clf()
-
-    topn.to_csv(f"results/{title}_importances.csv", index=False)
-    return topn
-
-
-def max_median_importances(att):
-    """
-    Aggregate importances by finding max value in every time series, than averaging over all time series
-    """
-
-    max_attributions = torch.amax(att, dim=1)
-    min_attributions = torch.amin(att, dim=1)
-    min_mask = (
-        torch.max(torch.abs(max_attributions), torch.abs(min_attributions))
-        > max_attributions
-    )
-    max_mask = torch.logical_not(min_mask)
-
-    assert (max_mask.int() + min_mask.int() == 1).all()
-
-    max_absolute_attributions = (
-        max_attributions * max_mask.int() + min_attributions * min_mask.int()
-    )
-
-    max_absolute_attributions_avg = torch.median(
-        max_absolute_attributions, dim=0
-    ).values
-    importances = pd.DataFrame(
-        data={
-            "Feature": get_feature_labels(),
-            "Median Max Absolute Attribution": max_absolute_attributions_avg.to("cpu")
-            .detach()
-            .numpy(),
-        }
-    )
-
-    # Just temporary for topn calculation
-    importances["abs"] = importances["Median Max Absolute Attribution"].apply(np.abs)
-
-    topn = importances.nlargest(20, columns="abs")
-    topn = topn.drop(columns="abs")
-
-    return topn
+    return importances
 
 
 if __name__ == "__main__":
@@ -126,11 +73,51 @@ if __name__ == "__main__":
     print("Loaded data")
 
     pad_masks = X_combined[:, :, -1]
+    pm, early_pm, late_pm = revise_pad(pad_masks)
 
-    titles = ["all", "early", "late"]
+    # Global importance over entire stay
+    att = np.multiply(attributions, np.expand_dims(pm, axis=-1))
+    importances = summative_importances(att)
+    print("Got global importances")
+    topn = importances.nlargest(20, columns="Summed Absolute Attributions")
 
-    for revised_pad, title in zip(revise_pad(pad_masks), titles):
-        att = np.multiply(attributions, np.expand_dims(revised_pad, axis=-1))
-        topn = summative_importances(att)
+    sns.set_theme()
 
-        print(topn)
+    ax = sns.barplot(
+        x="Summed Absolute Attributions", y="Feature", data=topn, orient="h", color="b"
+    )
+    ax.set_title(f"Global Feature Importance")
+    plt.tight_layout()
+    plt.savefig(f"results/global_importances.png")
+    plt.clf()
+    topn.to_csv(f"results/global_importances.csv", index=False)
+
+    # Early vs. Late importance
+    early_att = np.multiply(attributions, np.expand_dims(early_pm, axis=-1))
+    early_importances = summative_importances(early_att)
+    print("Got early importances")
+    early_importances["Window"] = "Early"
+
+    late_att = np.multiply(attributions, np.expand_dims(late_pm, axis=-1))
+    late_importances = summative_importances(late_att)
+    print("Got late importances")
+    late_importances["Window"] = "Late"
+
+    plottable = pd.concat([early_importances, late_importances])
+    plottable = plottable[plottable["Feature"].isin(topn["Feature"])]
+
+    ax = sns.barplot(
+        x="Summed Absolute Attributions",
+        y="Feature",
+        data=plottable,
+        orient="h",
+        color="b",
+        hue="Window",
+        palette={"Early": "tab:blue", "Late": "tab:red"},
+        order=topn["Feature"],
+    )
+    ax.set_title("Early vs. Late Feature Importance")
+    plt.tight_layout()
+    plt.savefig("results/evl_importances.png")
+
+    print("[+] Done")

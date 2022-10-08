@@ -1,11 +1,10 @@
 #!/bin/bash
 #SBATCH -n 1
 #SBATCH -p batch
-# #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=1
-#SBATCH --mem=128G
+#SBATCH --mem=190G
 #SBATCH --time=00:30:00
-#SBATCH --output ./logs/globalImportance-%j.log
+#SBATCH --output ./logs/globalImportance.log
 
 
 export PYTHONUNBUFFERED=TRUE
