@@ -1,4 +1,5 @@
 Item,Value
+Average Length of ICU Stay (hrs),"76.29 (median 49.65, std 78.42)"
 Average Age at ICU Admission,"64.11 (median 66.00, std 16.96)"
 [comorbidity] Myocardial infarction,"5537, (17.45 %)"
 [comorbidity] Congestive heart failure,"8641, (27.23 %)"

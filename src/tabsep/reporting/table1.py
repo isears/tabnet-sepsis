@@ -212,6 +212,15 @@ class Table1Generator(object):
             value=self._pprint_mean(self.all_df["cci_score"]),
         )
 
+    def _tablegen_LOS(self) -> None:
+        self.all_df["los"] = self.all_df.apply(
+            lambda x: (x["outtime"] - x["intime"]).total_seconds() / (60 * 60), axis=1
+        )
+        self._add_table_row(
+            item="Average Length of ICU Stay (hrs)",
+            value=self._pprint_mean(self.all_df["los"]),
+        )
+
     def populate(self) -> pd.DataFrame:
         tablegen_methods = [m for m in dir(self) if m.startswith("_tablegen")]
 

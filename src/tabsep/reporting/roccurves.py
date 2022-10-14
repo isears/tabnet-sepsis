@@ -8,13 +8,12 @@ from tabsep.modeling.timeseriesCV import CVResults, SingleCVResult
 
 if __name__ == "__main__":
     fancy_names = {
-        "Pipeline": "Logistic Regression",
-        "TstWrapper": "Time Series Transformer",
+        "Pipeline": "LR",
+        "TstWrapper": "TST",
     }
 
     colors = ["b", "g", "c", "m", "y"]
 
-    plt.title(f"Receiver Operating Characteristic")
     plt.plot([0, 1], [0, 1], "r--")
     plt.xlim([0, 1])
     plt.ylim([0, 1])
@@ -62,8 +61,10 @@ if __name__ == "__main__":
             tprs_upper,
             color=colors[idx],
             alpha=0.1,
-            label=r"$\pm$ 1 std. dev.",
+            label=r"$\pm$ 1 standard deviation",
         )
 
     plt.legend(loc="lower right")
+    plt.xlabel("1 - Specificity")
+    plt.ylabel("Sensitivity")
     plt.savefig(f"results/roc_curve_all.png")

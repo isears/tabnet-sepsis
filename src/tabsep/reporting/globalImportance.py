@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from tabsep.dataProcessing.fileBasedDataset import get_feature_labels
 from tabsep import config
+from tabsep.reporting import pretty_feature_names
 
 
 def revise_pad(pm):
@@ -50,7 +51,7 @@ def summative_importances(att):
 
     importances = pd.DataFrame(
         data={
-            "Feature": get_feature_labels(),
+            "Variable": get_feature_labels(),
             "Positive": sum_pos_attrs.to("cpu").detach().numpy(),
             "Negative": sum_neg_attr.to("cpu").detach().numpy(),
         }
@@ -80,13 +81,16 @@ if __name__ == "__main__":
     importances = summative_importances(att)
     print("Got global importances")
     topn = importances.nlargest(20, columns="Summed Absolute Attributions")
+    topn["Variable"] = topn["Variable"].apply(
+        lambda x: pretty_feature_names[x] if x in pretty_feature_names else x
+    )
 
     sns.set_theme()
 
     ax = sns.barplot(
-        x="Summed Absolute Attributions", y="Feature", data=topn, orient="h", color="b"
+        x="Summed Absolute Attributions", y="Variable", data=topn, orient="h", color="b"
     )
-    ax.set_title(f"Global Feature Importance")
+    ax.set_title(f"Global Importance")
     plt.tight_layout()
     plt.savefig(f"results/global_importances.png")
     plt.clf()
@@ -104,19 +108,19 @@ if __name__ == "__main__":
     late_importances["Window"] = "Late"
 
     plottable = pd.concat([early_importances, late_importances])
-    plottable = plottable[plottable["Feature"].isin(topn["Feature"])]
+    plottable = plottable[plottable["Variable"].isin(topn["Variable"])]
 
     ax = sns.barplot(
         x="Summed Absolute Attributions",
-        y="Feature",
+        y="Variable",
         data=plottable,
         orient="h",
         color="b",
         hue="Window",
         palette={"Early": "tab:blue", "Late": "tab:red"},
-        order=topn["Feature"],
+        order=topn["Variable"],
     )
-    ax.set_title("Early vs. Late Feature Importance")
+    ax.set_title("Early vs. Late Variable Importance")
     plt.tight_layout()
     plt.savefig("results/evl_importances.png")
 

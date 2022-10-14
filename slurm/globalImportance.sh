@@ -3,7 +3,7 @@
 #SBATCH -p batch
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=190G
-#SBATCH --time=00:30:00
+#SBATCH --time=00:15:00
 #SBATCH --output ./logs/globalImportance.log
 
 

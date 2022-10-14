@@ -345,7 +345,9 @@ if __name__ == "__main__":
         "LR Scaled": make_pipeline(
             FeatureScaler(), Ts2TabTransformer(), LogisticRegression(max_iter=1e7)
         ),
-        "LR": make_pipeline(Ts2TabTransformer(), LogisticRegression()),
+        "LR": make_pipeline(
+            FeatureScaler(), Ts2TabTransformer(), LogisticRegression(max_iter=1e7)
+        ),
         "XGBOOST": XGBClassifier(),
         "TST": TstWrapper(),
     }
