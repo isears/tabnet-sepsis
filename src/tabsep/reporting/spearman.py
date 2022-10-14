@@ -1,12 +1,12 @@
-from scipy.stats import spearmanr
+import numpy as np
+import pandas as pd
+import torch
+from scipy.stats import rankdata, spearmanr
+
 from tabsep import config
 from tabsep.dataProcessing.fileBasedDataset import get_feature_labels
+from tabsep.reporting import pretty_feature_names
 from tabsep.reporting.globalImportance import revise_pad
-import pandas as pd
-
-import torch
-import numpy as np
-from scipy.stats import rankdata
 
 
 # Sum over single icu stays (output (# icustays, # features))
@@ -27,24 +27,14 @@ if __name__ == "__main__":
     X_combined = X_combined[:, :, :-1]
     feature_labels = get_feature_labels()
 
-    # Crude check for static variables
-    delete_indices = list()
-    for idx, fl in enumerate(feature_labels):
-        this_feature_only_vals = X_combined[:, :, idx]
-        has_at_least_one_mask = np.logical_not(
-            np.all(this_feature_only_vals == 0.0, axis=-1)
-        )
-        assert len(has_at_least_one_mask) == X_combined.shape[0]
-        stays_with_at_least_one = this_feature_only_vals[has_at_least_one_mask]
+    # isolate only top 20 features
+    top = pd.read_csv("results/global_importances.csv")["Variable"].to_list()
+    inv_map = {v: k for k, v in pretty_feature_names.items()}
+    top_raw = [inv_map[n] if n in inv_map else n for n in top]
 
-        num_nonzero = np.sum((stays_with_at_least_one != 0.0).astype("int"), axis=1)
-        median_nonzero = np.median(num_nonzero)
+    kept_feature_indices = [feature_labels.index(n) for n in top_raw]
 
-        if median_nonzero < 2:
-            print(f"Detected static feature: {fl}")
-            delete_indices.append(idx)
-
-    att = np.delete(att, delete_indices, axis=-1)
+    att = att[:, :, kept_feature_indices]
 
     pm, early_pm, late_pm = revise_pad(pad_masks)
     early_importances = sum_attrs(att, early_pm)

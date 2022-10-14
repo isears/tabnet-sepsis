@@ -1,23 +1,24 @@
+import os
 import pickle
-from dataclasses import dataclass
 import sys
+from dataclasses import dataclass
 from typing import Callable
-import torch
+
 import numpy as np
 import pandas as pd
 import scipy.stats as st
-from tabsep.dataProcessing.fileBasedDataset import FileBasedDataset
-from tabsep.modeling import EarlyStopping
+import torch
 from sklearn.base import BaseEstimator, ClassifierMixin, TransformerMixin
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import log_loss, make_scorer, roc_auc_score, roc_curve
+from sklearn.model_selection import StratifiedKFold, cross_val_score
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import StratifiedKFold, cross_val_score
-from tabsep.modeling.tstImpl import TSTransformerEncoderClassiregressor, AdamW
-from sklearn.linear_model import LogisticRegression
 from xgboost import XGBClassifier
-import os
-from sklearn.metrics import roc_auc_score, log_loss, roc_curve, make_scorer
 
+from tabsep.dataProcessing.fileBasedDataset import FileBasedDataset
+from tabsep.modeling import EarlyStopping
+from tabsep.modeling.tstImpl import AdamW, TSTransformerEncoderClassiregressor
 
 CORES_AVAILABLE = len(os.sched_getaffinity(0))
 torch.manual_seed(42)
@@ -345,9 +346,7 @@ if __name__ == "__main__":
         "LR Scaled": make_pipeline(
             FeatureScaler(), Ts2TabTransformer(), LogisticRegression(max_iter=1e7)
         ),
-        "LR": make_pipeline(
-            FeatureScaler(), Ts2TabTransformer(), LogisticRegression(max_iter=1e7)
-        ),
+        "LR": make_pipeline(Ts2TabTransformer(), LogisticRegression(max_iter=1e7)),
         "XGBOOST": XGBClassifier(),
         "TST": TstWrapper(),
     }
