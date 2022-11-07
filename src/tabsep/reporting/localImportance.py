@@ -1,11 +1,12 @@
-import torch
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import seaborn as sns
-from tabsep.dataProcessing.fileBasedDataset import get_feature_labels
-from tabsep import config
+import torch
 from matplotlib.colors import ListedColormap
+
+from tabsep import config
+from tabsep.dataProcessing.fileBasedDataset import get_feature_labels
 from tabsep.reporting import pretty_feature_names
 
 if __name__ == "__main__":
@@ -61,7 +62,7 @@ if __name__ == "__main__":
     sample_case_attrs = sample_case_attrs.rename(columns=pretty_feature_names)
 
     sns.set(font_scale=2)
-    fig, ax = plt.subplots(figsize=(15, 8))
+    fig, ax = plt.subplots(figsize=(20, 12))
     sns.heatmap(
         sample_case_attrs.transpose(),
         linewidths=0.1,
@@ -75,7 +76,7 @@ if __name__ == "__main__":
     )
     cbar = ax.collections[0].colorbar
     cbar.set_label("Attribution Value", labelpad=20)
-    ax.set_xticklabels(ax.get_xticklabels(), rotation=40, ha="right")
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
     ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
     ax.set_ylabel("Variable")
     # ax.set_title(
@@ -97,8 +98,8 @@ if __name__ == "__main__":
         cmap=ListedColormap(["white"]),
         cbar=False,
     )
-    ax.set_xticklabels(ax.get_xticklabels(), rotation=40, ha="right")
-    ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=0, ha="right")
+    # ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
     # ax.set_title(
     #     f"Validation set idx {sample_idx} prediction {preds[sample_idx]:.2f} actual {y_test[sample_idx]:.2f}"
     # )

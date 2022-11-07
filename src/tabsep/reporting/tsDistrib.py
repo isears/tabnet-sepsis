@@ -3,28 +3,11 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import torch
-from scipy.interpolate import interp1d
 from scipy.stats import ttest_ind
 
 from tabsep import config
 from tabsep.dataProcessing.fileBasedDataset import get_feature_labels
 from tabsep.reporting import pretty_feature_names
-
-
-def interp_attrib(single_stay_atts):
-    assert single_stay_atts.ndim == 1
-
-    original_len = len(single_stay_atts)
-    assert original_len < 121  # Max stay length
-
-    x = np.arange(0, 100 + (100 / original_len), 100 / (original_len - 1))
-    f = interp1d(x, single_stay_atts)
-
-    # Interpolate to range(0,100)
-    interpolated = f(np.arange(0.0, 100.0, 1.0))
-    assert len(interpolated) == 100
-
-    return interpolated
 
 
 def get_early_late_means(single_stay_atts):
