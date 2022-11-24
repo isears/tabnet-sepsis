@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import scipy.stats as st
 import torch
+from pytorch_tabnet.tab_model import TabNetClassifier
 from sklearn.base import BaseEstimator, ClassifierMixin, TransformerMixin
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import log_loss, make_scorer, roc_auc_score, roc_curve
@@ -119,6 +120,27 @@ class Ts2TabTransformer(BaseEstimator, TransformerMixin):
 
     def transform(self, X, y=None):
         return X.reshape(X.shape[0], (X.shape[1] * X.shape[2]))
+
+
+class JustLastObsTransformer(BaseEstimator, TransformerMixin):
+    """
+    Just get last timeseries observation in X
+    Assumes time dimension is on second axis
+    """
+
+    def __init__(self) -> None:
+        pass
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X, y=None):
+        padmasks = X[:, :, -1]
+        X = X[:, :, 0:-1]
+
+        last_time_indices = torch.sum((padmasks > 0), axis=1)
+
+        return X[torch.arange(X.size(0)), last_time_indices - 1]
 
 
 class TensorBasedDataset(torch.utils.data.Dataset):
@@ -329,6 +351,7 @@ def doCV(clf, n_jobs=-1):
         scoring=cv_res.get_scorer(),
         n_jobs=n_jobs,
         verbose=1,
+        error_score="raise",
     )
 
     cv_res.print_report()
@@ -340,18 +363,22 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         model_name = sys.argv[1]
     else:
-        model_name = "LR"
+        model_name = "LR LastObs"
 
     models = {
         "LR Scaled": make_pipeline(
             FeatureScaler(), Ts2TabTransformer(), LogisticRegression(max_iter=1e7)
         ),
         "LR": make_pipeline(Ts2TabTransformer(), LogisticRegression(max_iter=1e7)),
-        "XGBOOST": XGBClassifier(),
+        "LR LastObs": make_pipeline(
+            FeatureScaler(), JustLastObsTransformer(), LogisticRegression(max_iter=1e7)
+        ),
+        "XGBOOST": make_pipeline(JustLastObsTransformer(), XGBClassifier()),
         "TST": TstWrapper(),
+        "TABNET": make_pipeline(JustLastObsTransformer(), TabNetClassifier()),
     }
 
-    job_config = {"LR": 1, "TST": 1, "XGBOOST": 11}
+    job_config = {"LR": 1, "TST": 1, "XGBOOST": 4, "LR LastObs": 1, "TABNET": 1}
 
     if model_name == "all":
 

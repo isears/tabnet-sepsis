@@ -8,4 +8,4 @@
 
 export PYTHONUNBUFFERED=TRUE
 
-python3 src/tabsep/modeling/timeseriesCV.py LR
+python3 src/tabsep/modeling/timeseriesCV.py "LR LastObs"
