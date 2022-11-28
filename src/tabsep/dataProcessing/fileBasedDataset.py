@@ -1,11 +1,12 @@
-import os.path
-import torch
-import pandas as pd
-import numpy as np
-from torch.nn.utils.rnn import pad_sequence
-from torch.nn.functional import pad
-from typing import List
 import json
+import os.path
+
+import pandas as pd
+import torch
+from torch.nn.functional import pad
+from torch.nn.utils.rnn import pad_sequence
+
+from tabsep import config
 
 
 def get_feature_labels():
@@ -61,6 +62,10 @@ class FileBasedDataset(torch.utils.data.Dataset):
         print(f"[{type(self).__name__}] Dataset initialization complete")
 
     def maxlen_padmask_collate(self, batch):
+        """
+        Pad and return third value (the pad mask)
+        Returns X, y, padmask
+        """
         for idx, (X, y) in enumerate(batch):
             actual_len = X.shape[1]
 
@@ -79,17 +84,23 @@ class FileBasedDataset(torch.utils.data.Dataset):
         y = torch.stack([Y for _, Y, _ in batch], dim=0)
         pad_mask = torch.stack([pad_mask for _, _, pad_mask in batch], dim=0)
 
-        raise NotImplemented
         return X.float(), y.float(), pad_mask.int()
 
-    def maxlen_padmask_collate_nopadret(self, batch):
+    def maxlen_padmask_collate_combined(self, batch):
         """
-        For compatibility with scikit learn
+        For compatibility with scikit learn, add the padmask as the last feature in X
         * If using this method, remember to remove the padmask from X in model
         """
         X, y, pad_mask = self.maxlen_padmask_collate(batch)
         X_and_pad = torch.cat((X, torch.unsqueeze(pad_mask, dim=-1)), dim=-1)
         return X_and_pad, y
+
+    def maxlen_collate(self, batch):
+        """
+        Pad, but don't include padmask at all (either as separate return value or part of X)
+        """
+        X, y, _ = self.maxlen_padmask_collate(batch)
+        return X, y
 
     def __len__(self):
         return len(self.cut_sample)
@@ -124,24 +135,10 @@ class FileBasedDataset(torch.utils.data.Dataset):
         combined_features = combined_features.reindex(
             self.feature_ids
         )  # Need to add any itemids that are missing
-        # TODO: could probably do imputation better (but maybe during preprocessing)
         combined_features = combined_features.fillna(0.0)
         X = torch.tensor(combined_features.values)
 
-        # Pad to maxlen
-        actual_len = X.shape[1]
-        assert actual_len < self.max_len
-        pad_mask = torch.ones(actual_len)
-        # TODO: transform here b/c the way TST expects it isn't the typical convention
-        X_mod = pad(X, (0, self.max_len - actual_len), mode="constant", value=0.0).T
-        pad_mask = pad(
-            pad_mask, (0, self.max_len - actual_len), mode="constant", value=0.0
-        )
-
-        # Put pad as last "feature" in X for compatibility w/scikit
-        X_and_pad = torch.cat((X_mod, torch.unsqueeze(pad_mask, dim=-1)), dim=-1)
-
-        return X_and_pad.float(), Y.float()
+        return X.float(), Y.float()
 
 
 def demo(dl):
@@ -172,9 +169,13 @@ if __name__ == "__main__":
     dl = torch.utils.data.DataLoader(
         ds,
         collate_fn=ds.maxlen_padmask_collate,
-        num_workers=16,
+        num_workers=config.cores_available,
         batch_size=4,
         pin_memory=True,
     )
 
+    print("Getting label prevalence...")
     get_label_prevalence(dl)
+
+    print("Demoing first few batches...")
+    demo(dl)
