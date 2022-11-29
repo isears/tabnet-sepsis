@@ -113,7 +113,7 @@ class FileBasedDataset(torch.utils.data.Dataset):
 
     def get_labels(self) -> torch.Tensor:
         Y = torch.tensor(self.cut_sample["label"].to_list())
-        Y = torch.unsqueeze(Y, 0)
+        Y = torch.unsqueeze(Y, 1)
         return Y
 
     def __len__(self):
