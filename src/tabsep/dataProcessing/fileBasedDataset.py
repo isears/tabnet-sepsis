@@ -4,7 +4,6 @@ import os.path
 import pandas as pd
 import torch
 from torch.nn.functional import pad
-from torch.nn.utils.rnn import pad_sequence
 
 from tabsep import config
 
@@ -25,7 +24,12 @@ def get_feature_labels():
 
 
 class FileBasedDataset(torch.utils.data.Dataset):
-    def __init__(self, processed_mimic_path: str, cut_sample: pd.DataFrame):
+    def __init__(
+        self,
+        stay_ids: pd.Series,
+        processed_mimic_path: str = "./mimicts",
+        pm_type=torch.bool,  # May require pad mask to be different type
+    ):
 
         print(f"[{type(self).__name__}] Initializing dataset...")
 
@@ -33,12 +37,14 @@ class FileBasedDataset(torch.utils.data.Dataset):
             pd.read_csv("cache/included_features.csv").squeeze("columns").to_list()
         )
 
-        self.cut_sample = cut_sample
+        self.cut_sample = pd.read_csv("cache/sample_cuts.csv")
+        self.cut_sample = self.cut_sample[self.cut_sample["stay_id"].isin(stay_ids)]
 
         print(f"\tExamples: {len(self.cut_sample)}")
         print(f"\tFeatures: {len(self.feature_ids)}")
 
         self.processed_mimic_path = processed_mimic_path
+        self.pm_type = pm_type
 
         try:
             with open("cache/metadata.json", "r") as f:
@@ -84,7 +90,7 @@ class FileBasedDataset(torch.utils.data.Dataset):
         y = torch.stack([Y for _, Y, _ in batch], dim=0)
         pad_mask = torch.stack([pad_mask for _, _, pad_mask in batch], dim=0)
 
-        return X.float(), y.float(), pad_mask.int()
+        return X.float(), y.float(), pad_mask.to(self.pm_type)
 
     def maxlen_padmask_collate_combined(self, batch):
         """
@@ -101,6 +107,14 @@ class FileBasedDataset(torch.utils.data.Dataset):
         """
         X, y, _ = self.maxlen_padmask_collate(batch)
         return X, y
+
+    def get_num_features(self) -> int:
+        return len(self.feature_ids)
+
+    def get_labels(self) -> torch.Tensor:
+        Y = torch.tensor(self.cut_sample["label"].to_list())
+        Y = torch.unsqueeze(Y, 0)
+        return Y
 
     def __len__(self):
         return len(self.cut_sample)
@@ -164,7 +178,7 @@ def get_label_prevalence(dl):
 
 if __name__ == "__main__":
     sample_cuts = pd.read_csv("cache/sample_cuts.csv")
-    ds = FileBasedDataset("./mimicts", cut_sample=sample_cuts)
+    ds = FileBasedDataset(sample_cuts["stay_id"])
 
     dl = torch.utils.data.DataLoader(
         ds,
@@ -174,7 +188,10 @@ if __name__ == "__main__":
         pin_memory=True,
     )
 
-    print("Getting label prevalence...")
+    print("Testing label getter:")
+    print(ds.get_labels().shape)
+
+    print("Iteratively getting label prevalence...")
     get_label_prevalence(dl)
 
     print("Demoing first few batches...")
