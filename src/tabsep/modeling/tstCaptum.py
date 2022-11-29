@@ -40,6 +40,7 @@ class TensorBasedDataset(torch.utils.data.Dataset):
         )
 
 
+# TODO: this needs to be revamped in response to model save changes implemented in transformerSingle.py
 if __name__ == "__main__":
     if torch.cuda.is_available():
         print("Detected GPU, using cuda")
@@ -59,7 +60,10 @@ if __name__ == "__main__":
     ).to(device)
 
     model.load_state_dict(
-        torch.load(f"{config.model_path}/model.pt", map_location=torch.device(device),)
+        torch.load(
+            f"{config.model_path}/model.pt",
+            map_location=torch.device(device),
+        )
     )
 
     model.eval()

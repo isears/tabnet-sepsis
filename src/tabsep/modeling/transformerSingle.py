@@ -11,6 +11,7 @@ import torch
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
 from skorch import NeuralNet
+from skorch.callbacks import LRScheduler, EarlyStopping, Checkpoint
 
 from tabsep import config
 from tabsep.dataProcessing.fileBasedDataset import FileBasedDataset
@@ -18,14 +19,13 @@ from tabsep.modeling.tstEstimator import AdamW, TstWrapper
 from tabsep.modeling.tstImpl import TSTransformerEncoderClassiregressor
 
 if __name__ == "__main__":
-    start_time_str = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
 
     cut_sample = pd.read_csv("cache/sample_cuts.csv")
     sids_train, sids_test = train_test_split(
         cut_sample["stay_id"].to_list(), test_size=0.1, random_state=42
     )
 
-    save_path = f"cache/models/singleTst_{start_time_str}"
+    save_path = f"cache/models/singleTst"
     os.mkdir(save_path)
 
     pd.DataFrame(data={"stay_id": sids_train}).to_csv(
@@ -52,8 +52,14 @@ if __name__ == "__main__":
         iterator_train__pin_memory=True,
         iterator_valid__pin_memory=True,
         device="cuda",
-        max_epochs=5,
+        max_epochs=100,  # Large for early stopping
         train_split=skorch.dataset.ValidSplit(0.1),
+        callbacks=[
+            EarlyStopping(patience=3),
+            Checkpoint(
+                load_best=True, fn_prefix=f"{save_path}/", f_pickle="whole_model.pkl"
+            ),
+        ],
         # TST params
         module__feat_dim=train_ds.get_num_features(),
         module__d_model=128,
