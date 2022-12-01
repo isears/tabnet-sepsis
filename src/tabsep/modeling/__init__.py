@@ -59,4 +59,4 @@ class CVResults:
 # https://github.com/skorch-dev/skorch/issues/442
 def my_auc(net, X, y):
     y_proba = net.predict_proba(X)
-    return roc_auc_score(y, y_proba[:, 0])
+    return roc_auc_score(y, y_proba[:, 1])

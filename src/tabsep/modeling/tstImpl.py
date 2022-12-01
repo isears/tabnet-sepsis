@@ -148,7 +148,8 @@ class TSTransformerEncoderClassiregressor(torch.nn.Module):
         output = self.output_layer(output)  # (batch_size, num_classes)
 
         # Attempt to shoehorn the model into single-class classification
-        output = self.single_class_output(output)
+        # NOTE: disabling this for use with BCEWithLogitsLoss in skorch NeuralNetBinaryClassifier
+        # output = self.single_class_output(output)
 
         return output
 

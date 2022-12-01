@@ -18,7 +18,6 @@ from skorch.callbacks import (
     GradientNormClipping,
     LRScheduler,
 )
-from skorch.helper import SliceDataset
 
 from tabsep import config
 from tabsep.dataProcessing.fileBasedDataset import FileBasedDataset
