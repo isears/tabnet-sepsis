@@ -10,9 +10,13 @@ import torch
 from optuna.integration import SkorchPruningCallback
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
-from skorch import NeuralNet, NeuralNetBinaryClassifier
-from skorch.callbacks import (Checkpoint, EarlyStopping, EpochScoring,
-                              GradientNormClipping)
+from skorch import NeuralNetBinaryClassifier
+from skorch.callbacks import (
+    Checkpoint,
+    EarlyStopping,
+    EpochScoring,
+    GradientNormClipping,
+)
 
 from tabsep import config
 from tabsep.dataProcessing.fileBasedDataset import FileBasedDataset
@@ -21,8 +25,9 @@ from tabsep.modeling.tstImpl import AdamW, TSTransformerEncoderClassiregressor
 
 
 class Objective:
-    def __init__(self, trainvalid_sids):
+    def __init__(self, trainvalid_sids, test_sids):
         self.trainvalid_sids = trainvalid_sids
+        self.test_sids = test_sids
 
     def __call__(self, trial: optuna.Trial):
         # Parameters to tune:
@@ -43,7 +48,7 @@ class Objective:
 
         tst = NeuralNetBinaryClassifier(
             TSTransformerEncoderClassiregressor,
-            criterion=torch.nn.BCELoss,
+            criterion=torch.nn.BCEWithLogitsLoss,
             optimizer=AdamW,
             optimizer__lr=learning_rate,
             iterator_train__batch_size=batch_size,
@@ -55,7 +60,7 @@ class Objective:
             iterator_train__pin_memory=True,
             iterator_valid__pin_memory=True,
             device="cuda",
-            max_epochs=100,  # Large for early stopping
+            max_epochs=15,  # Large for early stopping
             callbacks=[
                 EarlyStopping(patience=3),
                 Checkpoint(
@@ -65,7 +70,7 @@ class Objective:
                 ),
                 EpochScoring(my_auc, name="auc", lower_is_better=False),
                 GradientNormClipping(gradient_clip_value=4.0),
-                # SkorchPruningCallback(trial, monitor="my_auc"),
+                SkorchPruningCallback(trial, monitor="auc"),
             ],
             train_split=skorch.dataset.ValidSplit(0.1),
             # TST params
@@ -81,11 +86,9 @@ class Objective:
 
         tst.fit(train_ds, y=train_ds.get_labels())
 
-        best_epoch = [e for e in tst.history if e["auc_best"]]
+        test_ds = FileBasedDataset(self.test_sids)
 
-        return my_auc(
-            tst,
-        )
+        return roc_auc_score(test_ds.get_labels(), tst.predict_proba(test_ds)[:, 1])
 
 
 if __name__ == "__main__":
@@ -96,7 +99,7 @@ if __name__ == "__main__":
 
     pruner = optuna.pruners.MedianPruner()
     study = optuna.create_study(direction="maximize", pruner=pruner)
-    study.optimize(Objective(sids_train), n_trials=100)
+    study.optimize(Objective(sids_train, sids_test), n_trials=100)
 
     print("Best trial:")
     trial = study.best_trial

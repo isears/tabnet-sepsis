@@ -2,13 +2,11 @@
 Train single transformer model for downstream analysis
 """
 
-import datetime
 import os
 
 import pandas as pd
 import skorch
 import torch
-from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
 from skorch import NeuralNet, NeuralNetBinaryClassifier
 from skorch.callbacks import (
