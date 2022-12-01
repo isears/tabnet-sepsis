@@ -53,3 +53,10 @@ class CVResults:
 
         with open(f"results/{self.clf_name}.cvresult", "wb") as f:
             pickle.dump(self, f)
+
+
+# Hack to workaround discrepancies between torch and sklearn shape expectations
+# https://github.com/skorch-dev/skorch/issues/442
+def my_auc(net, X, y):
+    y_proba = net.predict_proba(X)
+    return roc_auc_score(y, y_proba[:, 0])

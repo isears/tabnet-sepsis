@@ -1,15 +1,16 @@
 # From https://github.com/gzerveas/mvts_transformer, with some modifications
-import torch
 import math
+
+import pandas as pd
+import torch
 from torch.nn.modules import (
-    MultiheadAttention,
-    Linear,
-    Dropout,
     BatchNorm1d,
+    Dropout,
+    Linear,
+    MultiheadAttention,
     TransformerEncoderLayer,
 )
-import pandas as pd
-from tabsep.modeling import EarlyStopping
+
 
 # Could also be learnable:
 # https://github.com/gzerveas/mvts_transformer/blob/fe3b539ccc2162f55cf7196c8edc7b46b41e7267/src/models/ts_transformer.py#L105
@@ -230,42 +231,6 @@ class AdamW(torch.optim.Optimizer):
                 p.data.copy_(p_data_fp32)
 
         return loss
-
-
-class TstOneInput(TSTransformerEncoderClassiregressor):
-    def forward(self, X):
-        X_unpacked, padding_masks = (
-            X[:, :, 0:-1],
-            X[:, :, -1] == 1,
-        )
-
-        return super().forward(X_unpacked, padding_masks)
-
-    # def __call__(self, X):
-    #     return self.forward(X)
-
-
-def model_factory(max_seq_len):
-    # Other options (for now defaults from paper)
-    d_model = 64  # Should be 64, but gpu mem can't handle it
-    n_heads = 8
-    num_layers = 3
-    dim_feedforward = 256
-    num_classes = 1
-
-    transformer_model = TSTransformerEncoderClassiregressor(
-        feat_dim=621,  # TODO: generate this dynamically?
-        d_model=d_model,
-        dim_feedforward=dim_feedforward,
-        max_len=max_seq_len,
-        n_heads=n_heads,
-        num_classes=num_classes,
-        num_layers=num_layers,
-    )
-
-    optimizer = AdamW(transformer_model.parameters())
-
-    return transformer_model, optimizer
 
 
 if __name__ == "__main__":

@@ -10,13 +10,20 @@ import skorch
 import torch
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
-from skorch import NeuralNet
-from skorch.callbacks import LRScheduler, EarlyStopping, Checkpoint
+from skorch import NeuralNet, NeuralNetBinaryClassifier
+from skorch.callbacks import (
+    Checkpoint,
+    EarlyStopping,
+    EpochScoring,
+    GradientNormClipping,
+    LRScheduler,
+)
+from skorch.helper import SliceDataset
 
 from tabsep import config
 from tabsep.dataProcessing.fileBasedDataset import FileBasedDataset
-from tabsep.modeling.tstEstimator import AdamW, TstWrapper
-from tabsep.modeling.tstImpl import TSTransformerEncoderClassiregressor
+from tabsep.modeling import my_auc
+from tabsep.modeling.tstImpl import AdamW, TSTransformerEncoderClassiregressor
 
 if __name__ == "__main__":
 
@@ -26,7 +33,7 @@ if __name__ == "__main__":
     )
 
     save_path = f"cache/models/singleTst"
-    os.mkdir(save_path)
+    os.makedirs(save_path, exist_ok=True)
 
     pd.DataFrame(data={"stay_id": sids_train}).to_csv(
         f"{save_path}/train_stayids.csv", index=False
@@ -41,12 +48,14 @@ if __name__ == "__main__":
 
     print("[+] Data loaded, training...")
 
-    tst = NeuralNet(
+    tst = NeuralNetBinaryClassifier(
         TSTransformerEncoderClassiregressor,
-        criterion=torch.nn.BCELoss,
+        criterion=torch.nn.BCEWithLogitsLoss,
         optimizer=AdamW,
+        iterator_train__batch_size=128,
+        iterator_valid__batch_size=128,
         iterator_train__collate_fn=train_ds.maxlen_padmask_collate,
-        iterator_valid__collate_fn=train_ds.maxlen_padmask_collate,
+        iterator_valid__collate_fn=test_ds.maxlen_padmask_collate,
         iterator_train__num_workers=config.cores_available,
         iterator_valid__num_workers=config.cores_available,
         iterator_train__pin_memory=True,
@@ -59,6 +68,8 @@ if __name__ == "__main__":
             Checkpoint(
                 load_best=True, fn_prefix=f"{save_path}/", f_pickle="whole_model.pkl"
             ),
+            EpochScoring(my_auc, name="auc", lower_is_better=False),
+            GradientNormClipping(gradient_clip_value=4.0),
         ],
         # TST params
         module__feat_dim=train_ds.get_num_features(),
@@ -70,17 +81,17 @@ if __name__ == "__main__":
         module__num_layers=3,
     )
 
-    tst.fit(train_ds)
+    tst.fit(train_ds, y=train_ds.get_labels())
 
     print(f"[+] Training complete, saving to {save_path}")
 
     tst.save_params(f_params=f"{save_path}/model.pkl")
 
-    preds = tst.predict_proba(test_ds)
-    torch.save(preds, f"{save_path}/preds.pt")
-    score = roc_auc_score(FileBasedDataset(sids_test).get_labels(), preds)
-    print(f"Validation score: {score}")
+    # preds = tst.predict_proba(test_ds)
+    # torch.save(preds, f"{save_path}/preds.pt")
+    # score = roc_auc_score(FileBasedDataset(sids_test).get_labels(), preds)
+    # print(f"Validation score: {score}")
 
-    with open(f"{save_path}/roc_auc_score.txt", "w") as f:
-        f.write(str(score))
-        f.write("\n")
+    # with open(f"{save_path}/roc_auc_score.txt", "w") as f:
+    #     f.write(str(score))
+    #     f.write("\n")

@@ -113,7 +113,7 @@ class FileBasedDataset(torch.utils.data.Dataset):
 
     def get_labels(self) -> torch.Tensor:
         Y = torch.tensor(self.cut_sample["label"].to_list())
-        Y = torch.unsqueeze(Y, 1)
+        # Y = torch.unsqueeze(Y, 1)
         return Y
 
     def __len__(self):
@@ -122,7 +122,7 @@ class FileBasedDataset(torch.utils.data.Dataset):
     def __getitem__(self, index: int):
         stay_id = self.cut_sample["stay_id"].iloc[index]
         Y = torch.tensor(self.cut_sample["label"].iloc[index])
-        Y = torch.unsqueeze(Y, 0)
+        # Y = torch.unsqueeze(Y, 0)
         cutidx = self.cut_sample["cutidx"].iloc[index]
 
         # Features
