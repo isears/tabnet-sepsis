@@ -67,6 +67,9 @@ class FileBasedDataset(torch.utils.data.Dataset):
 
         print(f"[{type(self).__name__}] Dataset initialization complete")
 
+    def last_value_collate(self, batch):
+        raise NotImplemented
+
     def maxlen_padmask_collate(self, batch):
         """
         Pad and return third value (the pad mask)
