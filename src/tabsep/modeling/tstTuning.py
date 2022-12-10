@@ -21,7 +21,7 @@ from skorch.callbacks import (
 
 from tabsep import config
 from tabsep.dataProcessing.fileBasedDataset import FileBasedDataset
-from tabsep.modeling import my_auc
+from tabsep.modeling import my_auprc, my_auroc
 from tabsep.modeling.tstImpl import AdamW, TSTransformerEncoderClassiregressor
 
 
@@ -40,8 +40,19 @@ def tunable_tst_factory(
 
     del tuning_params["d_model_multiplier"]
 
+    # Set valid batch size to be same as train batch size
+    tuning_params["iterator_valid__batch_size"] = tuning_params[
+        "iterator_train__batch_size"
+    ]
+
     tst_callbacks = [
         GradientNormClipping(gradient_clip_value=4.0),
+        EarlyStopping(patience=3),
+        Checkpoint(
+            load_best=True, fn_prefix=f"{save_path}/", f_pickle="whole_model.pkl",
+        ),
+        EpochScoring(my_auroc, name="auroc", lower_is_better=False),
+        EpochScoring(my_auprc, name="auprc", lower_is_better=False),
     ]
 
     if pruner:
@@ -54,14 +65,17 @@ def tunable_tst_factory(
         iterator_train__collate_fn=ds.maxlen_padmask_collate,
         iterator_valid__collate_fn=ds.maxlen_padmask_collate,
         iterator_train__num_workers=config.cores_available,
+        iterator_valid__num_workers=config.cores_available,
         iterator_train__pin_memory=True,
+        iterator_valid__pin_memory=True,
         device="cuda",
         callbacks=tst_callbacks,
-        train_split=None,
+        train_split=skorch.dataset.ValidSplit(0.1),
         # TST params
         module__feat_dim=ds.get_num_features(),
         module__max_len=ds.max_len,
         module__num_classes=1,
+        max_epochs=15,
         **tuning_params,
     )
 
@@ -81,16 +95,13 @@ class Objective:
         trial.suggest_categorical("module__n_heads", [4, 8, 16, 32, 64])
         trial.suggest_int("module__dim_feedforward", 128, 512)
         trial.suggest_int("iterator_train__batch_size", 8, 256)
-        trial.suggest_int("max_epochs", 1, 10)
 
-        train_sids, valid_sids = train_test_split(self.trainvalid_sids, random_state=42)
-        train_ds = FileBasedDataset(train_sids)
-        valid_ds = FileBasedDataset(valid_sids)
+        train_ds = FileBasedDataset(self.trainvalid_sids)
 
         tst = tunable_tst_factory(
             trial.params,
             train_ds,
-            # pruner=SkorchPruningCallback(trial=trial, monitor="train_loss"),
+            # pruner=SkorchPruningCallback(trial=trial, monitor="valid_loss"),
             pruner=None,
         )
 
@@ -100,12 +111,14 @@ class Objective:
             print(f"Warning, assumed runtime error: {e}")
             del tst
             torch.cuda.empty_cache()
-            return 0.5
+            return 0
 
-        score = roc_auc_score(valid_ds.get_labels(), tst.predict_proba(valid_ds)[:, 1])
+        epoch_scoring_callbacks = [c for c in tst.callbacks if type(c) == EpochScoring]
+        best_auprc = next(
+            filter(lambda c: c.name == "auprc", epoch_scoring_callbacks)
+        ).best_score_
 
-        # return -1 * score  # multiply by -1 b/c study direction is minimize
-        return score
+        return best_auprc
 
 
 if __name__ == "__main__":
@@ -116,7 +129,7 @@ if __name__ == "__main__":
 
     pruner = optuna.pruners.MedianPruner()
     study = optuna.create_study(direction="maximize", pruner=None)
-    study.optimize(Objective(sids_train), n_trials=1000)
+    study.optimize(Objective(sids_train), n_trials=500)
 
     print("Best trial:")
     trial = study.best_trial

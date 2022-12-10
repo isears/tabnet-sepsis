@@ -7,7 +7,8 @@ from typing import Callable
 import numpy as np
 import scipy.stats as st
 import torch
-from sklearn.metrics import make_scorer, roc_auc_score, roc_curve
+from sklearn.metrics import (average_precision_score, make_scorer,
+                             roc_auc_score, roc_curve)
 
 CORES_AVAILABLE = len(os.sched_getaffinity(0))
 
@@ -57,6 +58,12 @@ class CVResults:
 
 # Hack to workaround discrepancies between torch and sklearn shape expectations
 # https://github.com/skorch-dev/skorch/issues/442
-def my_auc(net, X, y):
+def my_auroc(net, X, y):
     y_proba = net.predict_proba(X)
     return roc_auc_score(y, y_proba[:, 1])
+
+
+def my_auprc(net, X, y):
+    y_proba = net.predict_proba(X)
+    return average_precision_score(y, y_proba[:, 1])
+
