@@ -1,0 +1,20 @@
+[FileBasedDataset] Initializing dataset...
+        Examples: 28559
+        Features: 621
+        Max length: 120
+[FileBasedDataset] Dataset initialization complete
+[FileBasedDataset] Initializing dataset...
+        Examples: 3174
+        Features: 621
+        Max length: 120
+[FileBasedDataset] Dataset initialization complete
+  epoch    auprc    auroc    train_loss    valid_acc    valid_loss    cp      dur
+-------  -------  -------  ------------  -----------  ------------  ----  -------
+      1   0.4224   0.8349        0.2444       0.9338        0.2018     +  65.1504
+      2   0.4328   0.8449        0.2267       0.9345        0.1984     +  65.7185
+      3   0.4196   0.8443        0.2207       0.9307        0.2014        65.5467
+      4   0.4315   0.8526        0.2185       0.9338        0.1998        65.1329
+Stopping since valid_loss has not improved in the last 3 epochs.
+Final score:
+        AUROC: 0.8418410041841003
+        Average precision: 0.39436963664345603

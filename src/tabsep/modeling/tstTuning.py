@@ -9,15 +9,11 @@ import pandas as pd
 import skorch
 import torch
 from optuna.integration import SkorchPruningCallback
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import average_precision_score, roc_auc_score
 from sklearn.model_selection import KFold, cross_val_score, train_test_split
 from skorch import NeuralNetBinaryClassifier
-from skorch.callbacks import (
-    Checkpoint,
-    EarlyStopping,
-    EpochScoring,
-    GradientNormClipping,
-)
+from skorch.callbacks import (Checkpoint, EarlyStopping, EpochScoring,
+                              GradientNormClipping)
 
 from tabsep import config
 from tabsep.dataProcessing.fileBasedDataset import FileBasedDataset
@@ -121,6 +117,15 @@ class Objective:
         return best_auprc
 
 
+def split_data_consistently():
+    cut_sample = pd.read_csv("cache/sample_cuts.csv")
+    sids_train, sids_test = train_test_split(
+        cut_sample["stay_id"].to_list(), test_size=0.1, random_state=42
+    )
+
+    return sids_train, sids_test
+
+
 if __name__ == "__main__":
     cut_sample = pd.read_csv("cache/sample_cuts.csv")
     sids_train, sids_test = train_test_split(
@@ -149,8 +154,14 @@ if __name__ == "__main__":
 
     tuned_tst.fit(train_ds, train_ds.get_labels())
 
-    final_score = roc_auc_score(
+    final_auroc = roc_auc_score(
         test_ds.get_labels(), tuned_tst.predict_proba(test_ds)[:, 1]
     )
 
-    print(f"Final score: {final_score}")
+    final_auprc = average_precision_score(
+        test_ds.get_labels(), tuned_tst.predict_proba(test_ds)
+    )
+
+    print("Final score:")
+    print(f"\tAUROC: {final_auroc}")
+    print(f"\tAverage precision: {final_auprc}")
