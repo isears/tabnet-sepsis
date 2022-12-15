@@ -2,7 +2,7 @@
 #SBATCH -n 1
 #SBATCH -p debug
 # #SBATCH --gres=gpu:1
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=16
 #SBATCH --mem=32G
 #SBATCH --time=00:30:00
 #SBATCH --output ./logs/debug.log

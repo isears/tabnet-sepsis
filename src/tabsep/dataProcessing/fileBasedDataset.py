@@ -39,6 +39,8 @@ class FileBasedDataset(torch.utils.data.Dataset):
 
         self.cut_sample = pd.read_csv("cache/sample_cuts.csv")
         self.cut_sample = self.cut_sample[self.cut_sample["stay_id"].isin(stay_ids)]
+        # Must shuffle otherwise all pos labels will be @ end
+        self.cut_sample = self.cut_sample.sample(frac=1, random_state=42)
 
         print(f"\tExamples: {len(self.cut_sample)}")
         print(f"\tFeatures: {len(self.feature_ids)}")
@@ -118,9 +120,9 @@ class FileBasedDataset(torch.utils.data.Dataset):
             last_nonzero_indices = (X.shape[1] - 1) - torch.argmax(
                 torch.flip(X, dims=(1,)).ne(0.0).int(), dim=1
             )
-            x_out.append(X[torch.arange(X.shape[0], last_nonzero_indices)])
+            x_out.append(X[torch.arange(X.shape[0]), last_nonzero_indices])
 
-        y = torch.stack([Y for _, Y, _ in batch], dim=0)
+        y = torch.stack([Y for _, Y in batch], dim=0)
         X = torch.stack(x_out, dim=0)
 
         return X.float(), y.float()

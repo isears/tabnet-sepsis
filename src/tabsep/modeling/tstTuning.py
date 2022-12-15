@@ -128,9 +128,7 @@ def split_data_consistently():
 
 if __name__ == "__main__":
     cut_sample = pd.read_csv("cache/sample_cuts.csv")
-    sids_train, sids_test = train_test_split(
-        cut_sample["stay_id"].to_list(), test_size=0.1, random_state=42
-    )
+    sids_train, sids_test = split_data_consistently()
 
     pruner = optuna.pruners.MedianPruner()
     study = optuna.create_study(direction="maximize", pruner=None)
