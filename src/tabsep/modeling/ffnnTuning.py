@@ -1,5 +1,5 @@
 """
-Find optimal hyperparameters for TST
+Find optimal hyperparameters for Feedforward neural network that only uses last non-zero value
 """
 import os
 
@@ -12,8 +12,12 @@ from optuna.integration import SkorchPruningCallback
 from sklearn.metrics import average_precision_score, roc_auc_score
 from sklearn.model_selection import KFold, cross_val_score, train_test_split
 from skorch import NeuralNetBinaryClassifier
-from skorch.callbacks import (Checkpoint, EarlyStopping, EpochScoring,
-                              GradientNormClipping)
+from skorch.callbacks import (
+    Checkpoint,
+    EarlyStopping,
+    EpochScoring,
+    GradientNormClipping,
+)
 
 from tabsep import config
 from tabsep.dataProcessing.fileBasedDataset import FileBasedDataset
@@ -24,7 +28,7 @@ from tabsep.modeling.tstImpl import AdamW, TSTransformerEncoderClassiregressor
 def tunable_tst_factory(
     tuning_params: dict,
     ds: FileBasedDataset,
-    save_path: str = "cache/models/optunatst",
+    save_path: str = "cache/models/optunaffnn",
     pruner=None,
 ):
     os.makedirs(save_path, exist_ok=True)

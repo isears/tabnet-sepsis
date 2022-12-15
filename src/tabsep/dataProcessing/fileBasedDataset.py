@@ -108,6 +108,23 @@ class FileBasedDataset(torch.utils.data.Dataset):
         X, y, _ = self.maxlen_padmask_collate(batch)
         return X, y
 
+    def last_nonzero_collate(self, batch):
+        """
+        Just return the last nonzero value in X
+        """
+        x_out = list()
+        for idx, (X, y) in enumerate(batch):
+            # Shape will be 1 dim (# of features)
+            last_nonzero_indices = (X.shape[1] - 1) - torch.argmax(
+                torch.flip(X, dims=(1,)).ne(0.0).int(), dim=1
+            )
+            x_out.append(X[torch.arange(X.shape[0], last_nonzero_indices)])
+
+        y = torch.stack([Y for _, Y, _ in batch], dim=0)
+        X = torch.stack(x_out, dim=0)
+
+        return X.float(), y.float()
+
     def get_num_features(self) -> int:
         return len(self.feature_ids)
 
@@ -182,7 +199,7 @@ if __name__ == "__main__":
 
     dl = torch.utils.data.DataLoader(
         ds,
-        collate_fn=ds.maxlen_padmask_collate,
+        collate_fn=ds.last_nonzero_collate,
         num_workers=config.cores_available,
         batch_size=4,
         pin_memory=True,
@@ -191,8 +208,8 @@ if __name__ == "__main__":
     print("Testing label getter:")
     print(ds.get_labels().shape)
 
-    print("Iteratively getting label prevalence...")
-    get_label_prevalence(dl)
+    # print("Iteratively getting label prevalence...")
+    # get_label_prevalence(dl)
 
     print("Demoing first few batches...")
     demo(dl)
