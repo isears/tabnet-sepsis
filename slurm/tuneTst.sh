@@ -4,7 +4,7 @@
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=32G
-#SBATCH --time=48:00:00
+#SBATCH --time=96:00:00
 #SBATCH --output ./logs/tuneTst.log
 
 module load cuda/11.3.1
