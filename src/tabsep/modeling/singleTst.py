@@ -8,20 +8,20 @@ from tabsep.dataProcessing.fileBasedDataset import FileBasedDataset
 from tabsep.modeling.tstTuning import split_data_consistently, tunable_tst_factory
 
 PARAMS = dict(
-    optimizer__lr=0.002656205687468148,
-    module__dropout=0.13910274697124775,
-    d_model_multiplier=4,
-    module__num_layers=1,
-    module__n_heads=8,
-    module__dim_feedforward=268,
-    iterator_train__batch_size=83,
+    optimizer__lr=1e-4,
+    module__dropout=0.1,
+    d_model_multiplier=8,
+    module__num_layers=3,
+    module__n_heads=16,
+    module__dim_feedforward=256,
+    iterator_train__batch_size=16,  # Should be 128
 )
 
 if __name__ == "__main__":
-    sids_train, sids_test = split_data_consistently()
+    idx_train, idx_test = split_data_consistently()
 
-    train_ds = FileBasedDataset(sids_train)
-    test_ds = FileBasedDataset(sids_test)
+    train_ds = FileBasedDataset(idx_train)
+    test_ds = FileBasedDataset(idx_test)
 
     tst = tunable_tst_factory(PARAMS, train_ds)
 

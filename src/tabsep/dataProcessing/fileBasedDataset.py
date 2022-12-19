@@ -26,7 +26,7 @@ def get_feature_labels():
 class FileBasedDataset(torch.utils.data.Dataset):
     def __init__(
         self,
-        stay_ids: pd.Series,
+        cutsample_indices,
         processed_mimic_path: str = "./mimicts",
         pm_type=torch.bool,  # May require pad mask to be different type
     ):
@@ -38,7 +38,11 @@ class FileBasedDataset(torch.utils.data.Dataset):
         )
 
         self.cut_sample = pd.read_csv("cache/sample_cuts.csv")
-        self.cut_sample = self.cut_sample[self.cut_sample["stay_id"].isin(stay_ids)]
+        # NOTE: maxlen calculated before filtering down to indices so that
+        # datasets all have uniform seq lengths
+        self.max_len = self.cut_sample["cutidx"].max()
+        self.cut_sample = self.cut_sample.loc[cutsample_indices].reset_index(drop=True)
+
         # Must shuffle otherwise all pos labels will be @ end
         self.cut_sample = self.cut_sample.sample(frac=1, random_state=42)
 
@@ -47,23 +51,6 @@ class FileBasedDataset(torch.utils.data.Dataset):
 
         self.processed_mimic_path = processed_mimic_path
         self.pm_type = pm_type
-
-        try:
-            with open("cache/metadata.json", "r") as f:
-                self.max_len = int(json.load(f)["max_len"])
-        except FileNotFoundError:
-            print(
-                f"[{type(self).__name__}] Failed to load metadata. Computing maximum length, this may take some time..."
-            )
-            self.max_len = 0
-            for sid in self.cut_sample["stay_id"].to_list():
-                ce = pd.read_csv(
-                    f"{processed_mimic_path}/{sid}/chartevents_features.csv", nrows=1
-                )
-                seq_len = len(ce.columns) - 1
-
-                if seq_len > self.max_len:
-                    self.max_len = seq_len
 
         print(f"\tMax length: {self.max_len}")
 
@@ -77,13 +64,15 @@ class FileBasedDataset(torch.utils.data.Dataset):
         for idx, (X, y) in enumerate(batch):
             actual_len = X.shape[1]
 
-            assert actual_len < self.max_len
+            assert (
+                actual_len <= self.max_len
+            ), f"Actual: {actual_len}, Max: {self.max_len}"
 
             pad_mask = torch.ones(actual_len)
-            X_mod = pad(X, (self.max_len - actual_len, 0), mode="constant", value=0.0)
+            X_mod = pad(X, (0, self.max_len - actual_len), mode="constant", value=0.0)
 
             pad_mask = pad(
-                pad_mask, (self.max_len - actual_len, 0), mode="constant", value=0.0
+                pad_mask, (0, self.max_len - actual_len), mode="constant", value=0.0
             )
 
             batch[idx] = (X_mod.T, y, pad_mask)
@@ -141,7 +130,6 @@ class FileBasedDataset(torch.utils.data.Dataset):
     def __getitem__(self, index: int):
         stay_id = self.cut_sample["stay_id"].iloc[index]
         Y = torch.tensor(self.cut_sample["label"].iloc[index])
-        # Y = torch.unsqueeze(Y, 0)
         cutidx = self.cut_sample["cutidx"].iloc[index]
 
         # Features
@@ -158,7 +146,7 @@ class FileBasedDataset(torch.utils.data.Dataset):
             if os.path.exists(full_path):
                 curr_features = pd.read_csv(
                     full_path,
-                    usecols=list(range(0, cutidx + 1)),
+                    usecols=list(range(0, cutidx)),
                     index_col="feature_id",
                 )
 
@@ -176,9 +164,9 @@ class FileBasedDataset(torch.utils.data.Dataset):
 
 def demo(dl):
     print("Printing first few batches:")
-    for batchnum, (X, Y, pad_mask) in enumerate(dl):
+    for batchnum, (X, Y) in enumerate(dl):
         print(f"Batch number: {batchnum}")
-        print(f"X shape: {X.shape}")
+        print(f"X shape: {X['X'].shape}")
         print(f"Y shape: {Y.shape}")
         print(X)
         print(Y)
@@ -201,7 +189,7 @@ if __name__ == "__main__":
 
     dl = torch.utils.data.DataLoader(
         ds,
-        collate_fn=ds.last_nonzero_collate,
+        collate_fn=ds.maxlen_padmask_collate,
         num_workers=config.cores_available,
         batch_size=4,
         pin_memory=True,

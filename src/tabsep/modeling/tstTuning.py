@@ -49,7 +49,9 @@ def tunable_tst_factory(
         GradientNormClipping(gradient_clip_value=4.0),
         EarlyStopping(patience=3),
         Checkpoint(
-            load_best=True, fn_prefix=f"{save_path}/", f_pickle="whole_model.pkl",
+            load_best=True,
+            fn_prefix=f"{save_path}/",
+            f_pickle="whole_model.pkl",
         ),
         EpochScoring(my_auroc, name="auroc", lower_is_better=False),
         EpochScoring(my_auprc, name="auprc", lower_is_better=False),
@@ -123,11 +125,11 @@ class Objective:
 
 def split_data_consistently():
     cut_sample = pd.read_csv("cache/sample_cuts.csv")
-    sids_train, sids_test = train_test_split(
-        cut_sample["stay_id"].to_list(), test_size=0.1, random_state=42
+    idx_train, idx_test = train_test_split(
+        cut_sample.index.to_list(), test_size=0.1, random_state=42
     )
 
-    return sids_train, sids_test
+    return idx_train, idx_test
 
 
 if __name__ == "__main__":
