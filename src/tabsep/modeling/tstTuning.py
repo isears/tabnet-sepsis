@@ -124,9 +124,9 @@ class Objective:
 
 
 def split_data_consistently():
-    cut_sample = pd.read_csv("cache/sample_cuts.csv")
+    sample = pd.read_csv("cache/included_stayids.csv")
     idx_train, idx_test = train_test_split(
-        cut_sample.index.to_list(), test_size=0.1, random_state=42
+        sample.index.to_list(), test_size=0.1, random_state=42
     )
 
     return idx_train, idx_test

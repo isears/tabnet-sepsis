@@ -1,10 +1,13 @@
 """
 Apply inclusion criteria to generate a list of included stay ids
 """
-import pandas as pd
-import dask.dataframe as dd
-from tabsep.dataProcessing.util import all_inclusive_dtypes
 import datetime
+
+import dask.dataframe as dd
+import pandas as pd
+
+from tabsep.dataProcessing import label_itemid, min_seq_len
+from tabsep.dataProcessing.util import all_inclusive_dtypes
 
 
 class InclusionCriteria:
@@ -16,19 +19,38 @@ class InclusionCriteria:
             parse_dates=["intime", "outtime"],
         )
 
-    def _exclude_nodata(self):
+    def _exclude_nolabels(self):
         """
-        Exclude patients w/no chartevents
+        Guarantee that there are labels > 24 hours into ICU stay
         """
         chartevents = dd.read_csv(
             "mimiciv/icu/chartevents.csv",
-            usecols=["stay_id", "subject_id"],
+            usecols=["stay_id", "subject_id", "itemid", "charttime"],
+            dtype=all_inclusive_dtypes,
             blocksize=100e6,
         )
 
-        chartevents_stay_ids = (
-            chartevents["stay_id"].unique().compute(scheduler="processes")
+        chartevents = chartevents[chartevents["itemid"] == label_itemid].compute(
+            scheduler="processes"
         )
+
+        chartevents = chartevents[
+            chartevents["stay_id"].isin(self.all_stays["stay_id"])
+        ]
+
+        chartevents = chartevents.merge(
+            self.all_stays[["stay_id", "intime", "outtime"]], how="left", on="stay_id"
+        )
+
+        # Drop anything that's too close to intime or after outtime
+        for time_column in ["charttime", "intime", "outtime"]:
+            chartevents[time_column] = pd.to_datetime(chartevents[time_column])
+
+        chartevents["difftime"] = chartevents["charttime"] - chartevents["intime"]
+        chartevents = chartevents[chartevents["difftime"] > min_seq_len]
+        chartevents = chartevents[chartevents["charttime"] < chartevents["outtime"]]
+
+        chartevents_stay_ids = chartevents["stay_id"].unique()
         self.all_stays = self.all_stays[
             self.all_stays["stay_id"].isin(chartevents_stay_ids)
         ]
@@ -51,45 +73,11 @@ class InclusionCriteria:
             )
         ]
 
-    def _exclude_early_sepsis(self, time_hours=24):
-        """
-        Exclude patients that arrive to the ICU qualifying for sepsis3
-        """
-        sepsis_df = pd.read_csv(
-            "mimiciv/derived/sepsis3.csv",
-            parse_dates=[
-                "sofa_time",
-                "suspected_infection_time",
-                "culture_time",
-                "antibiotic_time",
-            ],
-        )
-        sepsis_df["sepsis_time"] = sepsis_df.apply(
-            lambda row: max(row["sofa_time"], row["suspected_infection_time"]), axis=1
-        )
-
-        sepsis_df = sepsis_df.merge(
-            self.all_stays[["stay_id", "intime"]], how="left", on="stay_id"
-        )
-
-        early_sepsis_stays = sepsis_df[
-            sepsis_df.apply(
-                lambda row: row["sepsis_time"] - row["intime"]
-                < datetime.timedelta(hours=time_hours),
-                axis=1,
-            )
-        ]["stay_id"]
-
-        self.all_stays = self.all_stays[
-            ~self.all_stays["stay_id"].isin(early_sepsis_stays)
-        ]
-
     def get_included(self):
         order = [
-            self._exclude_nodata,
+            self._exclude_nolabels,
             self._exclude_short_stays,
             self._exclude_long_stays,
-            self._exclude_early_sepsis,
         ]
 
         for func in order:

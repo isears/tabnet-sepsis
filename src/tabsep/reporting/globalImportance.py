@@ -1,13 +1,14 @@
 ##########
 # Get top 20 features w/maximum attribution at any point during icustay
 ##########
-import torch
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import seaborn as sns
-from tabsep.dataProcessing.fileBasedDataset import get_feature_labels
+import torch
+
 from tabsep import config
+from tabsep.dataProcessing import get_feature_labels
 from tabsep.reporting import pretty_feature_names
 
 

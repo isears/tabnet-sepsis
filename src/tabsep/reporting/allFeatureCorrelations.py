@@ -1,13 +1,13 @@
-from tabsep.dataProcessing.fileBasedDataset import get_feature_labels
-from tabsep import config
-from sklearn.feature_selection import mutual_info_regression
-import torch
-import numpy as np
-import seaborn as sns
-import matplotlib.pyplot as plt
-
 from concurrent.futures import ProcessPoolExecutor
 
+import matplotlib.pyplot as plt
+import numpy as np
+import seaborn as sns
+import torch
+from sklearn.feature_selection import mutual_info_regression
+
+from tabsep import config
+from tabsep.dataProcessing import get_feature_labels
 
 if __name__ == "__main__":
     attributions = torch.load(f"{config.model_path}/attributions.pt").detach().numpy()
@@ -63,4 +63,3 @@ if __name__ == "__main__":
 
         mutual_info_heatmap[max_index] = 0.0
         mutual_info_heatmap[max_index[1], max_index[0]] = 0.0
-

@@ -6,12 +6,16 @@ import torch
 from torch.nn.functional import pad
 
 from tabsep import config
+from tabsep.dataProcessing import label_itemid, min_seq_len
+from tabsep.dataProcessing.inclusionCriteria import InclusionCriteria
 
 
-class FileBasedDataset(torch.utils.data.Dataset):
+class LabelGeneratingDataset(torch.utils.data.Dataset):
     def __init__(
         self,
-        cutsample_indices,
+        stay_ids,
+        label_itemid: int,
+        dropped_itemids,
         processed_mimic_path: str = "./mimicts",
         pm_type=torch.bool,  # May require pad mask to be different type
     ):
@@ -22,24 +26,39 @@ class FileBasedDataset(torch.utils.data.Dataset):
             pd.read_csv("cache/included_features.csv").squeeze("columns").to_list()
         )
 
-        self.cut_sample = pd.read_csv("cache/sample_cuts.csv")
-        # NOTE: maxlen calculated before filtering down to indices so that
-        # datasets all have uniform seq lengths
-        self.max_len = self.cut_sample["cutidx"].max()
-        self.cut_sample = self.cut_sample.loc[cutsample_indices].reset_index(drop=True)
-
-        # Must shuffle otherwise all pos labels will be @ end
-        self.cut_sample = self.cut_sample.sample(frac=1, random_state=42)
-
-        print(f"\tExamples: {len(self.cut_sample)}")
-        print(f"\tFeatures: {len(self.feature_ids)}")
-
+        self.stay_ids = stay_ids
+        self.label_itemid = label_itemid
+        # Only need to drop itemids that are already in the featureids
+        self.dropped_itemids = [i for i in dropped_itemids if i in self.feature_ids]
         self.processed_mimic_path = processed_mimic_path
         self.pm_type = pm_type
 
-        print(f"\tMax length: {self.max_len}")
+        try:
+            with open("cache/metadata.json", "r") as f:
+                self.max_len = int(json.load(f)["max_len"])
+        except FileNotFoundError:
+            print(
+                f"[{type(self).__name__}] Failed to load metadata. Computing maximum length, this may take some time..."
+            )
+            self.max_len = 0
+            for sid in self.stay_ids:
+                ce = pd.read_csv(
+                    f"{processed_mimic_path}/{sid}/chartevents_features.csv",
+                    nrows=1,
+                )
+                seq_len = len(ce.columns) - 1
 
-        print(f"[{type(self).__name__}] Dataset initialization complete")
+                if seq_len > self.max_len:
+                    self.max_len = seq_len
+
+            with open("cache/metadata.json", "w") as f:
+                f.write(json.dumps({"max_len": self.max_len}))
+
+        print(f"\tMax length: {self.max_len}")
+        print(f"\tExamples: {len(self.stay_ids)}")
+        print(f"\tFeatures: {len(self.feature_ids) - len(self.dropped_itemids)}")
+        print(f"\tLabel itemid: {self.label_itemid}")
+        print(f"\tDropped itemids: {self.dropped_itemids}")
 
     def maxlen_padmask_collate(self, batch):
         """
@@ -105,21 +124,17 @@ class FileBasedDataset(torch.utils.data.Dataset):
         return len(self.feature_ids)
 
     def get_labels(self) -> torch.Tensor:
-        Y = torch.tensor(self.cut_sample["label"].to_list())
-        # Y = torch.unsqueeze(Y, 1)
-        return Y
+        raise NotImplementedError
 
     def __len__(self):
-        return len(self.cut_sample)
+        return len(self.stay_ids)
 
     def __getitem__(self, index: int):
-        stay_id = self.cut_sample["stay_id"].iloc[index]
-        Y = torch.tensor(self.cut_sample["label"].iloc[index])
-        cutidx = self.cut_sample["cutidx"].iloc[index]
+        stay_id = self.stay_ids[index]
 
         # Features
         # Ensures every example has a sequence length of at least 1
-        combined_features = pd.DataFrame(columns=["feature_id", "0"])
+        combined_features = pd.DataFrame([])
 
         for feature_file in [
             "chartevents_features.csv",
@@ -131,7 +146,6 @@ class FileBasedDataset(torch.utils.data.Dataset):
             if os.path.exists(full_path):
                 curr_features = pd.read_csv(
                     full_path,
-                    usecols=list(range(0, cutidx)),
                     index_col="feature_id",
                 )
 
@@ -142,9 +156,51 @@ class FileBasedDataset(torch.utils.data.Dataset):
             self.feature_ids
         )  # Need to add any itemids that are missing
         combined_features = combined_features.fillna(0.0)
+
+        # Randomly select a non-zero value from label itemids
+        possible_labels = combined_features.loc[self.label_itemid]
+        min_idx = min_seq_len / config.timestep
+        possible_indices = [
+            int(i)
+            for i in possible_labels[possible_labels != 0].index.to_list()
+            if int(i) >= min_idx
+        ]
+
+        assert (
+            len(possible_indices) > 0
+        ), f"Stay id {stay_id} did not have a valid label event"
+
+        selected_label = possible_labels[possible_indices].sample(1, random_state=42)
+        cut_idx = int(selected_label.index[0])
+        Y = torch.tensor(selected_label.to_list())
+        Y = Y > 35.0  # TODO: remove if doing regression
+
+        # Cut X one timestep prior to selected label and drop specified features
+        kept_cols = [str(i) for i in range(0, cut_idx)]
+        combined_features = combined_features[kept_cols]
+        combined_features = combined_features.drop(
+            index=self.dropped_itemids + [self.label_itemid]
+        )
+
         X = torch.tensor(combined_features.values)
 
         return X.float(), Y.float()
+
+
+class CoagulopathyDataset(LabelGeneratingDataset):
+    def __init__(
+        self,
+        stay_ids,
+        processed_mimic_path: str = "./mimicts",
+        pm_type=torch.bool,
+    ):
+        super().__init__(
+            stay_ids,
+            label_itemid,
+            [],
+            processed_mimic_path,
+            pm_type,
+        )
 
 
 def demo(dl):
@@ -162,15 +218,16 @@ def demo(dl):
 
 def get_label_prevalence(dl):
     y_tot = torch.tensor(0.0)
-    for batchnum, (X, Y, pad_mask) in enumerate(dl):
+    for batchnum, (X_dict, Y) in enumerate(dl):
         y_tot += torch.sum(Y)
 
     print(f"Postivie Ys: {y_tot / (batchnum * dl.batch_size)}")
 
 
 if __name__ == "__main__":
-    sample_cuts = pd.read_csv("cache/sample_cuts.csv")
-    ds = FileBasedDataset(sample_cuts["stay_id"])
+    ds = CoagulopathyDataset(
+        pd.read_csv("cache/included_stayids.csv").squeeze("columns").to_list()
+    )
 
     dl = torch.utils.data.DataLoader(
         ds,
@@ -180,11 +237,11 @@ if __name__ == "__main__":
         pin_memory=True,
     )
 
-    print("Testing label getter:")
-    print(ds.get_labels().shape)
+    print("Iteratively getting label prevalence...")
+    get_label_prevalence(dl)
 
-    # print("Iteratively getting label prevalence...")
-    # get_label_prevalence(dl)
+    # print("Demoing first few batches...")
+    # demo(dl)
 
-    print("Demoing first few batches...")
-    demo(dl)
+    # print("Testing label getter:")
+    # print(ds.get_labels().shape)

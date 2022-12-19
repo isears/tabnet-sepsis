@@ -6,7 +6,7 @@ import torch
 from scipy.stats import ttest_ind
 
 from tabsep import config
-from tabsep.dataProcessing.fileBasedDataset import get_feature_labels
+from tabsep.dataProcessing import get_feature_labels
 from tabsep.reporting import pretty_feature_names
 
 
@@ -94,4 +94,3 @@ if __name__ == "__main__":
     print(earlier_important_count)
     print(later_important_count)
     print(insignificant_count)
-

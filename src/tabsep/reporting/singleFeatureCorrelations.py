@@ -1,12 +1,14 @@
-import torch
-from tabsep import config
-import numpy as np
-from tabsep.dataProcessing.fileBasedDataset import get_feature_labels
+import sys
+
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import seaborn as sns
+import torch
 from sklearn.feature_selection import mutual_info_regression
-import sys
+
+from tabsep import config
+from tabsep.dataProcessing import get_feature_labels
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:

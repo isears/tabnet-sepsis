@@ -4,7 +4,7 @@ import torch
 from scipy.stats import rankdata, spearmanr
 
 from tabsep import config
-from tabsep.dataProcessing.fileBasedDataset import get_feature_labels
+from tabsep.dataProcessing import get_feature_labels
 from tabsep.reporting import pretty_feature_names
 from tabsep.reporting.globalImportance import revise_pad
 

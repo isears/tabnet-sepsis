@@ -7,16 +7,10 @@ import pandas as pd
 from dask.diagnostics import ProgressBar
 
 from tabsep import config
+from tabsep.dataProcessing import min_seq_len
 from tabsep.dataProcessing.util import all_inclusive_dtypes
 
 pd.options.mode.chained_assignment = None  # default='warn'
-
-
-def get_mimicts_timestep():
-    with open("cache/mimicts/readme.txt", "r") as f:
-        for line in f.readlines():
-            if "timestep=" in line:
-                return datetime.timedelta(seconds=int(line.split("=")[-1]))
 
 
 if __name__ == "__main__":
@@ -49,12 +43,7 @@ if __name__ == "__main__":
 
     # Compute where the dataset should truncate the data for a specific value
     ptts_only["difftime"] = ptts_only["charttime"] - ptts_only["intime"]
-    ptts_only["cutidx"] = np.floor(  # Earliest possible: TODO: off-by-one errors
-        ptts_only["difftime"] / get_mimicts_timestep()
-    ).astype("int")
-
-    # ptts_only = ptts_only.rename(columns={"valuenum": "label"})
-    ptts_only["label"] = (ptts_only["valuenum"] > 35).astype("int")
+    ptts_only = ptts_only[ptts_only["difftime"] > min_seq_len]
 
     ptts_only[["stay_id", "cutidx", "label"]].to_csv(
         "cache/sample_cuts.csv", index=False

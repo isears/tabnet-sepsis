@@ -13,7 +13,7 @@ from scipy.interpolate import interp1d
 from sklearn.preprocessing import PolynomialFeatures
 
 from tabsep import config
-from tabsep.dataProcessing.fileBasedDataset import get_feature_labels
+from tabsep.dataProcessing import get_feature_labels
 from tabsep.reporting import pretty_feature_names
 
 
