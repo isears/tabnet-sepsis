@@ -12,16 +12,12 @@ from optuna.integration import SkorchPruningCallback
 from sklearn.metrics import average_precision_score, roc_auc_score
 from sklearn.model_selection import KFold, cross_val_score, train_test_split
 from skorch import NeuralNetBinaryClassifier
-from skorch.callbacks import (
-    Checkpoint,
-    EarlyStopping,
-    EpochScoring,
-    GradientNormClipping,
-)
+from skorch.callbacks import (Checkpoint, EarlyStopping, EpochScoring,
+                              GradientNormClipping)
 
 from tabsep import config
 from tabsep.dataProcessing.fileBasedDataset import FileBasedDataset
-from tabsep.modeling import my_auprc, my_auroc
+from tabsep.modeling import my_auprc, my_auroc, split_data_consistently
 from tabsep.modeling.tstImpl import AdamW, TSTransformerEncoderClassiregressor
 
 
@@ -121,15 +117,6 @@ class Objective:
         ).best_score_
 
         return best_auprc
-
-
-def split_data_consistently():
-    sample = pd.read_csv("cache/included_stayids.csv")
-    idx_train, idx_test = train_test_split(
-        sample.index.to_list(), test_size=0.1, random_state=42
-    )
-
-    return idx_train, idx_test
 
 
 if __name__ == "__main__":

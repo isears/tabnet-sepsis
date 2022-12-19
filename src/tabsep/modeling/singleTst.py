@@ -5,6 +5,7 @@ Run TST w/specific hyperparameters
 from sklearn.metrics import average_precision_score, roc_auc_score
 
 from tabsep.dataProcessing.fileBasedDataset import FileBasedDataset
+from tabsep.dataProcessing.labelGeneratingDataset import CoagulopathyDataset
 from tabsep.modeling.tstTuning import split_data_consistently, tunable_tst_factory
 
 PARAMS = dict(
@@ -18,14 +19,14 @@ PARAMS = dict(
 )
 
 if __name__ == "__main__":
-    idx_train, idx_test = split_data_consistently()
+    train_sids, test_sids = split_data_consistently()
 
-    train_ds = FileBasedDataset(idx_train)
-    test_ds = FileBasedDataset(idx_test)
+    train_ds = CoagulopathyDataset(train_sids)
+    test_ds = CoagulopathyDataset(test_sids)
 
     tst = tunable_tst_factory(PARAMS, train_ds)
 
-    tst.fit(train_ds, train_ds.get_labels())
+    tst.fit(train_ds, y=None)
 
     final_auroc = roc_auc_score(test_ds.get_labels(), tst.predict_proba(test_ds)[:, 1])
 

@@ -5,10 +5,16 @@ from dataclasses import dataclass
 from typing import Callable
 
 import numpy as np
+import pandas as pd
 import scipy.stats as st
 import torch
-from sklearn.metrics import (average_precision_score, make_scorer,
-                             roc_auc_score, roc_curve)
+from sklearn.metrics import (
+    average_precision_score,
+    make_scorer,
+    roc_auc_score,
+    roc_curve,
+)
+from sklearn.model_selection import train_test_split
 
 CORES_AVAILABLE = len(os.sched_getaffinity(0))
 
@@ -67,3 +73,11 @@ def my_auprc(net, X, y):
     y_proba = net.predict_proba(X)
     return average_precision_score(y, y_proba[:, 1])
 
+
+def split_data_consistently():
+    sample = pd.read_csv("cache/included_stayids.csv")
+    train_sids, test_sids = train_test_split(
+        sample.squeeze("columns").to_list(), test_size=0.1, random_state=42
+    )
+
+    return train_sids, test_sids

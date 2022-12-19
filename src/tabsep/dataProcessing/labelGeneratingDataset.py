@@ -85,7 +85,7 @@ class LabelGeneratingDataset(torch.utils.data.Dataset):
         y = torch.stack([Y for _, Y, _ in batch], dim=0)
         pad_mask = torch.stack([pad_mask for _, _, pad_mask in batch], dim=0)
 
-        return dict(X=X.float(), padding_masks=pad_mask.to(self.pm_type)), y.float()
+        return dict(X=X.float(), padding_masks=pad_mask.to(self.pm_type)), y.squeeze().float()
 
     def maxlen_padmask_collate_combined(self, batch):
         """
@@ -178,9 +178,11 @@ class LabelGeneratingDataset(torch.utils.data.Dataset):
         # Cut X one timestep prior to selected label and drop specified features
         kept_cols = [str(i) for i in range(0, cut_idx)]
         combined_features = combined_features[kept_cols]
-        combined_features = combined_features.drop(
-            index=self.dropped_itemids + [self.label_itemid]
-        )
+        # TODO: consider dropping the feature we're trying to predict
+        # Would have to adjust # of features in constructor as well
+        # combined_features = combined_features.drop(
+        #     index=self.dropped_itemids + [self.label_itemid]
+        # )
 
         X = torch.tensor(combined_features.values)
 
