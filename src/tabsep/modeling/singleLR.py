@@ -57,11 +57,16 @@ if __name__ == "__main__":
         pickle.dump(lr, f)
 
     odds_ratios = np.exp(lr.named_steps["logisticregression"].coef_)
+    coefficients = lr.named_steps["logisticregression"].coef_
     odds_ratios_df = pd.DataFrame(
-        index=get_feature_labels(), data={"OR": odds_ratios.squeeze()}
+        data={
+            "Variable": get_feature_labels(),
+            "Odds Ratios": odds_ratios.squeeze(),
+            "Coefficients": coefficients.squeeze(),
+        }
     )
 
-    odds_ratios_df.to_csv("cache/models/singleLr/odds_ratios.csv")
+    odds_ratios_df.to_csv("cache/models/singleLr/odds_ratios.csv", index=False)
 
     print("Final score:")
     print(f"\tAUROC: {final_auroc}")

@@ -12,29 +12,6 @@ from tabsep.dataProcessing import get_feature_labels
 from tabsep.reporting import pretty_feature_names
 
 
-def revise_pad(pm):
-    cut_early = np.copy(pm)
-    cut_late = np.copy(pm)
-
-    for idx in range(0, pm.shape[0]):
-        mask_len = int(pm[idx, :].sum())
-        half_mask = mask_len // 2
-
-        cut_early[idx, :] = np.concatenate(
-            [np.ones(half_mask), np.zeros(pm.shape[1] - half_mask)]
-        )
-
-        cut_late[idx, :] = np.concatenate(
-            [
-                np.zeros(half_mask),
-                np.ones(half_mask),
-                np.zeros(pm.shape[1] - (2 * half_mask)),
-            ]
-        )
-
-    return [pm, cut_early, cut_late]
-
-
 def summative_importances(att):
     """
     Aggregate importances by summing up all their attributions
@@ -67,62 +44,51 @@ def summative_importances(att):
 
 if __name__ == "__main__":
 
-    attributions = torch.load(f"{config.model_path}/attributions.pt").detach()
-    X_test = torch.load(f"{config.model_path}/X_test.pt")
-    X_train = torch.load(f"{config.model_path}/X_train.pt")
-    X_combined = torch.cat((X_test, X_train), 0).detach()
+    attributions = torch.load(f"{config.tst_path}/attributions.pt").detach()
 
     print("Loaded data")
 
-    pad_masks = X_combined[:, :, -1]
-    pm, early_pm, late_pm = revise_pad(pad_masks)
-
     # Global importance over entire stay
-    att = np.multiply(attributions, np.expand_dims(pm, axis=-1))
-    importances = summative_importances(att)
+    importances = summative_importances(attributions)
     print("Got global importances")
     topn = importances.nlargest(20, columns="Summed Absolute Attributions")
     topn["Variable"] = topn["Variable"].apply(
         lambda x: pretty_feature_names[x] if x in pretty_feature_names else x
     )
 
+    plottable_topn = topn[["Variable", "Positive", "Negative"]].melt(
+        id_vars="Variable",
+        var_name="Attribution Direction",
+        value_name="Summed Attribution",
+    )
     sns.set_theme()
 
+    sns.set(rc={"figure.figsize": (15, 15)})
     ax = sns.barplot(
-        x="Summed Absolute Attributions", y="Variable", data=topn, orient="h", color="b"
-    )
-    ax.set_title(f"Global Importance")
-    plt.tight_layout()
-    plt.savefig(f"results/global_importances.png")
-    plt.clf()
-    topn.to_csv(f"results/global_importances.csv", index=False)
-
-    # Early vs. Late importance
-    early_att = np.multiply(attributions, np.expand_dims(early_pm, axis=-1))
-    early_importances = summative_importances(early_att)
-    print("Got early importances")
-    early_importances["Window"] = "Early"
-
-    late_att = np.multiply(attributions, np.expand_dims(late_pm, axis=-1))
-    late_importances = summative_importances(late_att)
-    print("Got late importances")
-    late_importances["Window"] = "Late"
-
-    plottable = pd.concat([early_importances, late_importances])
-    plottable = plottable[plottable["Variable"].isin(topn["Variable"])]
-
-    ax = sns.barplot(
-        x="Summed Absolute Attributions",
+        x="Summed Attribution",
         y="Variable",
-        data=plottable,
+        data=plottable_topn,
+        hue="Attribution Direction",
         orient="h",
-        color="b",
-        hue="Window",
-        palette={"Early": "tab:blue", "Late": "tab:red"},
-        order=topn["Variable"],
+        palette="Set1",
     )
-    ax.set_title("Early vs. Late Variable Importance")
+    ax.set_title(f"Global Importance (Time Series Transformer Attributions)")
     plt.tight_layout()
-    plt.savefig("results/evl_importances.png")
+    plt.savefig(f"results/global_importances_tst.png")
+    plt.clf()
+    topn.to_csv(f"results/global_importances_tst.csv", index=False)
 
-    print("[+] Done")
+    # Now do LR
+    lr_odds_ratios = pd.read_csv(f"{config.lr_path}/odds_ratios.csv")
+    lr_odds_ratios["Absolute Coefficients"] = np.abs(lr_odds_ratios["Coefficients"])
+
+    topn = lr_odds_ratios.nlargest(20, columns="Absolute Coefficients")
+    topn["Variable"] = topn["Variable"].apply(
+        lambda x: pretty_feature_names[x] if x in pretty_feature_names else x
+    )
+    ax = sns.barplot(x="Coefficients", y="Variable", data=topn, orient="h", color="b")
+    ax.set_title(f"Global Importance (Logistic Regression Coefficients)")
+
+    plt.tight_layout()
+    plt.savefig(f"results/global_importances_lr.png")
+    plt.clf()

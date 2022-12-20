@@ -10,7 +10,8 @@ class Config:
     # Number of timesteps before sepsis onset
     prediction_timesteps: int
     # Path to TST model to use in results generation
-    model_path: str
+    tst_path: str
+    lr_path: str
     cores_available: int
     timestep: datetime.timedelta
 
@@ -26,7 +27,8 @@ with open("mimicts/readme.txt", "r") as f:
 config = Config(
     timestep_seconds=timestep_seconds,  # TODO: deprecated infavor of timestep
     prediction_timesteps=1,
-    model_path="/gpfs/home/isears1/Repos/tabnet-sepsis/cache/models/singleTst_2022-08-30_19:55:07",
+    tst_path="cache/models/singleTst",
+    lr_path="cache/models/singleLr",
     cores_available=len(os.sched_getaffinity(0)),
     timestep=datetime.timedelta(seconds=timestep_seconds),
 )
