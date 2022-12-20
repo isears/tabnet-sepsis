@@ -15,8 +15,10 @@ from sklearn.metrics import (
     roc_curve,
 )
 from sklearn.model_selection import train_test_split
+from torch.utils.data import DataLoader
 
-CORES_AVAILABLE = len(os.sched_getaffinity(0))
+from tabsep import config
+from tabsep.dataProcessing.labelGeneratingDataset import CoagulopathyDataset
 
 
 @dataclass

@@ -24,16 +24,17 @@ if __name__ == "__main__":
     train_ds = CoagulopathyDataset(train_sids)
     test_ds = CoagulopathyDataset(test_sids)
 
-    tst = tunable_tst_factory(PARAMS, train_ds)
+    tst = tunable_tst_factory(PARAMS, train_ds, save_path="cache/models/singleTst")
 
     tst.fit(train_ds, y=None)
 
-    final_auroc = roc_auc_score(test_ds.get_labels(), tst.predict_proba(test_ds)[:, 1])
+    # TODO: dont' have get_labels() anymore need to update this
+    # final_auroc = roc_auc_score(test_ds.get_labels(), tst.predict_proba(test_ds)[:, 1])
 
-    final_auprc = average_precision_score(
-        test_ds.get_labels(), tst.predict_proba(test_ds)[:, 1]
-    )
+    # final_auprc = average_precision_score(
+    #     test_ds.get_labels(), tst.predict_proba(test_ds)[:, 1]
+    # )
 
-    print("Final score:")
-    print(f"\tAUROC: {final_auroc}")
-    print(f"\tAverage precision: {final_auprc}")
+    # print("Final score:")
+    # print(f"\tAUROC: {final_auroc}")
+    # print(f"\tAverage precision: {final_auprc}")
