@@ -50,9 +50,9 @@ if __name__ == "__main__":
     final_auprc = average_precision_score(test_y, lr.predict_proba(test_X)[:, 1])
 
     print("Saving model and feature importances")
-    os.makedirs("cache/models/singleLr", exist_ok=True)
+    os.makedirs(config.lr_path, exist_ok=True)
 
-    with open("cache/models/singleLr/whole_model.pkl", "wb") as f:
+    with open(f"{config.lr_path}/whole_model.pkl", "wb") as f:
         pickle.dump(lr, f)
 
     odds_ratios = np.exp(lr.named_steps["logisticregression"].coef_)
@@ -65,7 +65,7 @@ if __name__ == "__main__":
         }
     )
 
-    odds_ratios_df.to_csv("cache/models/singleLr/odds_ratios.csv", index=False)
+    odds_ratios_df.to_csv(f"{config.lr_path}/odds_ratios.csv", index=False)
 
     print("Final score:")
     print(f"\tAUROC: {final_auroc}")
