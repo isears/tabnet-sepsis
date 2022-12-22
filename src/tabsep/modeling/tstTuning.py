@@ -136,7 +136,7 @@ if __name__ == "__main__":
 
     pruner = optuna.pruners.MedianPruner()
     study = optuna.create_study(direction="maximize", pruner=None)
-    study.optimize(Objective(sids_train), n_trials=1000)
+    study.optimize(Objective(sids_train), n_trials=500)
 
     print("Best trial:")
     trial = study.best_trial
