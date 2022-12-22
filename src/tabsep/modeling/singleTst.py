@@ -14,7 +14,7 @@ PARAMS = dict(
     module__num_layers=3,
     module__n_heads=16,
     module__dim_feedforward=256,
-    iterator_train__batch_size=16,  # Should be 128
+    iterator_train__batch_size=64,  # Should be 128
 )
 
 if __name__ == "__main__":
@@ -23,7 +23,7 @@ if __name__ == "__main__":
     train_ds = FileBasedDataset(sids_train)
     test_ds = FileBasedDataset(sids_test)
 
-    tst = tunable_tst_factory(PARAMS, train_ds)
+    tst = tunable_tst_factory(PARAMS, train_ds, save_path="cache/models/singleTst")
 
     tst.fit(train_ds, train_ds.get_labels())
 
