@@ -1,3 +1,8 @@
+import os
+import pickle
+
+import numpy as np
+import pandas as pd
 import torch
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import average_precision_score, roc_auc_score
@@ -6,7 +11,7 @@ from sklearn.preprocessing import StandardScaler
 from torch.utils.data import DataLoader
 
 from tabsep import config
-from tabsep.dataProcessing.fileBasedDataset import FileBasedDataset
+from tabsep.dataProcessing.fileBasedDataset import FileBasedDataset, get_feature_labels
 from tabsep.modeling.tstTuning import split_data_consistently
 
 
@@ -44,7 +49,24 @@ if __name__ == "__main__":
     final_auroc = roc_auc_score(test_y, lr.predict_proba(test_X)[:, 1])
     final_auprc = average_precision_score(test_y, lr.predict_proba(test_X)[:, 1])
 
+    print("Saving model and feature importances")
+    os.makedirs("cache/models/singleLr", exist_ok=True)
+
+    with open("cache/models/singleLr/whole_model.pkl", "wb") as f:
+        pickle.dump(lr, f)
+
+    odds_ratios = np.exp(lr.named_steps["logisticregression"].coef_)
+    coefficients = lr.named_steps["logisticregression"].coef_
+    odds_ratios_df = pd.DataFrame(
+        data={
+            "Variable": get_feature_labels(),
+            "Odds Ratios": odds_ratios.squeeze(),
+            "Coefficients": coefficients.squeeze(),
+        }
+    )
+
+    odds_ratios_df.to_csv("cache/models/singleLr/odds_ratios.csv", index=False)
+
     print("Final score:")
     print(f"\tAUROC: {final_auroc}")
     print(f"\tAverage precision: {final_auprc}")
-
