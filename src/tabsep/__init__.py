@@ -1,5 +1,5 @@
-from dataclasses import dataclass
 import os
+from dataclasses import dataclass
 
 
 @dataclass
@@ -23,7 +23,7 @@ with open("mimicts/readme.txt", "r") as f:
 
 config = Config(
     timestep_seconds=timestep_seconds,
-    prediction_timesteps=1,
+    prediction_timesteps=12,
     model_path="/gpfs/home/isears1/Repos/tabnet-sepsis/cache/models/singleTst_2022-08-30_19:55:07",
     cores_available=len(os.sched_getaffinity(0)),
 )
