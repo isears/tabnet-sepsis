@@ -26,7 +26,7 @@ class FileBasedDataset(torch.utils.data.Dataset):
         # NOTE: maxlen calculated before filtering down to indices so that
         # datasets all have uniform seq lengths
         self.max_len = self.cut_sample["cutidx"].max()
-        self.cut_sample = self.cut_sample[self.cut_sample['stay_id'].isin(stay_ids)]
+        self.cut_sample = self.cut_sample[self.cut_sample["stay_id"].isin(stay_ids)]
 
         # Must shuffle otherwise all pos labels will be @ end
         self.cut_sample = self.cut_sample.sample(frac=1, random_state=42)
@@ -101,6 +101,15 @@ class FileBasedDataset(torch.utils.data.Dataset):
 
         return X.float(), y.float()
 
+    def all_24_collate(self, batch):
+        """
+        - Truncate timeseries to just most recent 24 timesteps
+        - Carry forward all nonzero values older than 24 timesteps prior to cut
+        NOTE: this only really makes sense if the dataset is hour-by-hour
+        """
+        # TODO
+        raise NotImplementedError
+
     def get_num_features(self) -> int:
         return len(self.feature_ids)
 
@@ -130,9 +139,7 @@ class FileBasedDataset(torch.utils.data.Dataset):
 
             if os.path.exists(full_path):
                 curr_features = pd.read_csv(
-                    full_path,
-                    usecols=list(range(0, cutidx)),
-                    index_col="feature_id",
+                    full_path, usecols=list(range(0, cutidx)), index_col="feature_id",
                 )
 
                 combined_features = pd.concat([combined_features, curr_features])
