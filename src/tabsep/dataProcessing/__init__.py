@@ -19,4 +19,3 @@ def get_feature_labels():
 
 
 min_seq_len = datetime.timedelta(hours=24)
-label_itemid = 227466  # PTT

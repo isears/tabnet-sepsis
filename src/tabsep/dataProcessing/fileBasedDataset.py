@@ -11,7 +11,7 @@ from tabsep import config
 class FileBasedDataset(torch.utils.data.Dataset):
     def __init__(
         self,
-        cutsample_indices,
+        stay_ids,
         processed_mimic_path: str = "./mimicts",
         pm_type=torch.bool,  # May require pad mask to be different type
     ):
@@ -26,7 +26,7 @@ class FileBasedDataset(torch.utils.data.Dataset):
         # NOTE: maxlen calculated before filtering down to indices so that
         # datasets all have uniform seq lengths
         self.max_len = self.cut_sample["cutidx"].max()
-        self.cut_sample = self.cut_sample.loc[cutsample_indices].reset_index(drop=True)
+        self.cut_sample = self.cut_sample[self.cut_sample['stay_id'].isin(stay_ids)]
 
         # Must shuffle otherwise all pos labels will be @ end
         self.cut_sample = self.cut_sample.sample(frac=1, random_state=42)

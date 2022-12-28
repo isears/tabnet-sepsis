@@ -16,4 +16,4 @@ export PYTHONUNBUFFERED=TRUE
 
 python --version
 
-python src/tabsep/modeling/transformerSingle.py tst
+python src/tabsep/modeling/singleTst.py

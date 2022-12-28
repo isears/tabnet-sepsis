@@ -18,7 +18,6 @@ from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
 
 from tabsep import config
-from tabsep.dataProcessing.labelGeneratingDataset import CoagulopathyDataset
 
 
 @dataclass
@@ -77,9 +76,9 @@ def my_auprc(net, X, y):
 
 
 def split_data_consistently():
-    sample = pd.read_csv("cache/included_stayids.csv")
+    sample = pd.read_csv("cache/sample_cuts.csv")["stay_id"]
     train_sids, test_sids = train_test_split(
-        sample.squeeze("columns").to_list(), test_size=0.1, random_state=42
+        sample.to_list(), test_size=0.1, random_state=42
     )
 
     return train_sids, test_sids

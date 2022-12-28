@@ -12,14 +12,14 @@ from torch.utils.data import DataLoader
 
 from tabsep import config
 from tabsep.dataProcessing import get_feature_labels
-from tabsep.dataProcessing.labelGeneratingDataset import CoagulopathyDataset
+from tabsep.dataProcessing.fileBasedDataset import FileBasedDataset
 from tabsep.modeling.tstTuning import split_data_consistently
 
 
 def load_to_mem(sids: list):
     all_X, all_y = torch.tensor([]), torch.tensor([])
 
-    train_ds = CoagulopathyDataset(sids)
+    train_ds = FileBasedDataset(sids)
     memory_loader = DataLoader(
         train_ds,
         batch_size=16,  # Batch size only important for tuning # workers to load to mem
