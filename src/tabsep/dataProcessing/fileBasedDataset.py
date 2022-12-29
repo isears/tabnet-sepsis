@@ -105,9 +105,24 @@ class FileBasedDataset(torch.utils.data.Dataset):
         """
         - Truncate timeseries to just most recent 24 timesteps
         - Carry forward all nonzero values older than 24 timesteps prior to cut
-        NOTE: this only really makes sense if the dataset is hour-by-hour
+        NOTE: this only really makes sense if the dataset is hour-by-hour; this will
+        probably break if there are timeseries that are less than 24 steps in length
         """
         # TODO
+        x_out = list()
+        for idx, (X, y) in enumerate(batch):
+            most_recent_X = X[:, -24:, :]  # Values that will be passed thru
+            summarizable_X = X[:, :-24, :]  # Values that will be carried fwd
+            last_nonzero_indices = (summarizable_X.shape[1] - 1) - torch.argmax(
+                torch.flip(summarizable_X, dims=(1,)).ne(0.0).int(), dim=1
+            )
+            summarized_old_vals = summarizable_X[
+                torch.arange(summarizable_X.shape[0]), last_nonzero_indices
+            ]
+
+            final_X = torch.cat((summarized_old_vals, most_recent_X), dim=1)
+            x_out.append(final_X)
+
         raise NotImplementedError
 
     def get_num_features(self) -> int:

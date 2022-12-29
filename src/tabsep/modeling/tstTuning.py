@@ -12,8 +12,12 @@ from optuna.integration import SkorchPruningCallback
 from sklearn.metrics import average_precision_score, roc_auc_score
 from sklearn.model_selection import KFold, cross_val_score, train_test_split
 from skorch import NeuralNetBinaryClassifier
-from skorch.callbacks import (Checkpoint, EarlyStopping, EpochScoring,
-                              GradientNormClipping)
+from skorch.callbacks import (
+    Checkpoint,
+    EarlyStopping,
+    EpochScoring,
+    GradientNormClipping,
+)
 
 from tabsep import config
 from tabsep.dataProcessing.fileBasedDataset import FileBasedDataset
@@ -45,9 +49,7 @@ def tunable_tst_factory(
         GradientNormClipping(gradient_clip_value=4.0),
         EarlyStopping(patience=3),
         Checkpoint(
-            load_best=True,
-            fn_prefix=f"{save_path}/",
-            f_pickle="whole_model.pkl",
+            load_best=True, fn_prefix=f"{save_path}/", f_pickle="whole_model.pkl",
         ),
         EpochScoring(my_auroc, name="auroc", lower_is_better=False),
         EpochScoring(my_auprc, name="auprc", lower_is_better=False),
@@ -125,7 +127,7 @@ if __name__ == "__main__":
 
     pruner = optuna.pruners.MedianPruner()
     study = optuna.create_study(direction="maximize", pruner=None)
-    study.optimize(Objective(sids_train), n_trials=1000)
+    study.optimize(Objective(sids_train), n_trials=100)
 
     print("Best trial:")
     trial = study.best_trial
