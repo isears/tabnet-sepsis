@@ -5,7 +5,13 @@ Run TST w/specific hyperparameters
 from sklearn.metrics import average_precision_score, roc_auc_score
 
 from tabsep.dataProcessing.fileBasedDataset import FileBasedDataset
-from tabsep.modeling.tstTuning import split_data_consistently, tunable_tst_factory
+from tabsep.modeling import (
+    TSTCombinedConfig,
+    TSTModelConfig,
+    TSTRunConfig,
+    tst_skorch_factory,
+)
+from tabsep.modeling.tstTuning import split_data_consistently
 
 PARAMS = dict(
     optimizer__lr=1e-4,
@@ -14,7 +20,7 @@ PARAMS = dict(
     module__num_layers=3,
     module__n_heads=16,
     module__dim_feedforward=256,
-    iterator_train__batch_size=16,  # Should be 128
+    iterator_train__batch_size=128,  # Should be 128
 )
 
 if __name__ == "__main__":
@@ -23,7 +29,15 @@ if __name__ == "__main__":
     train_ds = FileBasedDataset(sids_train)
     test_ds = FileBasedDataset(sids_test)
 
-    tst = tunable_tst_factory(PARAMS, train_ds, save_path="cache/models/singleTst")
+    model_config = TSTModelConfig()
+    run_config = TSTRunConfig()
+    tst_config = TSTCombinedConfig(
+        save_path="cache/models/singleTst",
+        model_config=model_config,
+        run_config=run_config,
+    )
+
+    tst = tst_skorch_factory(tst_config, train_ds)
 
     tst.fit(train_ds, train_ds.get_labels())
 

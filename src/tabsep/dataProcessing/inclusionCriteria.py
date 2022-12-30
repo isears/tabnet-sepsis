@@ -1,10 +1,12 @@
 """
 Apply inclusion criteria to generate a list of included stay ids
 """
-import pandas as pd
-import dask.dataframe as dd
-from tabsep.dataProcessing.util import all_inclusive_dtypes
 import datetime
+
+import dask.dataframe as dd
+import pandas as pd
+
+from tabsep.dataProcessing.util import all_inclusive_dtypes
 
 
 class InclusionCriteria:
@@ -42,7 +44,7 @@ class InclusionCriteria:
             )
         ]
 
-    def _exclude_long_stays(self, time_hours=(24 * 30)):
+    def _exclude_long_stays(self, time_hours=(24 * 14)):
         self.all_stays = self.all_stays[
             self.all_stays.apply(
                 lambda row: (row["outtime"] - row["intime"])
