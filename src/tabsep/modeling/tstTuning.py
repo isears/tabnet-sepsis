@@ -6,6 +6,7 @@ from dataclasses import fields
 import optuna
 import pandas as pd
 import torch
+from mvtst.optimizers import AdamW, PlainRAdam, RAdam
 from sklearn.metrics import average_precision_score, roc_auc_score
 from sklearn.model_selection import KFold, cross_val_score, train_test_split
 from skorch.callbacks import (
@@ -41,6 +42,7 @@ def optuna_params_to_config(optuna_params: dict) -> TSTCombinedConfig:
         save_path="cache/models/optunatst",
         model_config=model_config,
         run_config=run_config,
+        optimizer_cls=optuna_params["optimizer"],
     )
 
     return combined_config
@@ -62,6 +64,7 @@ class Objective:
         trial.suggest_categorical("pos_encoding", ["fixed", "learnable"])
         trial.suggest_categorical("activation", ["gelu", "relu"])
         trial.suggest_categorical("norm", ["BatchNorm", "LayerNorm"])
+        trial.suggest_categorical("optimizer", [AdamW, PlainRAdam, RAdam])
 
         train_ds = FileBasedDataset(self.trainvalid_sids)
 

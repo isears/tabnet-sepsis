@@ -24,6 +24,7 @@ from skorch.callbacks import (
     EpochScoring,
     GradientNormClipping,
 )
+from torch.optim.optimizer import Optimizer
 
 from tabsep import config
 
@@ -105,11 +106,13 @@ class TSTCombinedConfig:
     save_path: str
     model_config: TSTModelConfig
     run_config: TSTRunConfig
+    optimizer_cls: type[Optimizer] = AdamW
 
     def generate_optuna_params(self):
         return {
             **self.model_config.generate_optuna_params(),
             **self.run_config.generate_optuna_params(),
+            "optimizer": self.optimizer_cls,
         }
 
 
@@ -136,7 +139,6 @@ def tst_skorch_factory(
     tst = NeuralNetBinaryClassifier(
         TSTransformerEncoderClassiregressor,
         criterion=torch.nn.BCEWithLogitsLoss,
-        optimizer=AdamW,
         iterator_train__collate_fn=ds.maxlen_padmask_collate,
         iterator_valid__collate_fn=ds.maxlen_padmask_collate,
         iterator_train__num_workers=config.cores_available,
