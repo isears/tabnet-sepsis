@@ -1,9 +1,8 @@
-import os
 import random
 import sys
-from typing import Tuple
 
 import pandas as pd
+from sklearn.model_selection import train_test_split
 
 from tabsep import config
 
@@ -84,7 +83,7 @@ if __name__ == "__main__":
     pos_cut_distribution = pos_septic_sample["cutidx"].to_list()
     pos_cut_oversample = random.choices(pos_cut_distribution, k=len(nonseptic_icustays))
 
-    def do_random_cut(self, stay_id: int) -> int:
+    def do_random_cut(stay_id: int) -> int:
         ce_df = pd.read_csv(
             f"mimicts/{stay_id}/chartevents_features.csv",
             nrows=1,
@@ -109,6 +108,23 @@ if __name__ == "__main__":
     print("Cut distribution test:")
     print(f"\tPositives: {final_df[final_df['label'] == 1]['cutidx'].median()}")
     print(f"\tNegatives: {final_df[final_df['label'] == 0]['cutidx'].median()}")
-    final_df.to_csv("cache/sample_cuts.csv", index=False)
+    train_df, test_df = train_test_split(final_df, test_size=0.1, random_state=42)
+    train_df.to_csv("cache/train_examples.csv", index=False)
+    test_df.to_csv("cache/test_examples.csv", index=False)
 
+    # Pretraining should include everyone except the test set
     print("[*] Generating pre-trainable dataset")
+    icustays = pd.read_csv("mimiciv/icu/icustays.csv")
+    icustays = icustays[~icustays["stay_id"].isin(test_df['stay_id'])]
+
+    def random_cut_mark_if_invalid(stay_id: int):
+        try:
+            return do_random_cut(stay_id)
+        except AssertionError:
+            return -1
+
+    pretrain_df = icustays[["stay_id"]]
+    pretrain_df["cutidx"] = pretrain_df["stay_id"].apply(random_cut_mark_if_invalid)
+    pretrain_df = pretrain_df[pretrain_df["cutidx"] > 0]
+    print(f"Pretraining examples: {len(pretrain_df)}")
+    pretrain_df.to_csv("cache/pretrain_examples.csv", index=False)

@@ -1,4 +1,3 @@
-import json
 import os.path
 
 import pandas as pd
@@ -26,7 +25,8 @@ def get_feature_labels():
 class FileBasedDataset(torch.utils.data.Dataset):
     def __init__(
         self,
-        stay_ids: pd.Series,
+        examples_path: str,
+        shuffle: bool = True,
         processed_mimic_path: str = "./mimicts",
         pm_type=torch.bool,  # May require pad mask to be different type
     ):
@@ -37,33 +37,18 @@ class FileBasedDataset(torch.utils.data.Dataset):
             pd.read_csv("cache/included_features.csv").squeeze("columns").to_list()
         )
 
-        self.cut_sample = pd.read_csv("cache/sample_cuts.csv")
-        self.cut_sample = self.cut_sample[self.cut_sample["stay_id"].isin(stay_ids)]
-        # Must shuffle otherwise all pos labels will be @ end
-        self.cut_sample = self.cut_sample.sample(frac=1, random_state=42)
+        self.examples = pd.read_csv(examples_path)
 
-        print(f"\tExamples: {len(self.cut_sample)}")
+        if shuffle:
+            # May need to shuffle otherwise all pos labels will be @ end
+            self.examples = self.examples.sample(frac=1, random_state=42)
+
+        print(f"\tExamples: {len(self.examples)}")
         print(f"\tFeatures: {len(self.feature_ids)}")
 
         self.processed_mimic_path = processed_mimic_path
         self.pm_type = pm_type
-
-        try:
-            with open("cache/metadata.json", "r") as f:
-                self.max_len = int(json.load(f)["max_len"])
-        except FileNotFoundError:
-            print(
-                f"[{type(self).__name__}] Failed to load metadata. Computing maximum length, this may take some time..."
-            )
-            self.max_len = 0
-            for sid in self.cut_sample["stay_id"].to_list():
-                ce = pd.read_csv(
-                    f"{processed_mimic_path}/{sid}/chartevents_features.csv", nrows=1
-                )
-                seq_len = len(ce.columns) - 1
-
-                if seq_len > self.max_len:
-                    self.max_len = seq_len
+        self.max_len = self.examples["cutidx"].max() + 1
 
         print(f"\tMax length: {self.max_len}")
 
@@ -157,18 +142,18 @@ class FileBasedDataset(torch.utils.data.Dataset):
         return len(self.feature_ids)
 
     def get_labels(self) -> torch.Tensor:
-        Y = torch.tensor(self.cut_sample["label"].to_list())
+        Y = torch.tensor(self.examples["label"].to_list())
         # Y = torch.unsqueeze(Y, 1)
         return Y
 
     def __len__(self):
-        return len(self.cut_sample)
+        return len(self.examples)
 
     def __getitem__(self, index: int):
-        stay_id = self.cut_sample["stay_id"].iloc[index]
-        Y = torch.tensor(self.cut_sample["label"].iloc[index])
+        stay_id = self.examples["stay_id"].iloc[index]
+        Y = torch.tensor(self.examples["label"].iloc[index])
         # Y = torch.unsqueeze(Y, 0)
-        cutidx = self.cut_sample["cutidx"].iloc[index]
+        cutidx = self.examples["cutidx"].iloc[index]
 
         # Features
         # Ensures every example has a sequence length of at least 1
@@ -222,8 +207,7 @@ def get_label_prevalence(dl):
 
 
 if __name__ == "__main__":
-    sample_cuts = pd.read_csv("cache/sample_cuts.csv")
-    ds = FileBasedDataset(sample_cuts["stay_id"])
+    ds = FileBasedDataset(examples_path="cache/test_examples.csv")
 
     dl = torch.utils.data.DataLoader(
         ds,
