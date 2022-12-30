@@ -43,6 +43,7 @@ def optuna_params_to_config(optuna_params: dict) -> TSTCombinedConfig:
         model_config=model_config,
         run_config=run_config,
         optimizer_cls=optuna_params["optimizer"],
+        optimizer_weight_decay=optuna_params["optimizer_weight_decay"],
     )
 
     return combined_config
@@ -65,6 +66,7 @@ class Objective:
         trial.suggest_categorical("activation", ["gelu", "relu"])
         trial.suggest_categorical("norm", ["BatchNorm", "LayerNorm"])
         trial.suggest_categorical("optimizer", [AdamW, PlainRAdam, RAdam])
+        trial.suggest_float("optimizer_weight_decay", 1e-3, 1e-1, log=True)
 
         train_ds = FileBasedDataset(self.trainvalid_sids)
 

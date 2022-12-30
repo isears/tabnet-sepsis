@@ -107,12 +107,14 @@ class TSTCombinedConfig:
     model_config: TSTModelConfig
     run_config: TSTRunConfig
     optimizer_cls: type[Optimizer] = AdamW
+    optimizer_weight_decay: float = None
 
     def generate_optuna_params(self):
         return {
             **self.model_config.generate_optuna_params(),
             **self.run_config.generate_optuna_params(),
             "optimizer": self.optimizer_cls,
+            "optimizer__weight_decay": self.optimizer_weight_decay,
         }
 
 
