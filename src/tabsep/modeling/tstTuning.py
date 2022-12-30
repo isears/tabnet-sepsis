@@ -9,23 +9,13 @@ import torch
 from mvtst.optimizers import AdamW, PlainRAdam, RAdam
 from sklearn.metrics import average_precision_score, roc_auc_score
 from sklearn.model_selection import KFold, cross_val_score, train_test_split
-from skorch.callbacks import (
-    Checkpoint,
-    EarlyStopping,
-    EpochScoring,
-    GradientNormClipping,
-)
+from skorch.callbacks import (Checkpoint, EarlyStopping, EpochScoring,
+                              GradientNormClipping)
 
 from tabsep import config
 from tabsep.dataProcessing.fileBasedDataset import FileBasedDataset
-from tabsep.modeling import (
-    TSTCombinedConfig,
-    TSTModelConfig,
-    TSTRunConfig,
-    my_auprc,
-    my_auroc,
-    tst_skorch_factory,
-)
+from tabsep.modeling import (TSTCombinedConfig, TSTModelConfig, TSTRunConfig,
+                             my_auprc, my_auroc, tst_skorch_factory)
 
 
 def optuna_params_to_config(optuna_params: dict) -> TSTCombinedConfig:
@@ -66,7 +56,7 @@ class Objective:
         trial.suggest_categorical("activation", ["gelu", "relu"])
         trial.suggest_categorical("norm", ["BatchNorm", "LayerNorm"])
         trial.suggest_categorical("optimizer", [AdamW, PlainRAdam, RAdam])
-        trial.suggest_float("optimizer_weight_decay", 1e-3, 1e-1, log=True)
+        trial.suggest_categorical("optimizer_weight_decay", [1e-3, 1e-2, 1e-1, None])
 
         train_ds = FileBasedDataset(self.trainvalid_sids)
 
