@@ -77,13 +77,15 @@ class FileBasedDataset(torch.utils.data.Dataset):
         for idx, (X, y) in enumerate(batch):
             actual_len = X.shape[1]
 
-            assert actual_len < self.max_len
+            assert (
+                actual_len <= self.max_len
+            ), f"Actual: {actual_len}, Max: {self.max_len}"
 
             pad_mask = torch.ones(actual_len)
-            X_mod = pad(X, (self.max_len - actual_len, 0), mode="constant", value=0.0)
+            X_mod = pad(X, (0, self.max_len - actual_len), mode="constant", value=0.0)
 
             pad_mask = pad(
-                pad_mask, (self.max_len - actual_len, 0), mode="constant", value=0.0
+                pad_mask, (0, self.max_len - actual_len), mode="constant", value=0.0
             )
 
             batch[idx] = (X_mod.T, y, pad_mask)
@@ -126,6 +128,30 @@ class FileBasedDataset(torch.utils.data.Dataset):
         X = torch.stack(x_out, dim=0)
 
         return X.float(), y.float()
+
+    def all_24_collate(self, batch):
+        """
+        - Truncate timeseries to just most recent 24 timesteps
+        - Carry forward all nonzero values older than 24 timesteps prior to cut
+        NOTE: this only really makes sense if the dataset is hour-by-hour; this will
+        probably break if there are timeseries that are less than 24 steps in length
+        """
+        # TODO
+        x_out = list()
+        for idx, (X, y) in enumerate(batch):
+            most_recent_X = X[:, -24:, :]  # Values that will be passed thru
+            summarizable_X = X[:, :-24, :]  # Values that will be carried fwd
+            last_nonzero_indices = (summarizable_X.shape[1] - 1) - torch.argmax(
+                torch.flip(summarizable_X, dims=(1,)).ne(0.0).int(), dim=1
+            )
+            summarized_old_vals = summarizable_X[
+                torch.arange(summarizable_X.shape[0]), last_nonzero_indices
+            ]
+
+            final_X = torch.cat((summarized_old_vals, most_recent_X), dim=1)
+            x_out.append(final_X)
+
+        raise NotImplementedError
 
     def get_num_features(self) -> int:
         return len(self.feature_ids)
@@ -201,7 +227,7 @@ if __name__ == "__main__":
 
     dl = torch.utils.data.DataLoader(
         ds,
-        collate_fn=ds.last_nonzero_collate,
+        collate_fn=ds.all_24_collate,
         num_workers=config.cores_available,
         batch_size=4,
         pin_memory=True,

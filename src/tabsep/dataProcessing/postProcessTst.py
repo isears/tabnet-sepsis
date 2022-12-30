@@ -1,8 +1,10 @@
 import os
-import pandas as pd
-from typing import Tuple
 import random
 import sys
+from typing import Tuple
+
+import pandas as pd
+
 from tabsep import config
 
 pd.options.mode.chained_assignment = None  # default='warn'
@@ -66,7 +68,7 @@ if __name__ == "__main__":
         row = sepsis_df.iloc[0]
         sepsis_idx = int(row[row == 1].index[0])
         # This should be guaranteed by inclusion criteria
-        assert sepsis_idx > 1
+        assert sepsis_idx >= 24
         # Predict ahead by a certain window
         cutidx = sepsis_idx - config.prediction_timesteps
 
@@ -120,9 +122,9 @@ if __name__ == "__main__":
             )
 
             stay_len = len(ce_df.columns)
-            assert stay_len > 3  # Should be guaranteed by inclusion criteria
+            assert stay_len > 24  # Should be guaranteed by inclusion criteria
 
-            return random.randrange(3, stay_len)
+            return random.randrange(12, stay_len)
 
     dc = DistributionCutter(pos_cut_oversample)
 
@@ -137,6 +139,6 @@ if __name__ == "__main__":
     ]
 
     print("Cut distribution test:")
-    print(f"\tPositives: {final_df[final_df['label'] == 1]['cutidx'].mean()}")
-    print(f"\tNegatives: {final_df[final_df['label'] == 0]['cutidx'].mean()}")
+    print(f"\tPositives: {final_df[final_df['label'] == 1]['cutidx'].median()}")
+    print(f"\tNegatives: {final_df[final_df['label'] == 0]['cutidx'].median()}")
     final_df.to_csv("cache/sample_cuts.csv", index=False)
