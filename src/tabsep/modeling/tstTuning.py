@@ -1,18 +1,13 @@
 """
 Find optimal hyperparameters for TST
 """
-import os
 from dataclasses import fields
 
-import numpy as np
 import optuna
 import pandas as pd
-import skorch
 import torch
-from optuna.integration import SkorchPruningCallback
 from sklearn.metrics import average_precision_score, roc_auc_score
 from sklearn.model_selection import KFold, cross_val_score, train_test_split
-from skorch import NeuralNetBinaryClassifier
 from skorch.callbacks import (
     Checkpoint,
     EarlyStopping,
@@ -133,7 +128,7 @@ if __name__ == "__main__":
     )
 
     final_auprc = average_precision_score(
-        test_ds.get_labels(), tuned_tst.predict_proba(test_ds)
+        test_ds.get_labels(), tuned_tst.predict_proba(test_ds)[:, 1]
     )
 
     print("Final score:")
