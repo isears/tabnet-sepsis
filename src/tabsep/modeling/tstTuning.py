@@ -2,6 +2,7 @@
 Find optimal hyperparameters for TST
 """
 import os
+from dataclasses import fields
 
 import numpy as np
 import optuna
@@ -21,65 +22,33 @@ from skorch.callbacks import (
 
 from tabsep import config
 from tabsep.dataProcessing.fileBasedDataset import FileBasedDataset
-from tabsep.modeling import my_auprc, my_auroc
-from tabsep.modeling.tstImpl import AdamW, TSTransformerEncoderClassiregressor
+from tabsep.modeling import (
+    TSTCombinedConfig,
+    TSTModelConfig,
+    TSTRunConfig,
+    my_auprc,
+    my_auroc,
+    tst_skorch_factory,
+)
 
 
-def tunable_tst_factory(
-    tuning_params: dict,
-    ds: FileBasedDataset,
-    save_path: str = "cache/models/optunatst",
-    pruner=None,
-):
-    os.makedirs(save_path, exist_ok=True)
-
-    # Need to make sure d_model is divisible by n_heads, so some cleanup needs to be done here
-    tuning_params["module__d_model"] = (
-        tuning_params["module__n_heads"] * tuning_params["d_model_multiplier"]
+def optuna_params_to_config(optuna_params: dict) -> TSTCombinedConfig:
+    """
+    Utility function to convert optuna trial params to model factory configs
+    """
+    model_config = TSTModelConfig(
+        **{k: v for k, v in optuna_params.items() if k in fields(TSTModelConfig)}
+    )
+    run_config = TSTRunConfig(
+        **{k: v for k, v in optuna_params.items() if k in fields(TSTRunConfig)}
+    )
+    combined_config = TSTCombinedConfig(
+        save_path="cache/models/optunatst",
+        model_config=model_config,
+        run_config=run_config,
     )
 
-    del tuning_params["d_model_multiplier"]
-
-    # Set valid batch size to be same as train batch size
-    tuning_params["iterator_valid__batch_size"] = tuning_params[
-        "iterator_train__batch_size"
-    ]
-
-    tst_callbacks = [
-        GradientNormClipping(gradient_clip_value=4.0),
-        EarlyStopping(patience=3),
-        Checkpoint(
-            load_best=True, fn_prefix=f"{save_path}/", f_pickle="whole_model.pkl",
-        ),
-        EpochScoring(my_auroc, name="auroc", lower_is_better=False),
-        EpochScoring(my_auprc, name="auprc", lower_is_better=False),
-    ]
-
-    if pruner:
-        tst_callbacks.append(pruner)
-
-    tst = NeuralNetBinaryClassifier(
-        TSTransformerEncoderClassiregressor,
-        criterion=torch.nn.BCEWithLogitsLoss,
-        optimizer=AdamW,
-        iterator_train__collate_fn=ds.maxlen_padmask_collate,
-        iterator_valid__collate_fn=ds.maxlen_padmask_collate,
-        iterator_train__num_workers=config.cores_available,
-        iterator_valid__num_workers=config.cores_available,
-        iterator_train__pin_memory=True,
-        iterator_valid__pin_memory=True,
-        device="cuda",
-        callbacks=tst_callbacks,
-        train_split=skorch.dataset.ValidSplit(0.1),
-        # TST params
-        module__feat_dim=ds.get_num_features(),
-        module__max_len=ds.max_len,
-        module__num_classes=1,
-        max_epochs=15,
-        **tuning_params,
-    )
-
-    return tst
+    return combined_config
 
 
 class Objective:
@@ -88,18 +57,21 @@ class Objective:
 
     def __call__(self, trial: optuna.Trial):
         # Parameters to tune:
-        trial.suggest_float("optimizer__lr", 1e-10, 0.1, log=True)
-        trial.suggest_float("module__dropout", 0.01, 0.7)
+        trial.suggest_float("lr", 1e-10, 0.1, log=True)
+        trial.suggest_float("dropout", 0.01, 0.7)
         trial.suggest_categorical("d_model_multiplier", [1, 2, 4, 8, 16, 32, 64])
-        trial.suggest_int("module__num_layers", 1, 15)
-        trial.suggest_categorical("module__n_heads", [4, 8, 16, 32, 64])
-        trial.suggest_int("module__dim_feedforward", 128, 512)
-        trial.suggest_int("iterator_train__batch_size", 8, 256)
+        trial.suggest_int("num_layers", 1, 15)
+        trial.suggest_categorical("n_heads", [4, 8, 16, 32, 64])
+        trial.suggest_int("dim_feedforward", 128, 512)
+        trial.suggest_int("batch_size", 8, 256)
+        trial.suggest_categorical("pos_encoding", ["fixed", "learnable"])
+        trial.suggest_categorical("activation", ["gelu", "relu"])
+        trial.suggest_categorical("norm", ["BatchNorm", "LayerNorm"])
 
         train_ds = FileBasedDataset(self.trainvalid_sids)
 
-        tst = tunable_tst_factory(
-            trial.params,
+        tst = tst_skorch_factory(
+            optuna_params_to_config(trial.params),
             train_ds,
             # pruner=SkorchPruningCallback(trial=trial, monitor="valid_loss"),
             pruner=None,
@@ -152,7 +124,7 @@ if __name__ == "__main__":
     train_ds = FileBasedDataset(sids_train)
     test_ds = FileBasedDataset(sids_test)
 
-    tuned_tst = tunable_tst_factory(trial.params, train_ds)
+    tuned_tst = tst_skorch_factory(optuna_params_to_config(trial.params), train_ds)
 
     tuned_tst.fit(train_ds, train_ds.get_labels())
 

@@ -14,7 +14,7 @@ PARAMS = dict(
     module__num_layers=3,
     module__n_heads=16,
     module__dim_feedforward=256,
-    iterator_train__batch_size=64,  # Should be 128
+    iterator_train__batch_size=16,  # Should be 128
 )
 
 if __name__ == "__main__":
