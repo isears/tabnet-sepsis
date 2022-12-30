@@ -84,52 +84,20 @@ if __name__ == "__main__":
     pos_cut_distribution = pos_septic_sample["cutidx"].to_list()
     pos_cut_oversample = random.choices(pos_cut_distribution, k=len(nonseptic_icustays))
 
-    class DistributionCutter:  # Building class so that we can maintain state
-        def __init__(self, sample) -> None:
-            self.sample = sample
-            self.idx = 0
-            self.total_length = len(sample)
+    def do_random_cut(self, stay_id: int) -> int:
+        ce_df = pd.read_csv(
+            f"mimicts/{stay_id}/chartevents_features.csv",
+            nrows=1,
+            index_col="feature_id",
+        )
 
-        def do_dist_cut(self, stay_id: int) -> int:
-            """
-            Attempts to create a distribution similar to self.sample
-            Will fail if not possible
-            """
-            ce_df = pd.read_csv(
-                f"mimicts/{stay_id}/chartevents_features.csv",
-                nrows=1,
-                index_col="feature_id",
-            )
+        stay_len = len(ce_df.columns)
+        assert stay_len > 24  # Should be guaranteed by inclusion criteria
 
-            stay_len = len(ce_df.columns)
-
-            # Get the longest stays out of the way first, when possible
-            valid_cuts = [c for c in self.sample if c <= (stay_len)]
-            assert (
-                len(valid_cuts) > 0
-            ), f"[-] Couldn't find a valid cut idx for stay length {stay_len} ({self.idx} / {self.total_length})\n{self.sample}"
-            cutidx = max(valid_cuts)
-            self.sample.remove(cutidx)
-
-            self.idx += 1
-            return cutidx
-
-        def do_random_cut(self, stay_id: int) -> int:
-            ce_df = pd.read_csv(
-                f"mimicts/{stay_id}/chartevents_features.csv",
-                nrows=1,
-                index_col="feature_id",
-            )
-
-            stay_len = len(ce_df.columns)
-            assert stay_len > 24  # Should be guaranteed by inclusion criteria
-
-            return random.randrange(12, stay_len)
-
-    dc = DistributionCutter(pos_cut_oversample)
+        return random.randrange(12, stay_len)
 
     nonseptic_sample["cutidx"] = nonseptic_sample["stay_id"].apply(
-        lambda s: dc.do_random_cut(s)
+        lambda s: do_random_cut(s)
     )
     nonseptic_sample["label"] = 0.0
 
@@ -142,3 +110,5 @@ if __name__ == "__main__":
     print(f"\tPositives: {final_df[final_df['label'] == 1]['cutidx'].median()}")
     print(f"\tNegatives: {final_df[final_df['label'] == 0]['cutidx'].median()}")
     final_df.to_csv("cache/sample_cuts.csv", index=False)
+
+    print("[*] Generating pre-trainable dataset")
