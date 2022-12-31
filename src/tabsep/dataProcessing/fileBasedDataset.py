@@ -146,16 +146,13 @@ class FileBasedDataset(torch.utils.data.Dataset):
         # Y = torch.unsqueeze(Y, 1)
         return Y
 
-    def __len__(self):
-        return len(self.examples)
-
-    def __getitem__(self, index: int):
+    def __getitem_X__(self, index: int):
+        """
+        Outsource so that it can be called separately in unsupervised datasets
+        """
         stay_id = self.examples["stay_id"].iloc[index]
-        Y = torch.tensor(self.examples["label"].iloc[index])
-        # Y = torch.unsqueeze(Y, 0)
         cutidx = self.examples["cutidx"].iloc[index]
 
-        # Features
         # Ensures every example has a sequence length of at least 1
         combined_features = pd.DataFrame(columns=["feature_id", "0"])
 
@@ -181,8 +178,18 @@ class FileBasedDataset(torch.utils.data.Dataset):
         )  # Need to add any itemids that are missing
         combined_features = combined_features.fillna(0.0)
         X = torch.tensor(combined_features.values)
+        return X.float()
 
-        return X.float(), Y.float()
+    def __len__(self):
+        return len(self.examples)
+
+    def __getitem__(self, index: int):
+        Y = torch.tensor(self.examples["label"].iloc[index]).float()
+        # Y = torch.unsqueeze(Y, 0)
+
+        X = self.__getitem_x__(index)
+
+        return X, Y
 
 
 def demo(dl):
