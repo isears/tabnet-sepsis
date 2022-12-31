@@ -14,8 +14,8 @@ from skorch.callbacks import (Checkpoint, EarlyStopping, EpochScoring,
 
 from tabsep import config
 from tabsep.dataProcessing.fileBasedDataset import FileBasedDataset
-from tabsep.modeling import (TSTCombinedConfig, TSTModelConfig, TSTRunConfig,
-                             my_auprc, my_auroc, tst_skorch_factory)
+from tabsep.modeling import TSTCombinedConfig, TSTModelConfig, TSTRunConfig
+from tabsep.modeling.skorchTst import skorch_tst_factory
 
 
 def optuna_params_to_config(optuna_params: dict) -> TSTCombinedConfig:
@@ -60,7 +60,7 @@ class Objective:
 
         train_ds = FileBasedDataset(self.trainvalid_sids)
 
-        tst = tst_skorch_factory(
+        tst = skorch_tst_factory(
             optuna_params_to_config(trial.params),
             train_ds,
             # pruner=SkorchPruningCallback(trial=trial, monitor="valid_loss"),
@@ -114,7 +114,7 @@ if __name__ == "__main__":
     train_ds = FileBasedDataset(sids_train)
     test_ds = FileBasedDataset(sids_test)
 
-    tuned_tst = tst_skorch_factory(optuna_params_to_config(trial.params), train_ds)
+    tuned_tst = skorch_tst_factory(optuna_params_to_config(trial.params), train_ds)
 
     tuned_tst.fit(train_ds, train_ds.get_labels())
 
