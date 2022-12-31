@@ -33,7 +33,9 @@ class FileBasedImputationDataset(FileBasedDataset):
     def __getitem__(self, index: int):
         stay_id = self.examples["stay_id"].iloc[index]
 
-        X = super().__getitem_X__(index)
+        # Need to transpose b/c downstream functions expect
+        # (seq_length, feat_dim) shape for some reason
+        X = super().__getitem_X__(index).T
         mask = noise_mask(
             X,
             self.masking_ratio,
@@ -79,7 +81,8 @@ if __name__ == "__main__":
     dl = torch.utils.data.DataLoader(
         ds,
         collate_fn=collate_unsuperv,
-        num_workers=config.cores_available,
+        # num_workers=config.cores_available,
+        num_workers=1,
         batch_size=4,
         pin_memory=True,
     )
