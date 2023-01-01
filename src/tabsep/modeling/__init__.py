@@ -7,8 +7,12 @@ import numpy as np
 import scipy.stats as st
 from mvtst.models.ts_transformer import TSTransformerEncoderClassiregressor
 from mvtst.optimizers import AdamW
-from sklearn.metrics import (average_precision_score, make_scorer,
-                             roc_auc_score, roc_curve)
+from sklearn.metrics import (
+    average_precision_score,
+    make_scorer,
+    roc_auc_score,
+    roc_curve,
+)
 from torch.optim.optimizer import Optimizer
 
 from tabsep import config
@@ -54,13 +58,18 @@ class TSTModelConfig:
         else:
             raise ValueError(f"One of d_model_multiplier and d_model must be sepcified")
 
-    def generate_optuna_params(self):
+    def generate_params(self):
         # Drop d_model_multiplier
         ret = {
             param_name: param_val
             for param_name, param_val in self.__dict__.items()
             if param_name != "d_model_multiplier"
         }
+
+        return ret
+
+    def generate_optuna_params(self):
+        ret = self.generate_params()
         # Add prefix
         ret = {
             f"module__{param_name}": param_val for param_name, param_val in ret.items()

@@ -115,7 +115,7 @@ if __name__ == "__main__":
     # Pretraining should include everyone except the test set
     print("[*] Generating pre-trainable dataset")
     icustays = pd.read_csv("mimiciv/icu/icustays.csv")
-    icustays = icustays[~icustays["stay_id"].isin(test_df['stay_id'])]
+    icustays = icustays[~icustays["stay_id"].isin(test_df["stay_id"])]
 
     def random_cut_mark_if_invalid(stay_id: int):
         try:
@@ -126,5 +126,7 @@ if __name__ == "__main__":
     pretrain_df = icustays[["stay_id"]]
     pretrain_df["cutidx"] = pretrain_df["stay_id"].apply(random_cut_mark_if_invalid)
     pretrain_df = pretrain_df[pretrain_df["cutidx"] > 0]
+    # Prevent pretraining from taking up significantly more memory than training
+    pretrain_df = pretrain_df[pretrain_df["cutidx"] < train_df["cutidx"].max()]
     print(f"Pretraining examples: {len(pretrain_df)}")
     pretrain_df.to_csv("cache/pretrain_examples.csv", index=False)
