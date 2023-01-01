@@ -57,9 +57,9 @@ class FileBasedDataset(torch.utils.data.Dataset):
     def maxlen_padmask_collate(self, batch):
         """
         Pad and return third value (the pad mask)
-        Returns X, y, padmask
+        Returns X, y, padmask, stay_ids
         """
-        for idx, (X, y) in enumerate(batch):
+        for idx, (X, y, stay_id) in enumerate(batch):
             actual_len = X.shape[1]
 
             assert (
@@ -73,19 +73,30 @@ class FileBasedDataset(torch.utils.data.Dataset):
                 pad_mask, (0, self.max_len - actual_len), mode="constant", value=0.0
             )
 
-            batch[idx] = (X_mod.T, y, pad_mask)
+            batch[idx] = (X_mod.T, y, pad_mask, stay_id)
 
-        X = torch.stack([X for X, _, _ in batch], dim=0)
-        y = torch.stack([Y for _, Y, _ in batch], dim=0)
-        pad_mask = torch.stack([pad_mask for _, _, pad_mask in batch], dim=0)
+        X = torch.stack([X for X, _, _, _ in batch], dim=0)
+        y = torch.stack([Y for _, Y, _, _ in batch], dim=0)
+        pad_mask = torch.stack([pad_mask for _, _, pad_mask, _ in batch], dim=0)
+        IDs = torch.tensor([stay_id for _, _, _, stay_id in batch])
 
-        return dict(X=X.float(), padding_masks=pad_mask.to(self.pm_type)), y.float()
+        return X, y, pad_mask.to(self.pm_type), IDs
+
+    def maxlen_padmask_collate_skorch(self, batch):
+        """
+        Skorch expects kwargs output
+        """
+        X, y, pad_mask, _ = self.maxlen_padmask_collate(batch)
+        return dict(X=X, padding_masks=pad_mask), y
 
     def maxlen_padmask_collate_combined(self, batch):
         """
         For compatibility with scikit learn, add the padmask as the last feature in X
         * If using this method, remember to remove the padmask from X in model
         """
+        raise NotImplementedError(
+            "Need to account for the fact that __getitem__() returns ID now"
+        )
         X, y, pad_mask = self.maxlen_padmask_collate(batch)
         X_and_pad = torch.cat((X, torch.unsqueeze(pad_mask, dim=-1)), dim=-1)
         return X_and_pad, y
@@ -94,6 +105,9 @@ class FileBasedDataset(torch.utils.data.Dataset):
         """
         Pad, but don't include padmask at all (either as separate return value or part of X)
         """
+        raise NotImplementedError(
+            "Need to account for the fact that __getitem__() returns ID now"
+        )
         X, y, _ = self.maxlen_padmask_collate(batch)
         return X, y
 
@@ -101,6 +115,9 @@ class FileBasedDataset(torch.utils.data.Dataset):
         """
         Just return the last nonzero value in X
         """
+        raise NotImplementedError(
+            "Need to account for the fact that __getitem__() returns ID now"
+        )
         x_out = list()
         for idx, (X, y) in enumerate(batch):
             # Shape will be 1 dim (# of features)
@@ -184,12 +201,13 @@ class FileBasedDataset(torch.utils.data.Dataset):
         return len(self.examples)
 
     def __getitem__(self, index: int):
+        stay_id = self.examples["stay_id"].iloc[index]
         Y = torch.tensor(self.examples["label"].iloc[index]).float()
         # Y = torch.unsqueeze(Y, 0)
 
-        X = self.__getitem_x__(index)
+        X = self.__getitem_X__(index)
 
-        return X, Y
+        return X, Y, stay_id
 
 
 def demo(dl):

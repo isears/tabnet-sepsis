@@ -127,6 +127,6 @@ if __name__ == "__main__":
     pretrain_df["cutidx"] = pretrain_df["stay_id"].apply(random_cut_mark_if_invalid)
     pretrain_df = pretrain_df[pretrain_df["cutidx"] > 0]
     # Prevent pretraining from taking up significantly more memory than training
-    pretrain_df = pretrain_df[pretrain_df["cutidx"] < train_df["cutidx"].max()]
+    pretrain_df = pretrain_df[pretrain_df["cutidx"] <= train_df["cutidx"].max()]
     print(f"Pretraining examples: {len(pretrain_df)}")
     pretrain_df.to_csv("cache/pretrain_examples.csv", index=False)
