@@ -5,18 +5,14 @@ Use all the original TST code
 import torch.utils.data
 from mvtst.datasets.dataset import collate_unsuperv
 from mvtst.models.loss import MaskedMSELoss
-from mvtst.models.ts_transformer import (
-    TSTransformerEncoder,
-    TSTransformerEncoderClassiregressor,
-)
-from mvtst.optimizers import Adamw
+from mvtst.models.ts_transformer import (TSTransformerEncoder,
+                                         TSTransformerEncoderClassiregressor)
+from mvtst.optimizers import AdamW
 from mvtst.running import UnsupervisedRunner
 
 from tabsep import config
 from tabsep.dataProcessing.fileBasedImputationDataset import (
-    FileBasedDataset,
-    FileBasedImputationDataset,
-)
+    FileBasedDataset, FileBasedImputationDataset)
 from tabsep.modeling import TSTCombinedConfig, TSTModelConfig, TSTRunConfig
 
 if __name__ == "__main__":
@@ -50,13 +46,16 @@ if __name__ == "__main__":
         batch_size=128,
         pin_memory=True,
     )
+
     runner = UnsupervisedRunner(
         model=pretraining_encoder,
         dataloader=pretraining_dl,
         device="cuda",
         loss_module=MaskedMSELoss(reduction="none"),
-        optimizer=Adamw(pretraining_encoder.parameters(), lr=1e-4),
+        optimizer=AdamW(pretraining_encoder.parameters(), lr=1e-3),
     )
 
-    for idx in range(0, 10):
-        runner.train_epoch(epoch_num=idx)
+    for idx in range(0, 3):
+        metrics = runner.train_epoch(epoch_num=idx)
+        print(metrics)
+
