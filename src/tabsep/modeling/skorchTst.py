@@ -9,7 +9,7 @@ import torch
 import torch.utils.data
 from mvtst.models.ts_transformer import TSTransformerEncoderClassiregressor
 from sklearn.metrics import average_precision_score, roc_auc_score
-from skorch import NeuralNetBinaryClassifier
+from skorch import NeuralNet, NeuralNetBinaryClassifier
 from skorch.callbacks import (
     Checkpoint,
     EarlyStopping,
@@ -19,13 +19,7 @@ from skorch.callbacks import (
 
 from tabsep import config
 from tabsep.dataProcessing.fileBasedDataset import FileBasedDataset
-from tabsep.modeling import (
-    TSTCombinedConfig,
-    TSTModelConfig,
-    TSTRunConfig,
-    my_auprc,
-    my_auroc,
-)
+from tabsep.modeling import TSTConfig, my_auprc, my_auroc
 
 PARAMS = dict(
     optimizer__lr=1e-4,
@@ -38,9 +32,7 @@ PARAMS = dict(
 )
 
 
-def skorch_tst_factory(
-    tst_config: TSTCombinedConfig, ds: torch.utils.data.Dataset, pruner=None
-):
+def skorch_tst_factory(tst_config: TSTConfig, ds: FileBasedDataset, pruner=None):
     """
     Generate TSTs wrapped in standard skorch wrapper
     """
@@ -61,8 +53,8 @@ def skorch_tst_factory(
     tst = NeuralNetBinaryClassifier(
         TSTransformerEncoderClassiregressor,
         criterion=torch.nn.BCEWithLogitsLoss,
-        iterator_train__collate_fn=ds.maxlen_padmask_collate,
-        iterator_valid__collate_fn=ds.maxlen_padmask_collate,
+        iterator_train__collate_fn=ds.maxlen_padmask_collate_skorch,
+        iterator_valid__collate_fn=ds.maxlen_padmask_collate_skorch,
         iterator_train__num_workers=config.cores_available,
         iterator_valid__num_workers=config.cores_available,
         iterator_train__pin_memory=True,
@@ -74,36 +66,17 @@ def skorch_tst_factory(
         module__feat_dim=ds.get_num_features(),
         module__max_len=ds.max_len,
         max_epochs=15,
-        **tst_config.generate_optuna_params(),
+        **tst_config.generate_skorch_full_params(),
     )
 
     return tst
 
 
 if __name__ == "__main__":
-    sids_train, sids_test = split_data_consistently()
+    pretraining_ds = FileBasedDataset("cache/train_examples.csv")
+    tst_config = TSTConfig(save_path="cache/models/skorchTst")
 
-    train_ds = FileBasedDataset(sids_train)
-    test_ds = FileBasedDataset(sids_test)
+    tst = skorch_tst_factory(tst_config, pretraining_ds)
 
-    model_config = TSTModelConfig()
-    run_config = TSTRunConfig()
-    tst_config = TSTCombinedConfig(
-        save_path="cache/models/singleTst",
-        model_config=model_config,
-        run_config=run_config,
-    )
+    tst.fit(pretraining_ds, y=None)
 
-    tst = skorch_tst_factory(tst_config, train_ds)
-
-    tst.fit(train_ds, train_ds.get_labels())
-
-    final_auroc = roc_auc_score(test_ds.get_labels(), tst.predict_proba(test_ds)[:, 1])
-
-    final_auprc = average_precision_score(
-        test_ds.get_labels(), tst.predict_proba(test_ds)[:, 1]
-    )
-
-    print("Final score:")
-    print(f"\tAUROC: {final_auroc}")
-    print(f"\tAverage precision: {final_auprc}")

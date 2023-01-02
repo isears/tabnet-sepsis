@@ -23,7 +23,7 @@ from tqdm import tqdm
 
 from tabsep import config
 from tabsep.dataProcessing.fileBasedDataset import FileBasedDataset
-from tabsep.modeling.tstTuning import split_data_consistently
+from tabsep.modeling.skorchTstTuning import split_data_consistently
 
 torch.manual_seed(42)
 np.random.seed(42)
@@ -67,9 +67,7 @@ if __name__ == "__main__":
             X.requires_grad = True
             attributor = IntegratedGradients(tst.module_)
             batch_attributions = attributor.attribute(
-                X,
-                additional_forward_args=padding_masks,
-                target=0,
+                X, additional_forward_args=padding_masks, target=0,
             )
 
             y_pred = torch.cat((y_pred, batch_preds.to("cpu")))

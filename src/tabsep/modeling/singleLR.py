@@ -12,7 +12,6 @@ from torch.utils.data import DataLoader
 
 from tabsep import config
 from tabsep.dataProcessing.fileBasedDataset import FileBasedDataset, get_feature_labels
-from tabsep.modeling.tstTuning import split_data_consistently
 
 
 def load_to_mem(sids: list):
