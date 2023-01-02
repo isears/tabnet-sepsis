@@ -50,6 +50,9 @@ def skorch_tst_factory(tst_config: TSTConfig, ds: FileBasedDataset, pruner=None)
         EpochScoring(my_auprc, name="auprc", lower_is_better=False),
     ]
 
+    if pruner is not None:
+        tst_callbacks.append(pruner)
+
     tst = NeuralNetBinaryClassifier(
         TSTransformerEncoderClassiregressor,
         criterion=torch.nn.BCEWithLogitsLoss,

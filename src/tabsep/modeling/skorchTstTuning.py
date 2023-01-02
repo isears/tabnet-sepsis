@@ -7,6 +7,7 @@ import optuna
 import pandas as pd
 import torch
 from mvtst.optimizers import AdamW, PlainRAdam, RAdam
+from optuna.integration.skorch import SkorchPruningCallback
 from sklearn.metrics import average_precision_score, roc_auc_score
 from sklearn.model_selection import KFold, cross_val_score, train_test_split
 from skorch.callbacks import (
@@ -18,70 +19,49 @@ from skorch.callbacks import (
 
 from tabsep import config
 from tabsep.dataProcessing.fileBasedDataset import FileBasedDataset
-from tabsep.modeling import TSTCombinedConfig, TSTModelConfig, TSTRunConfig
+from tabsep.modeling import TSTConfig
 from tabsep.modeling.skorchTst import skorch_tst_factory
 
 
-class Objective:
-    def __init__(self, trainvalid_sids):
-        self.trainvalid_sids = trainvalid_sids
+def objective(trial: optuna.Trial) -> float:
+    # Parameters to tune:
+    trial.suggest_float("lr", 1e-10, 0.1, log=True)
+    trial.suggest_float("dropout", 0.01, 0.7)
+    trial.suggest_categorical("d_model_multiplier", [1, 2, 4, 8, 16, 32, 64])
+    trial.suggest_int("num_layers", 1, 15)
+    trial.suggest_categorical("n_heads", [4, 8, 16, 32, 64])
+    trial.suggest_int("dim_feedforward", 128, 512)
+    trial.suggest_int("batch_size", 8, 256)
+    trial.suggest_categorical("pos_encoding", ["fixed", "learnable"])
+    trial.suggest_categorical("activation", ["gelu", "relu"])
+    trial.suggest_categorical("norm", ["BatchNorm", "LayerNorm"])
+    trial.suggest_categorical("optimizer_name", ["AdamW", "PlainRAdam", "RAdam"])
+    trial.suggest_categorical("weight_decay", [1e-3, 1e-2, 1e-1, 0])
 
-    def __call__(self, trial: optuna.Trial):
-        # Parameters to tune:
-        trial.suggest_float("lr", 1e-10, 0.1, log=True)
-        trial.suggest_float("dropout", 0.01, 0.7)
-        trial.suggest_categorical("d_model_multiplier", [1, 2, 4, 8, 16, 32, 64])
-        trial.suggest_int("num_layers", 1, 15)
-        trial.suggest_categorical("n_heads", [4, 8, 16, 32, 64])
-        trial.suggest_int("dim_feedforward", 128, 512)
-        trial.suggest_int("batch_size", 8, 256)
-        trial.suggest_categorical("pos_encoding", ["fixed", "learnable"])
-        trial.suggest_categorical("activation", ["gelu", "relu"])
-        trial.suggest_categorical("norm", ["BatchNorm", "LayerNorm"])
-        trial.suggest_categorical("optimizer", [AdamW, PlainRAdam, RAdam])
-        trial.suggest_categorical("optimizer_weight_decay", [1e-3, 1e-2, 1e-1, None])
+    pretraining_ds = FileBasedDataset("cache/train_examples.csv")
+    tst_config = TSTConfig(save_path="cache/models/tstTuning", **trial.params)
 
-        train_ds = FileBasedDataset(self.trainvalid_sids)
-
-        tst = skorch_tst_factory(
-            optuna_params_to_config(trial.params),
-            train_ds,
-            # pruner=SkorchPruningCallback(trial=trial, monitor="valid_loss"),
-            pruner=None,
-        )
-
-        try:
-            tst.fit(train_ds, train_ds.get_labels())
-        except RuntimeError as e:
-            print(f"Warning, assumed runtime error: {e}")
-            del tst
-            torch.cuda.empty_cache()
-            return 0
-
-        epoch_scoring_callbacks = [c for c in tst.callbacks if type(c) == EpochScoring]
-        best_auprc = next(
-            filter(lambda c: c.name == "auprc", epoch_scoring_callbacks)
-        ).best_score_
-
-        return best_auprc
-
-
-def split_data_consistently():
-    cut_sample = pd.read_csv("cache/sample_cuts.csv")
-    sids_train, sids_test = train_test_split(
-        cut_sample["stay_id"].to_list(), test_size=0.1, random_state=42
+    tst = skorch_tst_factory(
+        tst_config,
+        pretraining_ds,
+        pruner=SkorchPruningCallback(trial=trial, monitor="valid_loss"),
     )
 
-    return sids_train, sids_test
+    try:
+        tst.fit(pretraining_ds, y=None)
+    except RuntimeError as e:
+        print(f"Warning, assumed runtime error: {e}")
+        del tst
+        torch.cuda.empty_cache()
+        return float("nan")
+
+    return max(tst.history[:, "auprc"])
 
 
 if __name__ == "__main__":
-    cut_sample = pd.read_csv("cache/sample_cuts.csv")
-    sids_train, sids_test = split_data_consistently()
-
-    pruner = optuna.pruners.MedianPruner()
-    study = optuna.create_study(direction="maximize", pruner=None)
-    study.optimize(Objective(sids_train), n_trials=500)
+    pruner = optuna.pruners.PercentilePruner(25.0)
+    study = optuna.create_study(direction="maximize", pruner=pruner)
+    study.optimize(objective, n_trials=500)
 
     print("Best trial:")
     trial = study.best_trial
@@ -91,24 +71,3 @@ if __name__ == "__main__":
     print("  Params: ")
     for key, value in trial.params.items():
         print("    {}: {}".format(key, value))
-
-    # Retrain w/hyperparams then test on hold-out dataset
-    print("Re-training with hyperparams and testing on hold-out dataset")
-    train_ds = FileBasedDataset(sids_train)
-    test_ds = FileBasedDataset(sids_test)
-
-    tuned_tst = skorch_tst_factory(optuna_params_to_config(trial.params), train_ds)
-
-    tuned_tst.fit(train_ds, train_ds.get_labels())
-
-    final_auroc = roc_auc_score(
-        test_ds.get_labels(), tuned_tst.predict_proba(test_ds)[:, 1]
-    )
-
-    final_auprc = average_precision_score(
-        test_ds.get_labels(), tuned_tst.predict_proba(test_ds)[:, 1]
-    )
-
-    print("Final score:")
-    print(f"\tAUROC: {final_auroc}")
-    print(f"\tAverage precision: {final_auprc}")
