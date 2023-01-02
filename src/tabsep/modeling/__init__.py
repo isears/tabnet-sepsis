@@ -8,8 +8,12 @@ import optuna
 import scipy.stats as st
 from mvtst.models.ts_transformer import TSTransformerEncoderClassiregressor
 from mvtst.optimizers import AdamW, PlainRAdam, RAdam
-from sklearn.metrics import (average_precision_score, make_scorer,
-                             roc_auc_score, roc_curve)
+from sklearn.metrics import (
+    average_precision_score,
+    make_scorer,
+    roc_auc_score,
+    roc_curve,
+)
 from torch.optim.optimizer import Optimizer
 
 from tabsep import config
@@ -113,7 +117,7 @@ class TSTConfig:
         """
         non_passable_params = ["module__num_classes"]
         ret = self.generate_skorch_full_params()
-        ret = {k: v for k, v in ret if k not in non_passable_params}
+        ret = {k: v for k, v in ret.items() if k not in non_passable_params}
         return ret
 
 

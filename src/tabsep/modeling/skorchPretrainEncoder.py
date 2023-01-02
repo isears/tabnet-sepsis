@@ -40,22 +40,6 @@ class MaskedMSELossSkorchConnector(MaskedMSELoss):
         return super().forward(y_pred, **target_packed)
 
 
-# PARAMS = dict(
-#     optimizer=AdamW,
-#     optimizer__lr=1e-4,
-#     module__dropout=0.1,
-#     d_model_multiplier=8,
-#     module__num_layers=3,
-#     module__n_heads=16,
-#     module__dim_feedforward=256,
-#     module__pos_encoding="learnable",  # or fixed? Does that make sense for pretraining?
-#     module__activation="gelu",
-#     module__norm="BatchNorm",
-#     module__freeze=False,
-#     iterator_train__batch_size=128,  # Should be 128
-# )
-
-
 def skorch_pretraining_encoder_factory(
     tst_config: TSTConfig, ds: FileBasedImputationDataset, pruner=None
 ):
@@ -99,9 +83,8 @@ def skorch_pretraining_encoder_factory(
 
 if __name__ == "__main__":
     pretraining_ds = FileBasedImputationDataset("cache/pretrain_examples.csv")
+    tst_config = TSTConfig(save_path="cache/models/skorchPretrainingTst")
 
-    pretraining_encoder = skorch_pretraining_encoder_factory(
-        TSTConfig(save_path="cache/models/skorchPretrainingTst"), pretraining_ds
-    )
+    pretraining_encoder = skorch_pretraining_encoder_factory(tst_config, pretraining_ds)
 
     pretraining_encoder.fit(pretraining_ds)
