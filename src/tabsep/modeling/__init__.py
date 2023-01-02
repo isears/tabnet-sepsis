@@ -4,15 +4,12 @@ from dataclasses import asdict, dataclass, fields
 from typing import Callable
 
 import numpy as np
+import optuna
 import scipy.stats as st
 from mvtst.models.ts_transformer import TSTransformerEncoderClassiregressor
-from mvtst.optimizers import AdamW
-from sklearn.metrics import (
-    average_precision_score,
-    make_scorer,
-    roc_auc_score,
-    roc_curve,
-)
+from mvtst.optimizers import AdamW, PlainRAdam, RAdam
+from sklearn.metrics import (average_precision_score, make_scorer,
+                             roc_auc_score, roc_curve)
 from torch.optim.optimizer import Optimizer
 
 from tabsep import config
@@ -72,7 +69,7 @@ class TSTConfig:
     # Non-model Params
     save_path: str
     optimizer_cls: type[Optimizer] = AdamW
-    optimizer_weight_decay: float = None
+    weight_decay: float = None
     batch_size: int = 128
     lr: float = 1e-4
 
@@ -89,7 +86,7 @@ class TSTConfig:
     norm: str = "BatchNorm"
     freeze: bool = False
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         # Gather params and distribute to appropriate sub-config
         model_config_params = {
             f.name: asdict(self)[f.name] for f in fields(TSTModelConfig)
@@ -97,15 +94,27 @@ class TSTConfig:
 
         self.model_config = TSTModelConfig(**model_config_params)
 
-    def generate_skorch_params(self):
-        return {
+    def generate_skorch_full_params(self) -> dict:
+        """
+        Params passable to skorch NeuralNet for full training
+        """
+        return dict(
             **self.model_config.generate_skorch_params(),
-            "optimizer": self.optimizer_cls,
-            "optimizer__weight_decay": self.optimizer_weight_decay,
-            "optimizer__lr": self.lr,
-            "iterator_train__batch_size": self.batch_size,
-            "iterator_valid__batch_size": self.batch_size,
-        }
+            optimizer=self.optimizer_cls,
+            optimizer__lr=self.lr,
+            optimizer__weight_decay=self.weight_decay,
+            iterator_train__batch_size=self.batch_size,
+            iterator_valid__batch_size=self.batch_size,
+        )
+
+    def generate_skorch_pretraining_params(self) -> dict:
+        """
+        Params passable to skorch NeuralNet for encoder pretraining
+        """
+        non_passable_params = ["module__num_classes"]
+        ret = self.generate_skorch_full_params()
+        ret = {k: v for k, v in ret if k not in non_passable_params}
+        return ret
 
 
 @dataclass

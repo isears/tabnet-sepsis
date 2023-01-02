@@ -23,18 +23,7 @@ from skorch.callbacks import (
 from tabsep import config
 from tabsep.dataProcessing.fileBasedDataset import FileBasedDataset
 from tabsep.dataProcessing.fileBasedImputationDataset import FileBasedImputationDataset
-from tabsep.modeling import my_auprc, my_auroc
-
-
-def translate_optuna_params(params: dict):
-    """
-    Optuna cannot directly set d_model, must instead set d_model_multiplier
-
-    This functions translates into skorch-consumable parameters
-    """
-    params["module__d_model"] = params["module__n_heads"] * params["d_model_multiplier"]
-    del params["d_model_multiplier"]
-    return params
+from tabsep.modeling import TSTConfig, my_auprc, my_auroc
 
 
 class MaskedMSELossSkorchConnector(MaskedMSELoss):
@@ -51,41 +40,40 @@ class MaskedMSELossSkorchConnector(MaskedMSELoss):
         return super().forward(y_pred, **target_packed)
 
 
-PARAMS = dict(
-    optimizer=AdamW,
-    optimizer__lr=1e-4,
-    module__dropout=0.1,
-    d_model_multiplier=8,
-    module__num_layers=3,
-    module__n_heads=16,
-    module__dim_feedforward=256,
-    module__pos_encoding="learnable",  # or fixed? Does that make sense for pretraining?
-    module__activation="gelu",
-    module__norm="BatchNorm",
-    module__freeze=False,
-    iterator_train__batch_size=128,  # Should be 128
-)
+# PARAMS = dict(
+#     optimizer=AdamW,
+#     optimizer__lr=1e-4,
+#     module__dropout=0.1,
+#     d_model_multiplier=8,
+#     module__num_layers=3,
+#     module__n_heads=16,
+#     module__dim_feedforward=256,
+#     module__pos_encoding="learnable",  # or fixed? Does that make sense for pretraining?
+#     module__activation="gelu",
+#     module__norm="BatchNorm",
+#     module__freeze=False,
+#     iterator_train__batch_size=128,  # Should be 128
+# )
 
 
 def skorch_pretraining_encoder_factory(
-    params: dict, ds: FileBasedImputationDataset, save_path: str, pruner=None
+    tst_config: TSTConfig, ds: FileBasedImputationDataset, pruner=None
 ):
     """
     Generate TSTs wrapped in standard skorch wrapper
     """
-    os.makedirs(save_path, exist_ok=True)
+    os.makedirs(tst_config.save_path, exist_ok=True)
 
     tst_callbacks = [
         GradientNormClipping(gradient_clip_value=4.0),
         EarlyStopping(patience=3),
         Checkpoint(
             load_best=True,
-            fn_prefix=f"{save_path}/",
+            fn_prefix=f"{tst_config.save_path}/",
             f_pickle="pretrained_encoder.pkl",
         ),
     ]
 
-    # TODO: convert to NeuralNetRegressor?
     pretraining_encoder = NeuralNet(
         TSTransformerEncoder,
         iterator_train__collate_fn=ds.collate_unsuperv_skorch,
@@ -103,7 +91,7 @@ def skorch_pretraining_encoder_factory(
         module__feat_dim=ds.get_num_features(),
         module__max_len=ds.max_len,
         max_epochs=25,
-        **translate_optuna_params(params),
+        **tst_config.generate_skorch_pretraining_params(),
     )
 
     return pretraining_encoder
@@ -113,7 +101,7 @@ if __name__ == "__main__":
     pretraining_ds = FileBasedImputationDataset("cache/pretrain_examples.csv")
 
     pretraining_encoder = skorch_pretraining_encoder_factory(
-        PARAMS, pretraining_ds, "cache/models/skorchPretrainingTst"
+        TSTConfig(save_path="cache/models/skorchPretrainingTst"), pretraining_ds
     )
 
     pretraining_encoder.fit(pretraining_ds)

@@ -9,34 +9,17 @@ import torch
 from mvtst.optimizers import AdamW, PlainRAdam, RAdam
 from sklearn.metrics import average_precision_score, roc_auc_score
 from sklearn.model_selection import KFold, cross_val_score, train_test_split
-from skorch.callbacks import (Checkpoint, EarlyStopping, EpochScoring,
-                              GradientNormClipping)
+from skorch.callbacks import (
+    Checkpoint,
+    EarlyStopping,
+    EpochScoring,
+    GradientNormClipping,
+)
 
 from tabsep import config
 from tabsep.dataProcessing.fileBasedDataset import FileBasedDataset
 from tabsep.modeling import TSTCombinedConfig, TSTModelConfig, TSTRunConfig
 from tabsep.modeling.skorchTst import skorch_tst_factory
-
-
-def optuna_params_to_config(optuna_params: dict) -> TSTCombinedConfig:
-    """
-    Utility function to convert optuna trial params to model factory configs
-    """
-    model_config = TSTModelConfig(
-        **{k: v for k, v in optuna_params.items() if k in fields(TSTModelConfig)}
-    )
-    run_config = TSTRunConfig(
-        **{k: v for k, v in optuna_params.items() if k in fields(TSTRunConfig)}
-    )
-    combined_config = TSTCombinedConfig(
-        save_path="cache/models/optunatst",
-        model_config=model_config,
-        run_config=run_config,
-        optimizer_cls=optuna_params["optimizer"],
-        optimizer_weight_decay=optuna_params["optimizer_weight_decay"],
-    )
-
-    return combined_config
 
 
 class Objective:
