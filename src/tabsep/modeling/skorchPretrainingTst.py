@@ -86,7 +86,7 @@ def skorch_pretraining_encoder_factory(
     ]
 
     # TODO: convert to NeuralNetRegressor?
-    pretraining_encoder = NeuralNetRegressor(
+    pretraining_encoder = NeuralNet(
         TSTransformerEncoder,
         iterator_train__collate_fn=ds.collate_unsuperv_skorch,
         iterator_valid__collate_fn=ds.collate_unsuperv_skorch,
