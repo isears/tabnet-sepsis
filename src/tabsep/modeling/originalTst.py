@@ -17,7 +17,6 @@ from tabsep.dataProcessing.fileBasedImputationDataset import (
     FileBasedDataset,
     FileBasedImputationDataset,
 )
-from tabsep.modeling import TSTCombinedConfig, TSTModelConfig, TSTRunConfig
 
 if __name__ == "__main__":
     pretraining_ds = FileBasedImputationDataset("cache/pretrain_examples.csv")
@@ -33,7 +32,7 @@ if __name__ == "__main__":
         num_layers=3,
         dim_feedforward=256,
         dropout=0.1,
-        pos_encoding="fixed",
+        pos_encoding="learnable",
         activation="gelu",
         norm="BatchNorm",
         freeze=False,
@@ -52,10 +51,10 @@ if __name__ == "__main__":
         dataloader=pretraining_dl,
         device="cuda",
         loss_module=MaskedMSELoss(reduction="none"),
-        optimizer=AdamW(pretraining_encoder.parameters(), lr=1e-3),
+        optimizer=AdamW(pretraining_encoder.parameters(), lr=1e-4),
     )
 
-    for idx in range(0, 7):
+    for idx in range(0, 5):
         run_metrics = runner.train_epoch(epoch_num=idx)
         print(f"\n{run_metrics}")
 
@@ -74,7 +73,7 @@ if __name__ == "__main__":
         freeze=False,
     ).to("cuda")
 
-    tst.transformer_encoder = pretraining_encoder
+    tst.transformer_encoder = pretraining_encoder.transformer_encoder
 
     training_dl = torch.utils.data.DataLoader(
         training_ds,
@@ -99,7 +98,7 @@ if __name__ == "__main__":
         dataloader=training_dl,
         device="cuda",
         loss_module=NoFussCrossEntropyLoss(reduction="none"),
-        optimizer=AdamW(tst.parameters(), lr=1e-3, weight_decay=0),
+        optimizer=AdamW(tst.parameters(), lr=1e-4, weight_decay=0),
     )
 
     testing_runner = SupervisedRunner(

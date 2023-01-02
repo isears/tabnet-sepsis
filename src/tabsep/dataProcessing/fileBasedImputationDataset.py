@@ -30,6 +30,32 @@ class FileBasedImputationDataset(FileBasedDataset):
         self.distribution = distribution
         self.exclude_feats = exclude_feats
 
+    def collate_unsuperv_skorch(self, batch):
+        """
+        Return values in a format that can automatically be passed to forward() / loss()
+        i.e. via skorch
+
+        Forward requires kwargs X and padding_masks
+        Loss requires targets and target_masks
+        """
+        X, targets, target_masks, padding_masks, IDs = collate_unsuperv(
+            batch, max_len=self.max_len
+        )
+        return (
+            dict(X=X, padding_masks=padding_masks),
+            dict(y_true=targets, mask=target_masks),
+        )
+
+    def collate_unsuperv_skorch_scoring(self, batch):
+        """
+        Skorch can't deal with y as dict for scoring
+        """
+        # TODO: will this cause a problem if max_len of the valid ds != max_len of the training ds?
+        X, targets, target_masks, padding_masks, IDs = collate_unsuperv(
+            batch, max_len=self.max_len
+        )
+        return dict(X=X, padding_masks=padding_masks), targets
+
     def __getitem__(self, index: int):
         stay_id = self.examples["stay_id"].iloc[index]
 

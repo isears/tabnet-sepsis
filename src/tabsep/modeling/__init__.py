@@ -1,6 +1,6 @@
 import os
 import pickle
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass, fields
 from typing import Callable
 
 import numpy as np
@@ -16,16 +16,6 @@ from sklearn.metrics import (
 from torch.optim.optimizer import Optimizer
 
 from tabsep import config
-
-CORES_AVAILABLE = len(os.sched_getaffinity(0))
-
-
-@dataclass
-class SingleCVResult:
-    fpr: np.ndarray
-    tpr: np.ndarray
-    thresholds: np.ndarray
-    auc: float
 
 
 @dataclass
@@ -68,7 +58,7 @@ class TSTModelConfig:
 
         return ret
 
-    def generate_optuna_params(self):
+    def generate_skorch_params(self):
         ret = self.generate_params()
         # Add prefix
         ret = {
@@ -78,38 +68,52 @@ class TSTModelConfig:
 
 
 @dataclass
-class TSTRunConfig:
-    """
-    A config for the TST model training loop with "sensible" params
-    as suggested by the paper
-    """
-
+class TSTConfig:
+    # Non-model Params
+    save_path: str
+    optimizer_cls: type[Optimizer] = AdamW
+    optimizer_weight_decay: float = None
     batch_size: int = 128
     lr: float = 1e-4
 
-    def generate_optuna_params(self):
+    # Model Params
+    d_model_multiplier: int = None
+    d_model: int = 128
+    n_heads: int = 16
+    num_layers: int = 3
+    dim_feedforward: int = 256
+    num_classes: int = 1
+    dropout: float = 0.1
+    pos_encoding: str = "fixed"
+    activation: str = "gelu"
+    norm: str = "BatchNorm"
+    freeze: bool = False
+
+    def __post_init__(self):
+        # Gather params and distribute to appropriate sub-config
+        model_config_params = {
+            f.name: asdict(self)[f.name] for f in fields(TSTModelConfig)
+        }
+
+        self.model_config = TSTModelConfig(**model_config_params)
+
+    def generate_skorch_params(self):
         return {
+            **self.model_config.generate_skorch_params(),
+            "optimizer": self.optimizer_cls,
+            "optimizer__weight_decay": self.optimizer_weight_decay,
+            "optimizer__lr": self.lr,
             "iterator_train__batch_size": self.batch_size,
             "iterator_valid__batch_size": self.batch_size,
-            "optimizer__lr": self.lr,
         }
 
 
 @dataclass
-class TSTCombinedConfig:
-    save_path: str
-    model_config: TSTModelConfig
-    run_config: TSTRunConfig
-    optimizer_cls: type[Optimizer] = AdamW
-    optimizer_weight_decay: float = None
-
-    def generate_optuna_params(self):
-        return {
-            **self.model_config.generate_optuna_params(),
-            **self.run_config.generate_optuna_params(),
-            "optimizer": self.optimizer_cls,
-            "optimizer__weight_decay": self.optimizer_weight_decay,
-        }
+class SingleCVResult:
+    fpr: np.ndarray
+    tpr: np.ndarray
+    thresholds: np.ndarray
+    auc: float
 
 
 class CVResults:

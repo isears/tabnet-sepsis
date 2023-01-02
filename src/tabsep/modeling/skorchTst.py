@@ -26,7 +26,6 @@ from tabsep.modeling import (
     my_auprc,
     my_auroc,
 )
-from tabsep.modeling.tstTuning import split_data_consistently
 
 PARAMS = dict(
     optimizer__lr=1e-4,
