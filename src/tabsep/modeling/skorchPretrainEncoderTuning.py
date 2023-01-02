@@ -31,8 +31,8 @@ def objective(trial: optuna.Trial) -> float:
     trial.suggest_categorical("pos_encoding", ["fixed", "learnable"])
     trial.suggest_categorical("activation", ["gelu", "relu"])
     trial.suggest_categorical("norm", ["BatchNorm", "LayerNorm"])
-    trial.suggest_categorical("optimizer_cls", ["AdamW", "PlainRAdam", "RAdam"])
-    trial.suggest_categorical("weight_decay", [1e-3, 1e-2, 1e-1, None])
+    trial.suggest_categorical("optimizer_name", ["AdamW", "PlainRAdam", "RAdam"])
+    trial.suggest_categorical("weight_decay", [1e-3, 1e-2, 1e-1, 0])
 
     pretraining_ds = FileBasedImputationDataset("cache/pretrain_examples.csv")
     tst_config = TSTConfig(save_path="cache/models/optunaPretraining", **trial.params)
@@ -49,7 +49,7 @@ def objective(trial: optuna.Trial) -> float:
         print(f"Warning, assumed runtime error: {e}")
         del pretraining_encoder
         torch.cuda.empty_cache()
-        return np.inf
+        return float("nan")
 
     return max(pretraining_encoder.history[:, "valid_loss"])
 

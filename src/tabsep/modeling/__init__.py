@@ -1,16 +1,12 @@
-import os
 import pickle
 from dataclasses import asdict, dataclass, fields
 from typing import Callable
 
 import numpy as np
-import optuna
 import scipy.stats as st
-from mvtst.models.ts_transformer import TSTransformerEncoderClassiregressor
 from mvtst.optimizers import AdamW, PlainRAdam, RAdam
 from sklearn.metrics import (average_precision_score, make_scorer,
                              roc_auc_score, roc_curve)
-from torch.optim.optimizer import Optimizer
 
 from tabsep import config
 
@@ -68,8 +64,8 @@ class TSTModelConfig:
 class TSTConfig:
     # Non-model Params
     save_path: str
-    optimizer_cls: str = "AdamW"
-    weight_decay: float = None
+    optimizer_name: str = "AdamW"
+    weight_decay: float = 0
     batch_size: int = 128
     lr: float = 1e-4
 
@@ -94,13 +90,23 @@ class TSTConfig:
 
         self.model_config = TSTModelConfig(**model_config_params)
 
+    def _get_optimizer_cls(optimizer_name: str):
+        if optimizer_name == "AdamW":
+            return AdamW
+        elif optimizer_name == "PlainRAdam":
+            return PlainRAdam
+        elif optimizer_name == "RAdam":
+            return RAdam
+        else:
+            raise ValueError("Optimizer must be one of: (AdamW | PlainRAdam | RAdam)")
+
     def generate_skorch_full_params(self) -> dict:
         """
         Params passable to skorch NeuralNet for full training
         """
         return dict(
             **self.model_config.generate_skorch_params(),
-            optimizer=globals()[self.optimizer_cls],
+            optimizer=TSTConfig._get_optimizer_cls(self.optimizer_name),
             optimizer__lr=self.lr,
             optimizer__weight_decay=self.weight_decay,
             iterator_train__batch_size=self.batch_size,
