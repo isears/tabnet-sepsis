@@ -44,7 +44,7 @@ def objective(trial: optuna.Trial) -> float:
     tst = skorch_tst_factory(
         tst_config,
         pretraining_ds,
-        pruner=SkorchPruningCallback(trial=trial, monitor="valid_loss"),
+        pruner=SkorchPruningCallback(trial=trial, monitor="auprc"),
     )
 
     try:
