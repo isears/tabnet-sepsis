@@ -8,12 +8,8 @@ import optuna
 import scipy.stats as st
 from mvtst.models.ts_transformer import TSTransformerEncoderClassiregressor
 from mvtst.optimizers import AdamW, PlainRAdam, RAdam
-from sklearn.metrics import (
-    average_precision_score,
-    make_scorer,
-    roc_auc_score,
-    roc_curve,
-)
+from sklearn.metrics import (average_precision_score, make_scorer,
+                             roc_auc_score, roc_curve)
 from torch.optim.optimizer import Optimizer
 
 from tabsep import config
@@ -72,7 +68,7 @@ class TSTModelConfig:
 class TSTConfig:
     # Non-model Params
     save_path: str
-    optimizer_cls: type[Optimizer] = AdamW
+    optimizer_cls: str = "AdamW"
     weight_decay: float = None
     batch_size: int = 128
     lr: float = 1e-4
@@ -104,7 +100,7 @@ class TSTConfig:
         """
         return dict(
             **self.model_config.generate_skorch_params(),
-            optimizer=self.optimizer_cls,
+            optimizer=globals()[self.optimizer_cls],
             optimizer__lr=self.lr,
             optimizer__weight_decay=self.weight_decay,
             iterator_train__batch_size=self.batch_size,

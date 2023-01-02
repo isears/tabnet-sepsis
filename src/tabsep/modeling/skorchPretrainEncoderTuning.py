@@ -1,5 +1,6 @@
 from dataclasses import fields
 
+import numpy as np
 import optuna
 import pandas as pd
 import torch
@@ -15,7 +16,7 @@ from skorch.callbacks import (
 from tabsep import config
 from tabsep.dataProcessing.fileBasedImputationDataset import FileBasedImputationDataset
 from tabsep.modeling import TSTConfig
-from tabsep.modeling.skorchPretrainingTst import skorch_pretraining_encoder_factory
+from tabsep.modeling.skorchPretrainEncoder import skorch_pretraining_encoder_factory
 
 
 def objective(trial: optuna.Trial) -> float:
@@ -30,7 +31,7 @@ def objective(trial: optuna.Trial) -> float:
     trial.suggest_categorical("pos_encoding", ["fixed", "learnable"])
     trial.suggest_categorical("activation", ["gelu", "relu"])
     trial.suggest_categorical("norm", ["BatchNorm", "LayerNorm"])
-    trial.suggest_categorical("optimizer_cls", [AdamW, PlainRAdam, RAdam])
+    trial.suggest_categorical("optimizer_cls", ["AdamW", "PlainRAdam", "RAdam"])
     trial.suggest_categorical("weight_decay", [1e-3, 1e-2, 1e-1, None])
 
     pretraining_ds = FileBasedImputationDataset("cache/pretrain_examples.csv")
@@ -48,7 +49,7 @@ def objective(trial: optuna.Trial) -> float:
         print(f"Warning, assumed runtime error: {e}")
         del pretraining_encoder
         torch.cuda.empty_cache()
-        return 0
+        return np.inf
 
     return max(pretraining_encoder.history[:, "valid_loss"])
 
