@@ -14,10 +14,10 @@ from tabsep import config
 from tabsep.dataProcessing.fileBasedDataset import FileBasedDataset, get_feature_labels
 
 
-def load_to_mem(sids: list):
+def load_to_mem(path: str):
     all_X, all_y = torch.tensor([]), torch.tensor([])
 
-    train_ds = FileBasedDataset(sids)
+    train_ds = FileBasedDataset(path)
     memory_loader = DataLoader(
         train_ds,
         batch_size=16,  # Batch size only important for tuning # workers to load to mem
@@ -34,15 +34,13 @@ def load_to_mem(sids: list):
 
 
 if __name__ == "__main__":
-
-    sids_train, sids_test = split_data_consistently()
-    train_X, train_y = load_to_mem(sids_train)
+    train_X, train_y = load_to_mem("cache/train_examples.csv")
     print("[*] Training data loaded data to memory")
 
     lr = make_pipeline(StandardScaler(), LogisticRegression(max_iter=1000))
     lr.fit(train_X, train_y)
 
-    test_X, test_y = load_to_mem(sids_test)
+    test_X, test_y = load_to_mem("cache/test_examples.csv")
     print("[*] Testing data loaded to memory")
 
     final_auroc = roc_auc_score(test_y, lr.predict_proba(test_X)[:, 1])

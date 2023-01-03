@@ -53,15 +53,23 @@ def objective(trial: optuna.Trial) -> float:
         print(f"Warning, assumed runtime error: {e}")
         del tst
         torch.cuda.empty_cache()
-        return float("nan")
+        # return float("nan")
+        return 0.0
 
-    return max(tst.history[:, "auprc"])
+    # TODO: there has to be a better way to do this
+    # this doesn't necessarily return the auprc of the checkpoint-ed model
+    # Checkpoints are based on loss
+    epoch_scoring_callbacks = [c for c in tst.callbacks if type(c) == EpochScoring]
+    best_auprc = next(
+        filter(lambda c: c.name == "auprc", epoch_scoring_callbacks)
+    ).best_score_
+    return best_auprc
 
 
 if __name__ == "__main__":
     pruner = optuna.pruners.PercentilePruner(25.0)
     study = optuna.create_study(direction="maximize", pruner=pruner)
-    study.optimize(objective, n_trials=500)
+    study.optimize(objective, n_trials=1000)
 
     print("Best trial:")
     trial = study.best_trial

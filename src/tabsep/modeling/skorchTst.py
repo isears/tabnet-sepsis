@@ -68,7 +68,7 @@ def skorch_tst_factory(tst_config: TSTConfig, ds: FileBasedDataset, pruner=None)
         # TST params
         module__feat_dim=ds.get_num_features(),
         module__max_len=ds.max_len,
-        max_epochs=15,
+        max_epochs=25,
         **tst_config.generate_skorch_full_params(),
     )
 

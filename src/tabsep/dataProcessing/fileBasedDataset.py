@@ -115,18 +115,15 @@ class FileBasedDataset(torch.utils.data.Dataset):
         """
         Just return the last nonzero value in X
         """
-        raise NotImplementedError(
-            "Need to account for the fact that __getitem__() returns ID now"
-        )
         x_out = list()
-        for idx, (X, y) in enumerate(batch):
+        for idx, (X, y, ID) in enumerate(batch):
             # Shape will be 1 dim (# of features)
             last_nonzero_indices = (X.shape[1] - 1) - torch.argmax(
                 torch.flip(X, dims=(1,)).ne(0.0).int(), dim=1
             )
             x_out.append(X[torch.arange(X.shape[0]), last_nonzero_indices])
 
-        y = torch.stack([Y for _, Y in batch], dim=0)
+        y = torch.stack([Y for _, Y, _ in batch], dim=0)
         X = torch.stack(x_out, dim=0)
 
         return X.float(), y.float()
