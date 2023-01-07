@@ -209,10 +209,8 @@ class FileBasedDataset(torch.utils.data.Dataset):
 
 def demo(dl):
     print("Printing first few batches:")
-    for batchnum, (X, Y, pad_mask) in enumerate(dl):
+    for batchnum, (X, Y) in enumerate(dl):
         print(f"Batch number: {batchnum}")
-        print(f"X shape: {X.shape}")
-        print(f"Y shape: {Y.shape}")
         print(X)
         print(Y)
 

@@ -64,6 +64,16 @@ if __name__ == "__main__":
 
     odds_ratios_df.to_csv(f"{config.lr_path}/odds_ratios.csv", index=False)
 
+    training_preds = lr.predict_proba(train_X)[:, 1]
+    train_examples = pd.read_csv("cache/train_examples.csv")
+    train_examples["lr_pred"] = training_preds
+    train_examples.to_csv("cache/train_examples.csv", index=False)
+
+    testing_preds = lr.predict_proba(test_X)[:, 1]
+    test_examples = pd.read_csv("cache/test_examples.csv")
+    test_examples["lr_pred"] = testing_preds
+    test_examples.to_csv("cache/test_examples.csv", index=False)
+
     print("Final score:")
     print(f"\tAUROC: {final_auroc}")
     print(f"\tAverage precision: {final_auprc}")
