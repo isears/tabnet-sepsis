@@ -30,17 +30,17 @@ def load_to_mem(path: str):
         all_X = torch.cat((all_X, batch_X))
         all_y = torch.cat((all_y, batch_y))
 
-    return all_X, all_y
+    return all_X, all_y, train_ds
 
 
 if __name__ == "__main__":
-    train_X, train_y = load_to_mem("cache/train_examples.csv")
+    train_X, train_y, train_ds = load_to_mem("cache/train_examples.csv")
     print("[*] Training data loaded data to memory")
 
     lr = make_pipeline(StandardScaler(), LogisticRegression(max_iter=1000))
     lr.fit(train_X, train_y)
 
-    test_X, test_y = load_to_mem("cache/test_examples.csv")
+    test_X, test_y, test_ds = load_to_mem("cache/test_examples.csv")
     print("[*] Testing data loaded to memory")
 
     final_auroc = roc_auc_score(test_y, lr.predict_proba(test_X)[:, 1])
@@ -65,14 +65,12 @@ if __name__ == "__main__":
     odds_ratios_df.to_csv(f"{config.lr_path}/odds_ratios.csv", index=False)
 
     training_preds = lr.predict_proba(train_X)[:, 1]
-    train_examples = pd.read_csv("cache/train_examples.csv")
-    train_examples["lr_pred"] = training_preds
-    train_examples.to_csv("cache/train_examples.csv", index=False)
+    train_ds.examples["lr_pred"] = training_preds
+    train_ds.examples.to_csv("cache/train_examples.csv", index=False)
 
     testing_preds = lr.predict_proba(test_X)[:, 1]
-    test_examples = pd.read_csv("cache/test_examples.csv")
-    test_examples["lr_pred"] = testing_preds
-    test_examples.to_csv("cache/test_examples.csv", index=False)
+    test_ds.examples["lr_pred"] = testing_preds
+    test_ds.examples.to_csv("cache/test_examples.csv", index=False)
 
     print("Final score:")
     print(f"\tAUROC: {final_auroc}")

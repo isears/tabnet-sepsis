@@ -25,17 +25,18 @@ class EnsembleScorer:
     def __init__(self) -> None:
         pass
 
-    def _correct_preds(self, net, X, lr_preds):
+    def _correct_preds(self, net, X):
         # TODO: this is slow, return to fix if time allows
-        y_actual = torch.stack([i[2] for i in X])
+        y_actual = torch.stack([i[3] for i in X])
+        lr_preds = torch.stack([i[2] for i in X])
         corrected_preds = lr_preds + np.squeeze(net.predict(X))
         return y_actual, corrected_preds
 
-    def auroc(self, net, X, lr_preds):
-        return roc_auc_score(*self._correct_preds(net, X, lr_preds))
+    def auroc(self, net, X, y):
+        return roc_auc_score(*self._correct_preds(net, X))
 
-    def auprc(self, net, X, lr_preds):
-        return average_precision_score(*self._correct_preds(net, X, lr_preds))
+    def auprc(self, net, X, y):
+        return average_precision_score(*self._correct_preds(net, X))
 
 
 # Need to correct shape of predictions coming out of skorch model for some reason
@@ -83,7 +84,7 @@ def ensemble_tst_factory(tst_config: TSTConfig, ds: FileBasedDataset, pruner=Non
         # TST params
         module__feat_dim=ds.get_num_features(),
         module__max_len=ds.max_len,
-        max_epochs=2,  # TODO: debug only
+        max_epochs=25,
         **tst_config.generate_skorch_full_params(),
     )
 
@@ -92,7 +93,7 @@ def ensemble_tst_factory(tst_config: TSTConfig, ds: FileBasedDataset, pruner=Non
 
 if __name__ == "__main__":
     ds = EnsembleDataset("cache/train_examples.csv")
-    tst_config = TSTConfig(save_path="cache/models/ensembleSkorchTst")
+    tst_config = TSTConfig(save_path="cache/models/ensembleSkorchTst", lr=1e-5)
 
     tst = ensemble_tst_factory(tst_config, ds)
 
@@ -104,7 +105,7 @@ if __name__ == "__main__":
 
     corrections = tst.predict(test_ds)
 
-    corrected_preds = lr_preds + corrections
+    corrected_preds = lr_preds + np.squeeze(corrections)
 
     auroc = roc_auc_score(test_ds.get_labels(), corrected_preds)
     auprc = average_precision_score(test_ds.get_labels(), corrected_preds)

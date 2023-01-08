@@ -32,7 +32,8 @@ class EnsembleDataset(FileBasedDataset):
         Need new collate fn b/c __getitem__ now returns 4
         """
         newbatch = [
-            (X, lr_correction, stay_id) for X, lr_correction, Y, stay_id in batch
+            (X, lr_correction, stay_id)
+            for X, lr_correction, lr_pred, Y, stay_id in batch
         ]
         X, y, pad_mask, _ = super().maxlen_padmask_collate(newbatch)
         return dict(X=X, padding_masks=pad_mask), y
@@ -42,11 +43,12 @@ class EnsembleDataset(FileBasedDataset):
         lr_correction = torch.tensor(
             self.examples["ensemble_label"].iloc[index]
         ).float()
+        lr_pred = torch.tensor(self.examples["lr_pred"].iloc[index]).float()
         Y = torch.tensor(self.examples["label"].iloc[index]).float()
 
         X = self.__getitem_X__(index)
 
-        return X, lr_correction, Y, stay_id
+        return X, lr_correction, lr_pred, Y, stay_id
 
 
 if __name__ == "__main__":
