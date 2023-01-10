@@ -18,8 +18,10 @@ from skorch.callbacks import (
 )
 
 from tabsep import config
+from tabsep.dataProcessing.ensembleDataset import EnsembleDataset
 from tabsep.dataProcessing.fileBasedDataset import FileBasedDataset
 from tabsep.modeling import TSTConfig
+from tabsep.modeling.skorchEnsembleTst import ensemble_tst_factory
 from tabsep.modeling.skorchTst import skorch_tst_factory
 
 
@@ -38,13 +40,13 @@ def objective(trial: optuna.Trial) -> float:
     trial.suggest_categorical("optimizer_name", ["AdamW", "PlainRAdam", "RAdam"])
     trial.suggest_categorical("weight_decay", [1e-3, 1e-2, 1e-1, 0])
 
-    pretraining_ds = FileBasedDataset("cache/train_examples.csv")
+    pretraining_ds = EnsembleDataset("cache/train_examples.csv")
     tst_config = TSTConfig(save_path="cache/models/tstTuning", **trial.params)
 
-    tst = skorch_tst_factory(
+    tst = ensemble_tst_factory(
         tst_config,
         pretraining_ds,
-        pruner=SkorchPruningCallback(trial=trial, monitor="auprc"),
+        # pruner=SkorchPruningCallback(trial=trial, monitor="auprc"),
     )
 
     try:
@@ -67,9 +69,10 @@ def objective(trial: optuna.Trial) -> float:
 
 
 if __name__ == "__main__":
-    pruner = optuna.pruners.PercentilePruner(25.0)
+    pruner = None
+    # pruner = optuna.pruners.PercentilePruner(25.0)
     study = optuna.create_study(direction="maximize", pruner=pruner)
-    study.optimize(objective, n_trials=1000)
+    study.optimize(objective, n_trials=500)
 
     print("Best trial:")
     trial = study.best_trial

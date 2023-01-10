@@ -84,7 +84,7 @@ def ensemble_tst_factory(tst_config: TSTConfig, ds: FileBasedDataset, pruner=Non
         # TST params
         module__feat_dim=ds.get_num_features(),
         module__max_len=ds.max_len,
-        max_epochs=25,
+        max_epochs=1,
         **tst_config.generate_skorch_full_params(),
     )
 
@@ -93,7 +93,21 @@ def ensemble_tst_factory(tst_config: TSTConfig, ds: FileBasedDataset, pruner=Non
 
 if __name__ == "__main__":
     ds = EnsembleDataset("cache/train_examples.csv")
-    tst_config = TSTConfig(save_path="cache/models/ensembleSkorchTst", lr=1e-5)
+    tst_config = TSTConfig(
+        save_path="cache/models/ensembleSkorchTst",
+        lr=7.729784380014021e-05,
+        dropout=0.6594354080067655,
+        d_model_multiplier=4,
+        num_layers=2,
+        n_heads=8,
+        dim_feedforward=485,
+        batch_size=94,
+        pos_encoding="fixed",
+        activation="relu",
+        norm="BatchNorm",
+        optimizer_name="RAdam",
+        weight_decay=0.1,
+    )
 
     tst = ensemble_tst_factory(tst_config, ds)
 
