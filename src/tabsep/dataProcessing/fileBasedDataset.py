@@ -25,7 +25,7 @@ def get_feature_labels():
 class FileBasedDataset(torch.utils.data.Dataset):
     def __init__(
         self,
-        examples_path: str,
+        examples: str | pd.DataFrame,
         shuffle: bool = True,
         processed_mimic_path: str = "./mimicts",
         pm_type=torch.bool,  # May require pad mask to be different type
@@ -37,7 +37,14 @@ class FileBasedDataset(torch.utils.data.Dataset):
             pd.read_csv("cache/included_features.csv").squeeze("columns").to_list()
         )
 
-        self.examples = pd.read_csv(examples_path)
+        if type(examples) == str:
+            self.examples = pd.read_csv(examples)
+        elif type(examples) == pd.DataFrame:
+            self.examples = examples
+        else:
+            raise ValueError(
+                f"Cannot except type {type(examples)} for argument 'examples'"
+            )
 
         if shuffle:
             # May need to shuffle otherwise all pos labels will be @ end
