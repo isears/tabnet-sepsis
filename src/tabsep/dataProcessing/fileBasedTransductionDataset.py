@@ -2,6 +2,8 @@
 Dataset for unsupervised pretraining
 """
 
+import random
+
 import torch
 from mvtst.datasets.dataset import collate_unsuperv, transduct_mask
 
@@ -25,6 +27,8 @@ class FileBasedTransductionDataset(FileBasedImputationDataset):
     ):
         super().__init__(examples_path, shuffle, processed_mimic_path, pm_type)
 
+        random.seed(42)
+
         self.mask_feats = mask_feats
         self.start_hint = start_hint
         self.end_hint = end_hint
@@ -35,6 +39,8 @@ class FileBasedTransductionDataset(FileBasedImputationDataset):
             raise NotImplemented(
                 "Need to think more about how mask feats should be generated"
             )
+
+        print(f"\tMask features: {self.mask_feats}")
 
     def collate_unsuperv_skorch(self, batch):
         """
@@ -55,10 +61,13 @@ class FileBasedTransductionDataset(FileBasedImputationDataset):
     def __getitem__(self, index: int):
         stay_id = self.examples["stay_id"].iloc[index]
 
+        # For now, just selecting one feature to mask at a time
+        this_mask_feats = random.choices(self.mask_feats, k=1)
+
         # Need to transpose b/c downstream functions expect
         # (seq_length, feat_dim) shape for some reason
         X = super().__getitem_X__(index).T
-        mask = transduct_mask(X, self.mask_feats, self.start_hint, self.end_hint)
+        mask = transduct_mask(X, this_mask_feats, self.start_hint, self.end_hint)
 
         return X, torch.from_numpy(mask), stay_id
 

@@ -3,11 +3,15 @@ Run Skorch implementation of TST w/specific hyperparams
 """
 
 import os
+import pickle
 
 import skorch
 import torch
 import torch.utils.data
-from mvtst.models.ts_transformer import TSTransformerEncoderClassiregressor
+from mvtst.models.ts_transformer import (
+    TSTransformerEncoder,
+    TSTransformerEncoderClassiregressor,
+)
 from sklearn.metrics import average_precision_score, roc_auc_score
 from skorch import NeuralNet, NeuralNetBinaryClassifier
 from skorch.callbacks import (
@@ -20,19 +24,30 @@ from skorch.callbacks import (
 from tabsep import config
 from tabsep.dataProcessing.fileBasedDataset import FileBasedDataset
 from tabsep.modeling import TSTConfig, my_auprc, my_auroc
-
-PARAMS = dict(
-    optimizer__lr=1e-4,
-    module__dropout=0.1,
-    d_model_multiplier=8,
-    module__num_layers=3,
-    module__n_heads=16,
-    module__dim_feedforward=256,
-    iterator_train__batch_size=128,  # Should be 128
+from tabsep.modeling.skorchPretrainEncoder import (
+    MaskedMSELoss,
+    MaskedMSELossSkorchConnector,
 )
 
+TUNING_PARAMS = {
+    "lr": 7.729784380014021e-05,
+    "dropout": 0.6594354080067655,
+    "d_model_multiplier": 4,
+    "num_layers": 2,
+    "n_heads": 8,
+    "dim_feedforward": 485,
+    "batch_size": 94,
+    "pos_encoding": "fixed",
+    "activation": "relu",
+    "norm": "BatchNorm",
+    "optimizer_name": "RAdam",
+    "weight_decay": 0.1,
+}
 
-def skorch_tst_factory(tst_config: TSTConfig, ds: FileBasedDataset, pruner=None):
+
+def skorch_tst_factory(
+    tst_config: TSTConfig, ds: FileBasedDataset, pruner=None, pretrained_encoder=False
+):
     """
     Generate TSTs wrapped in standard skorch wrapper
     """
@@ -72,14 +87,26 @@ def skorch_tst_factory(tst_config: TSTConfig, ds: FileBasedDataset, pruner=None)
         **tst_config.generate_skorch_full_params(),
     )
 
+    if pretrained_encoder:
+        with open(
+            "cache/models/skorchPretrainingTst/pretrained_encoder.pkl", "rb"
+        ) as f:
+            skorch_encoder = pickle.load(f)
+
+        tst.initialize()
+        tst.module_.transformer_encoder.load_state_dict(
+            skorch_encoder.module_.transformer_encoder.state_dict()
+        )
+
     return tst
 
 
 if __name__ == "__main__":
-    pretraining_ds = FileBasedDataset("cache/train_examples.csv")
-    tst_config = TSTConfig(save_path="cache/models/skorchTst")
 
-    tst = skorch_tst_factory(tst_config, pretraining_ds)
+    pretraining_ds = FileBasedDataset("cache/train_examples.csv")
+    tst_config = TSTConfig(save_path="cache/models/skorchTst", **TUNING_PARAMS)
+
+    tst = skorch_tst_factory(tst_config, pretraining_ds, pretrained_encoder=False)
 
     tst.fit(pretraining_ds, y=None)
 
