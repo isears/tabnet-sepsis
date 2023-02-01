@@ -90,15 +90,19 @@ class TSTConfig:
 
         self.model_config = TSTModelConfig(**model_config_params)
 
-    def _get_optimizer_cls(optimizer_name: str):
-        if optimizer_name == "AdamW":
+    def get_optimizer_cls(self):
+        if self.optimizer_name == "AdamW":
             return AdamW
-        elif optimizer_name == "PlainRAdam":
+        elif self.optimizer_name == "PlainRAdam":
             return PlainRAdam
-        elif optimizer_name == "RAdam":
+        elif self.optimizer_name == "RAdam":
             return RAdam
         else:
             raise ValueError("Optimizer must be one of: (AdamW | PlainRAdam | RAdam)")
+
+    def generate_optimizer(self, model_params):
+        optimizer_cls = self.get_optimizer_cls()
+        return optimizer_cls(model_params, lr=self.lr)
 
     def generate_skorch_full_params(self) -> dict:
         """
@@ -106,7 +110,7 @@ class TSTConfig:
         """
         return dict(
             **self.model_config.generate_skorch_params(),
-            optimizer=TSTConfig._get_optimizer_cls(self.optimizer_name),
+            optimizer=self.get_optimizer_cls(),
             optimizer__lr=self.lr,
             optimizer__weight_decay=self.weight_decay,
             iterator_train__batch_size=self.batch_size,
@@ -121,6 +125,12 @@ class TSTConfig:
         ret = self.generate_skorch_full_params()
         ret = {k: v for k, v in ret.items() if k not in non_passable_params}
         return ret
+
+    def generate_model_params(self) -> dict:
+        return self.model_config.generate_params()
+
+    def generate_optimizer_params(self) -> dict:
+        return dict(lr=self.lr)
 
 
 @dataclass
@@ -180,4 +190,3 @@ def my_auroc(net, X, y):
 def my_auprc(net, X, y):
     y_proba = net.predict_proba(X)
     return average_precision_score(y, y_proba[:, 1])
-

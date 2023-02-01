@@ -96,6 +96,9 @@ class FileBasedDataset(torch.utils.data.Dataset):
         X, y, pad_mask, _ = self.maxlen_padmask_collate(batch)
         return dict(X=X, padding_masks=pad_mask), y
 
+    def timewarp_collate(self, batch):
+        raise NotImplemented
+
     def maxlen_padmask_collate_combined(self, batch):
         """
         For compatibility with scikit learn, add the padmask as the last feature in X

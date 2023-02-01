@@ -1,6 +1,8 @@
 import os
 from dataclasses import dataclass
 
+import torch
+
 
 @dataclass
 class Config:
@@ -13,6 +15,7 @@ class Config:
     tst_path: str
     lr_path: str
     cores_available: int
+    gpus_available: int
 
 
 with open("mimicts/readme.txt", "r") as f:
@@ -30,4 +33,5 @@ config = Config(
     tst_path="cache/models/singleTst",
     lr_path="cache/models/singleLr",
     cores_available=len(os.sched_getaffinity(0)),
+    gpus_available=torch.cuda.device_count()
 )
