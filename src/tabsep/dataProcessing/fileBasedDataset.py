@@ -61,6 +61,18 @@ class FileBasedDataset(torch.utils.data.Dataset):
 
         print(f"[{type(self).__name__}] Dataset initialization complete")
 
+    def dataloader_factory(self, batch_size: int):
+        # TODO: need to be able to specify collate_fn
+        dl = torch.utils.data.DataLoader(
+            self,
+            collate_fn=self.maxlen_padmask_collate_skorch,
+            num_workers=config.cores_available,
+            batch_size=batch_size,
+            pin_memory=True,
+        )
+
+        return dl
+
     def maxlen_padmask_collate(self, batch):
         """
         Pad and return third value (the pad mask)
