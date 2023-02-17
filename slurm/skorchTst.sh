@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH -n 1
-#SBATCH -p gpu-debug
+#SBATCH -p gpu
 #SBATCH --gres=gpu:1
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=8
 #SBATCH --mem=32G
 #SBATCH --time=00:30:00
 #SBATCH --output ./logs/skorchTst.log

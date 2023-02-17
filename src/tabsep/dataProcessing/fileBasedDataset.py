@@ -3,6 +3,7 @@ import os.path
 import pandas as pd
 import torch
 from torch.nn.functional import pad
+from tqdm import tqdm
 
 from tabsep import config
 
@@ -29,6 +30,7 @@ class FileBasedDataset(torch.utils.data.Dataset):
         shuffle: bool = True,
         processed_mimic_path: str = "./mimicts",
         pm_type=torch.bool,  # May require pad mask to be different type
+        standard_scale=False,
     ):
 
         print(f"[{type(self).__name__}] Initializing dataset...")
@@ -58,6 +60,48 @@ class FileBasedDataset(torch.utils.data.Dataset):
         self.max_len = self.examples["cutidx"].max() + 1
 
         print(f"\tMax length: {self.max_len}")
+
+        # Find mean and std if using standard scalar
+        # NOTE: ignoring 0s as they are usually indicative of missing values
+        self.standard_scale = False  # Initially set to False so that scaling isn't attempted before instatiation of mu and sigma
+        if standard_scale:
+            print("Standard scalar turned ON, computing per-feature mu / sigma...")
+            if (
+                type(examples) is str
+                and os.path.exists(f"{examples}.feature_means.pt")
+                and os.path.exists(f"{examples}.feature_stds.pt")
+            ):
+                print("Found cache, loading standard scaling params from file")
+                self.feature_means = torch.load(f"{examples}.feature_means.pt")
+                self.feature_stds = torch.load(f"{examples}.feature_stds.pt")
+
+            else:
+                print("No cache, computing new standard scaling params")
+
+                feature_sums = torch.zeros(self.get_num_features())
+                feature_squares = torch.zeros(self.get_num_features())
+                feature_nonzero_counts = torch.zeros(self.get_num_features())
+
+                for X, _, _ in tqdm(self):
+                    feature_sums += X.sum(dim=1)
+                    feature_squares += torch.square(X).sum(dim=1)
+                    feature_nonzero_counts += torch.count_nonzero(X, dim=1)
+
+                self.feature_means = torch.nan_to_num(
+                    feature_sums / feature_nonzero_counts
+                )
+                self.feature_stds = torch.nan_to_num(
+                    torch.sqrt(
+                        (feature_squares / feature_nonzero_counts)
+                        - torch.square((feature_sums / feature_squares))
+                    )
+                )
+
+                if type(examples) is str:
+                    torch.save(self.feature_means, f"{examples}.feature_means.pt")
+                    torch.save(self.feature_stds, f"{examples}.feature_stds.pt")
+
+            self.standard_scale = True
 
         print(f"[{type(self).__name__}] Dataset initialization complete")
 
@@ -137,6 +181,12 @@ class FileBasedDataset(torch.utils.data.Dataset):
         """
         Just return the last nonzero value in X
         """
+
+        if self.standard_scale:
+            raise RuntimeError(
+                "Collate fn not valid for datasets that implement standard scaling"
+            )
+
         x_out = list()
         for idx, (X, y, ID) in enumerate(batch):
             # Shape will be 1 dim (# of features)
@@ -213,8 +263,13 @@ class FileBasedDataset(torch.utils.data.Dataset):
             self.feature_ids
         )  # Need to add any itemids that are missing
         combined_features = combined_features.fillna(0.0)
-        X = torch.tensor(combined_features.values)
-        return X.float()
+        X = torch.tensor(combined_features.values).float()
+
+        if self.standard_scale:
+            X = (X - self.feature_means[:, None]) / self.feature_stds[:, None]
+            X = torch.nan_to_num(X)
+
+        return X
 
     def __len__(self):
         return len(self.examples)
@@ -249,7 +304,7 @@ def get_label_prevalence(dl):
 
 
 if __name__ == "__main__":
-    ds = FileBasedDataset(examples_path="cache/test_examples.csv")
+    ds = FileBasedDataset(examples="cache/test_examples.csv", standard_scale=True)
 
     dl = torch.utils.data.DataLoader(
         ds,

@@ -5,8 +5,12 @@ from typing import Callable
 import numpy as np
 import scipy.stats as st
 from mvtst.optimizers import AdamW, PlainRAdam, RAdam
-from sklearn.metrics import (average_precision_score, make_scorer,
-                             roc_auc_score, roc_curve)
+from sklearn.metrics import (
+    average_precision_score,
+    make_scorer,
+    roc_auc_score,
+    roc_curve,
+)
 
 from tabsep import config
 
