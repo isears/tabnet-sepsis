@@ -83,7 +83,7 @@ def skorch_tst_factory(
         # TST params
         module__feat_dim=ds.get_num_features(),
         module__max_len=ds.max_len,
-        max_epochs=25,
+        max_epochs=50,
         **tst_config.generate_skorch_full_params(),
     )
 
@@ -109,4 +109,3 @@ if __name__ == "__main__":
     tst = skorch_tst_factory(tst_config, pretraining_ds, pretrained_encoder=False)
 
     tst.fit(pretraining_ds, y=None)
-

@@ -40,10 +40,10 @@ def objective(trial: optuna.Trial) -> float:
     trial.suggest_categorical("optimizer_name", ["AdamW", "PlainRAdam", "RAdam"])
     trial.suggest_categorical("weight_decay", [1e-3, 1e-2, 1e-1, 0])
 
-    pretraining_ds = EnsembleDataset("cache/train_examples.csv")
+    pretraining_ds = FileBasedDataset("cache/train_examples.csv")
     tst_config = TSTConfig(save_path="cache/models/tstTuning", **trial.params)
 
-    tst = ensemble_tst_factory(
+    tst = skorch_tst_factory(
         tst_config,
         pretraining_ds,
         # pruner=SkorchPruningCallback(trial=trial, monitor="auprc"),
@@ -56,23 +56,16 @@ def objective(trial: optuna.Trial) -> float:
         del tst
         torch.cuda.empty_cache()
         # return float("nan")
-        return 0.0
+        return 100
 
-    # TODO: there has to be a better way to do this
-    # this doesn't necessarily return the auprc of the checkpoint-ed model
-    # Checkpoints are based on loss
-    epoch_scoring_callbacks = [c for c in tst.callbacks if type(c) == EpochScoring]
-    best_auprc = next(
-        filter(lambda c: c.name == "auprc", epoch_scoring_callbacks)
-    ).best_score_
-    return best_auprc
+    return min([h["valid_loss"] for h in tst.history])
 
 
 if __name__ == "__main__":
     pruner = None
     # pruner = optuna.pruners.PercentilePruner(25.0)
-    study = optuna.create_study(direction="maximize", pruner=pruner)
-    study.optimize(objective, n_trials=500)
+    study = optuna.create_study(direction="minimize", pruner=pruner)
+    study.optimize(objective, n_trials=10000)
 
     print("Best trial:")
     trial = study.best_trial
