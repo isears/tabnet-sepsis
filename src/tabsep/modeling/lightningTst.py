@@ -82,8 +82,8 @@ class LitTst(pl.LightningModule):
 def lightning_tst_factory(tst_config: TSTConfig, ds: FileBasedDataset):
     tst = TSTransformerEncoderClassiregressor(
         **tst_config.generate_model_params(),
-        feat_dim=ds.get_num_features(),
-        max_len=ds.max_len
+        feat_dim=ds.dataset.get_num_features(),
+        max_len=ds.dataset.max_len
     )
 
     lightning_wrapper = LitTst(tst, tst_config)
@@ -92,19 +92,22 @@ def lightning_tst_factory(tst_config: TSTConfig, ds: FileBasedDataset):
 
 
 def generate_dataloaders(batch_size: int):
-    examples = pd.read_csv("cache/train_examples.csv")
-    train_examples, valid_examples = train_test_split(
-        examples, test_size=0.1, random_state=42
+    tds = FileBasedDataset("cache/train_examples.csv", standard_scale=True)
+    train_size = int(0.9 * len(tds))
+    test_size = len(tds) - train_size
+
+    training_ds, valid_ds = torch.utils.data.random_split(
+        tds,
+        [train_size, test_size],
+        generator=torch.Generator().manual_seed(42),
     )
-    training_ds = FileBasedDataset(train_examples)
-    test_ds = FileBasedDataset("cache/test_examples.csv")
-    valid_ds = FileBasedDataset(valid_examples)
-    valid_ds.max_len = training_ds.max_len
-    test_ds.max_len = training_ds.max_len
+
+    test_ds = FileBasedDataset("cache/test_examples.csv", standard_scale=True)
+    test_ds.max_len = tds.max_len
 
     training_dl = torch.utils.data.DataLoader(
         training_ds,
-        collate_fn=training_ds.maxlen_padmask_collate,
+        collate_fn=tds.maxlen_padmask_collate,
         num_workers=config.cores_available,
         batch_size=batch_size,
         pin_memory=True,
@@ -112,14 +115,14 @@ def generate_dataloaders(batch_size: int):
 
     valid_dl = torch.utils.data.DataLoader(
         valid_ds,
-        collate_fn=valid_ds.maxlen_padmask_collate,
+        collate_fn=tds.maxlen_padmask_collate,
         num_workers=config.cores_available,
         batch_size=batch_size,
     )
 
     test_dl = torch.utils.data.DataLoader(
         test_ds,
-        collate_fn=test_ds.maxlen_padmask_collate,
+        collate_fn=tds.maxlen_padmask_collate,
         num_workers=config.cores_available,
         batch_size=batch_size,
     )

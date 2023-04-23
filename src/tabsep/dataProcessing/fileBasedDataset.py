@@ -1,4 +1,5 @@
 import os.path
+import pickle
 
 import pandas as pd
 import torch
@@ -63,45 +64,12 @@ class FileBasedDataset(torch.utils.data.Dataset):
 
         # Find mean and std if using standard scalar
         # NOTE: ignoring 0s as they are usually indicative of missing values
-        self.standard_scale = False  # Initially set to False so that scaling isn't attempted before instatiation of mu and sigma
+        # TODO: training scaler needs to be shared with validation dataset
+        self.standard_scale = standard_scale
         if standard_scale:
-            print("Standard scalar turned ON, computing per-feature mu / sigma...")
-            if (
-                type(examples) is str
-                and os.path.exists(f"{examples}.feature_means.pt")
-                and os.path.exists(f"{examples}.feature_stds.pt")
-            ):
-                print("Found cache, loading standard scaling params from file")
-                self.feature_means = torch.load(f"{examples}.feature_means.pt")
-                self.feature_stds = torch.load(f"{examples}.feature_stds.pt")
-
-            else:
-                print("No cache, computing new standard scaling params")
-
-                feature_sums = torch.zeros(self.get_num_features())
-                feature_squares = torch.zeros(self.get_num_features())
-                feature_nonzero_counts = torch.zeros(self.get_num_features())
-
-                for X, _, _ in tqdm(self):
-                    feature_sums += X.sum(dim=1)
-                    feature_squares += torch.square(X).sum(dim=1)
-                    feature_nonzero_counts += torch.count_nonzero(X, dim=1)
-
-                self.feature_means = torch.nan_to_num(
-                    feature_sums / feature_nonzero_counts
-                )
-                self.feature_stds = torch.nan_to_num(
-                    torch.sqrt(
-                        (feature_squares / feature_nonzero_counts)
-                        - torch.square((feature_sums / feature_squares))
-                    )
-                )
-
-                if type(examples) is str:
-                    torch.save(self.feature_means, f"{examples}.feature_means.pt")
-                    torch.save(self.feature_stds, f"{examples}.feature_stds.pt")
-
-            self.standard_scale = True
+            print("Standard scalar turned ON, loading LR standard scaler")
+            with open("cache/models/singleLr/whole_model.pkl", "rb") as f:
+                self.scaler = pickle.load(f).named_steps["standardscaler"]
 
         print(f"[{type(self).__name__}] Dataset initialization complete")
 
@@ -281,6 +249,9 @@ class FileBasedDataset(torch.utils.data.Dataset):
 
         X = self.__getitem_X__(index)
 
+        assert not torch.isnan(X).any()
+        assert not torch.isnan(Y).any()
+
         return X, Y, stay_id
 
 
@@ -308,7 +279,7 @@ if __name__ == "__main__":
 
     dl = torch.utils.data.DataLoader(
         ds,
-        collate_fn=ds.all_24_collate,
+        collate_fn=ds.maxlen_padmask_collate_skorch,
         num_workers=config.cores_available,
         batch_size=4,
         pin_memory=True,
