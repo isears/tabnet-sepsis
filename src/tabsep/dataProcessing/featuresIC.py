@@ -1,5 +1,6 @@
 import dask.dataframe as dd
 import pandas as pd
+
 from tabsep.dataProcessing.util import all_inclusive_dtypes
 
 
@@ -40,6 +41,13 @@ def generate_missingness(threshold: float) -> pd.Series:
         )
 
         out = pd.concat([out, included_itemids["itemid"]])
+
+    scaling_params = pd.read_csv("cache/scaling_params.csv")
+
+    # Filter out zero-std or na
+    scaling_params = scaling_params[scaling_params["std"] != 0.0]
+    scaling_params = scaling_params.dropna(subset=["mean", "std"])
+    out = out[out.isin(scaling_params["itemid"])]
 
     print(f"Final feature count: {len(out)}")
     out.to_csv("cache/included_features.csv", index=False)
