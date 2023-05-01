@@ -9,21 +9,6 @@ from tqdm import tqdm
 from tabsep import config
 
 
-def get_feature_labels():
-    """
-    Returns feature labels in-order of their appearance in X
-    """
-    feature_ids = (
-        pd.read_csv("cache/included_features.csv").squeeze("columns").to_list()
-    )
-    d_items = pd.read_csv("mimiciv/icu/d_items.csv", index_col="itemid")
-    d_items = d_items.reindex(feature_ids)
-
-    assert len(d_items) == len(feature_ids)
-
-    return d_items["label"].to_list()
-
-
 class FileBasedDataset(torch.utils.data.Dataset):
     def __init__(
         self,
@@ -32,6 +17,7 @@ class FileBasedDataset(torch.utils.data.Dataset):
         processed_mimic_path: str = "./mimicts",
         pm_type=torch.bool,  # May require pad mask to be different type
         standard_scale=False,
+        top_n_features: int = None,
     ):
 
         print(f"[{type(self).__name__}] Initializing dataset...")
@@ -39,6 +25,15 @@ class FileBasedDataset(torch.utils.data.Dataset):
         self.feature_ids = (
             pd.read_csv("cache/included_features.csv").squeeze("columns").to_list()
         )
+
+        if top_n_features != None:
+            odds_ratios = pd.read_csv("cache/models/singleLr/odds_ratios.csv")
+            odds_ratios["importance"] = odds_ratios["Coefficients"].abs()
+            top_features = odds_ratios.nlargest(top_n_features, columns="importance")
+
+            self.feature_ids = [
+                f for f in self.feature_ids if f in top_features["itemid"].to_list()
+            ]
 
         if type(examples) == str:
             self.examples = pd.read_csv(examples)
@@ -97,6 +92,17 @@ class FileBasedDataset(torch.utils.data.Dataset):
         )
 
         return dl
+
+    def get_feature_labels(self):
+        """
+        Returns feature labels in-order of their appearance in X
+        """
+        d_items = pd.read_csv("mimiciv/icu/d_items.csv", index_col="itemid")
+        d_items = d_items.reindex(self.feature_ids)
+
+        assert len(d_items) == len(self.feature_ids)
+
+        return d_items["label"].to_list()
 
     def maxlen_padmask_collate(self, batch):
         """
@@ -162,12 +168,6 @@ class FileBasedDataset(torch.utils.data.Dataset):
         """
         Just return the last nonzero value in X
         """
-
-        if self.standard_scale:
-            raise RuntimeError(
-                "Collate fn not valid for datasets that implement standard scaling"
-            )
-
         x_out = list()
         for idx, (X, y, ID) in enumerate(batch):
             # Shape will be 1 dim (# of features)

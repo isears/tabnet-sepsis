@@ -30,18 +30,18 @@ from tabsep.modeling.skorchPretrainEncoder import (
 )
 
 TUNING_PARAMS = {
-    "lr": 8.640938824421861e-06,
-    "dropout": 0.3283181195131914,
-    "d_model_multiplier": 64,
-    "num_layers": 8,
-    "n_heads": 4,
-    "dim_feedforward": 460,
-    "batch_size": 138,
+    "lr": 0.001,
+    "dropout": 0.1,
+    "d_model_multiplier": 8,
+    "num_layers": 3,
+    "n_heads": 16,
+    "dim_feedforward": 256,
+    "batch_size": 128,
     "pos_encoding": "learnable",
-    "activation": "relu",
+    "activation": "gelu",
     "norm": "LayerNorm",
     "optimizer_name": "RAdam",
-    "weight_decay": 0.01,
+    # "weight_decay": 0.01,
 }
 
 
@@ -55,7 +55,7 @@ def skorch_tst_factory(
 
     tst_callbacks = [
         GradientNormClipping(gradient_clip_value=4.0),
-        EarlyStopping(patience=3),
+        EarlyStopping(patience=10),
         Checkpoint(
             load_best=True,
             fn_prefix=f"{tst_config.save_path}/",
@@ -103,7 +103,9 @@ def skorch_tst_factory(
 
 if __name__ == "__main__":
 
-    pretraining_ds = FileBasedDataset("cache/train_examples.csv", standard_scale=True)
+    pretraining_ds = FileBasedDataset(
+        "cache/train_examples.csv", standard_scale=True, top_n_features=100
+    )
     tst_config = TSTConfig(save_path="cache/models/skorchTst", **TUNING_PARAMS)
 
     tst = skorch_tst_factory(tst_config, pretraining_ds, pretrained_encoder=False)

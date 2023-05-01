@@ -24,7 +24,7 @@ from skorch.callbacks import (
 )
 
 from tabsep import config
-from tabsep.dataProcessing.fileBasedDataset import FileBasedDataset, get_feature_labels
+from tabsep.dataProcessing.fileBasedDataset import FileBasedDataset
 from tabsep.dataProcessing.fileBasedImputationDataset import FileBasedImputationDataset
 from tabsep.dataProcessing.fileBasedTransductionDataset import (
     FileBasedTransductionDataset,
@@ -102,17 +102,17 @@ if __name__ == "__main__":
         # "Platelet Count",
     ]
 
-    feature_names = get_feature_labels()
+    # feature_names = get_feature_labels()
 
-    features_to_mask_indices = [
-        feature_names.index(fname) for fname in features_to_mask_names
-    ]
+    # features_to_mask_indices = [
+    #     feature_names.index(fname) for fname in features_to_mask_names
+    # ]
 
-    pretraining_ds = FileBasedTransductionDataset(
-        "cache/pretrain_examples.csv", mask_feats=features_to_mask_indices
-    )
-    tst_config = TSTConfig(save_path="cache/models/skorchPretrainingTst")
+    # pretraining_ds = FileBasedTransductionDataset(
+    #     "cache/pretrain_examples.csv", mask_feats=features_to_mask_indices
+    # )
+    # tst_config = TSTConfig(save_path="cache/models/skorchPretrainingTst")
 
-    pretraining_encoder = skorch_pretraining_encoder_factory(tst_config, pretraining_ds)
+    # pretraining_encoder = skorch_pretraining_encoder_factory(tst_config, pretraining_ds)
 
-    pretraining_encoder.fit(pretraining_ds)
+    # pretraining_encoder.fit(pretraining_ds)
