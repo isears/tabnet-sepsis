@@ -67,9 +67,22 @@ class FileBasedDataset(torch.utils.data.Dataset):
         # TODO: training scaler needs to be shared with validation dataset
         self.standard_scale = standard_scale
         if standard_scale:
-            print("Standard scalar turned ON, loading LR standard scaler")
-            with open("cache/models/singleLr/whole_model.pkl", "rb") as f:
-                self.scaler = pickle.load(f).named_steps["standardscaler"]
+            print("Standard scalar turned ON, loading params from cache")
+            self.scaling_params = pd.read_csv(
+                "cache/scaling_params.csv", index_col="itemid"
+            ).reindex(self.feature_ids)
+
+            # Check that preprocessing filtered out all the problem children
+            assert not self.scaling_params["std"].isna().any()
+            assert not self.scaling_params["mean"].isna().any()
+            assert not (self.scaling_params["std"] == 0.0).any()
+
+            self.ordered_means = torch.tensor(
+                self.scaling_params["mean"].to_numpy()
+            ).unsqueeze(-1)
+            self.ordered_stds = torch.tensor(
+                self.scaling_params["std"].to_numpy()
+            ).unsqueeze(-1)
 
         print(f"[{type(self).__name__}] Dataset initialization complete")
 
@@ -231,13 +244,13 @@ class FileBasedDataset(torch.utils.data.Dataset):
             self.feature_ids
         )  # Need to add any itemids that are missing
         combined_features = combined_features.fillna(0.0)
-        X = torch.tensor(combined_features.values).float()
+        X = torch.tensor(combined_features.values)
 
         if self.standard_scale:
-            X = (X - self.feature_means[:, None]) / self.feature_stds[:, None]
+            X = (X - self.ordered_means) / self.ordered_stds
             X = torch.nan_to_num(X)
 
-        return X
+        return X.float()
 
     def __len__(self):
         return len(self.examples)
