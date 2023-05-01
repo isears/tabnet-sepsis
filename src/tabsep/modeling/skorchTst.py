@@ -13,7 +13,7 @@ from mvtst.models.ts_transformer import (
     TSTransformerEncoderClassiregressor,
 )
 from sklearn.metrics import average_precision_score, roc_auc_score
-from skorch import NeuralNet, NeuralNetBinaryClassifier
+from skorch import NeuralNet, NeuralNetBinaryClassifier, NeuralNetClassifier
 from skorch.callbacks import (
     Checkpoint,
     EarlyStopping,
@@ -68,7 +68,7 @@ def skorch_tst_factory(
     if pruner is not None:
         tst_callbacks.append(pruner)
 
-    tst = NeuralNetBinaryClassifier(
+    tst = NeuralNetClassifier(
         TSTransformerEncoderClassiregressor,
         criterion=torch.nn.BCEWithLogitsLoss,
         iterator_train__collate_fn=ds.maxlen_padmask_collate_skorch,

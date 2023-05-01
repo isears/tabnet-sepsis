@@ -44,7 +44,7 @@ class InclusionCriteria:
             )
         ]
 
-    def _exclude_long_stays(self, time_hours=(24 * 14)):
+    def _exclude_long_stays(self, time_hours=(24 * 30)):
         self.all_stays = self.all_stays[
             self.all_stays.apply(
                 lambda row: (row["outtime"] - row["intime"])
@@ -88,9 +88,9 @@ class InclusionCriteria:
 
     def get_included(self):
         order = [
-            self._exclude_nodata,
-            self._exclude_short_stays,
-            self._exclude_long_stays,
+            # self._exclude_nodata,
+            # self._exclude_short_stays,
+            # self._exclude_long_stays,
             self._exclude_early_sepsis,
         ]
 

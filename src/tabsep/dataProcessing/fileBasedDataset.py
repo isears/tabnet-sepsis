@@ -255,6 +255,38 @@ class FileBasedDataset(torch.utils.data.Dataset):
         return X, Y, stay_id
 
 
+class TruncatedFBD(FileBasedDataset):
+    """
+    Assumes ffill = True form mimicts
+    """
+
+    def __init__(
+        self,
+        examples: str | pd.DataFrame,
+        shuffle: bool = True,
+        processed_mimic_path: str = "./mimicts",
+        pm_type=torch.bool,
+        standard_scale=False,
+        truncate_steps=24,
+    ):
+        super().__init__(
+            examples, shuffle, processed_mimic_path, pm_type, standard_scale
+        )
+
+        self.truncate_steps = truncate_steps
+        self.max_len = truncate_steps
+
+    def __getitem__(self, index: int):
+        X, Y, stay_id = super().__getitem__(index)
+
+        if X.shape[-1] > self.truncate_steps:
+            X_trunk = X[:, -self.truncate_steps :]
+        else:
+            X_trunk = X
+
+        return X_trunk, Y, stay_id
+
+
 def demo(dl):
     print("Printing first few batches:")
     for batchnum, (X, Y) in enumerate(dl):
@@ -275,7 +307,7 @@ def get_label_prevalence(dl):
 
 
 if __name__ == "__main__":
-    ds = FileBasedDataset(examples="cache/test_examples.csv", standard_scale=True)
+    ds = TruncatedFBD(examples="cache/test_examples.csv", standard_scale=False)
 
     dl = torch.utils.data.DataLoader(
         ds,
