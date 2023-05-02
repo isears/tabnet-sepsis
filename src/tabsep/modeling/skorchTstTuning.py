@@ -27,8 +27,8 @@ from tabsep.modeling.skorchTst import skorch_tst_factory
 
 def objective(trial: optuna.Trial) -> float:
     # Parameters to tune:
-    trial.suggest_float("lr", 1e-10, 0.1, log=True)
-    trial.suggest_float("dropout", 0.01, 0.7)
+    trial.suggest_float("lr", 1e-8, 0.1, log=True)
+    trial.suggest_float("dropout", 0.1, 0.7)
     trial.suggest_categorical("d_model_multiplier", [1, 2, 4, 8, 16, 32, 64])
     trial.suggest_int("num_layers", 1, 15)
     trial.suggest_categorical("n_heads", [4, 8, 16, 32, 64])
@@ -39,9 +39,17 @@ def objective(trial: optuna.Trial) -> float:
     trial.suggest_categorical("norm", ["BatchNorm", "LayerNorm"])
     trial.suggest_categorical("optimizer_name", ["AdamW", "PlainRAdam", "RAdam"])
     trial.suggest_categorical("weight_decay", [1e-3, 1e-2, 1e-1, 0])
+    trial.suggest_int("top_n_features", 10, 239)
 
-    pretraining_ds = FileBasedDataset("cache/train_examples.csv")
-    tst_config = TSTConfig(save_path="cache/models/tstTuning", **trial.params)
+    pretraining_ds = FileBasedDataset(
+        "cache/train_examples.csv",
+        standard_scale=True,
+        top_n_features=trial.params["top_n_features"],
+    )
+    tst_config = TSTConfig(
+        save_path="cache/models/tstTuning",
+        **{k: v for k, v in trial.params.items() if k != "top_n_features"},
+    )
 
     tst = skorch_tst_factory(
         tst_config,

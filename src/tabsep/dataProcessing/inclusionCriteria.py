@@ -13,7 +13,7 @@ class InclusionCriteria:
     def __init__(self):
         self.all_stays = pd.read_csv(
             "mimiciv/icu/icustays.csv",
-            usecols=["stay_id", "intime", "outtime"],
+            usecols=["stay_id", "intime", "outtime", "first_careunit"],
             dtype={"stay_id": "int", "intime": "str", "outtime": "str"},
             parse_dates=["intime", "outtime"],
         )
@@ -86,9 +86,17 @@ class InclusionCriteria:
             ~self.all_stays["stay_id"].isin(early_sepsis_stays)
         ]
 
+    def _include_sicu(self):
+        self.all_stays = self.all_stays[
+            self.all_stays["first_careunit"].isin(
+                ["Trauma SICU (TSICU)", "Surgical Intensive Care Unit (SICU)"]
+            )
+        ]
+
     def get_included(self):
         order = [
             self._exclude_nodata,
+            self._include_sicu,
             self._exclude_short_stays,
             self._exclude_long_stays,
             self._exclude_early_sepsis,
