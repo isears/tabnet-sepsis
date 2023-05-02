@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import torch
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import average_precision_score, roc_auc_score
+from sklearn.metrics import average_precision_score, f1_score, roc_auc_score
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 from torch.utils.data import DataLoader
@@ -46,6 +46,7 @@ if __name__ == "__main__":
 
     final_auroc = roc_auc_score(test_y, lr.predict_proba(test_X)[:, 1])
     final_auprc = average_precision_score(test_y, lr.predict_proba(test_X)[:, 1])
+    final_f1 = f1_score(test_y, lr.predict_proba(test_X)[:, 1].round())
 
     print("Saving model and feature importances")
     os.makedirs(config.lr_path, exist_ok=True)
@@ -77,3 +78,4 @@ if __name__ == "__main__":
     print("Final score:")
     print(f"\tAUROC: {final_auroc}")
     print(f"\tAverage precision: {final_auprc}")
+    print(f"\tF1: {final_f1}")

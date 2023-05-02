@@ -8,26 +8,18 @@ import pickle
 import skorch
 import torch
 import torch.utils.data
-from mvtst.models.ts_transformer import (
-    TSTransformerEncoder,
-    TSTransformerEncoderClassiregressor,
-)
+from mvtst.models.ts_transformer import (TSTransformerEncoder,
+                                         TSTransformerEncoderClassiregressor)
 from sklearn.metrics import average_precision_score, roc_auc_score
 from skorch import NeuralNet, NeuralNetBinaryClassifier
-from skorch.callbacks import (
-    Checkpoint,
-    EarlyStopping,
-    EpochScoring,
-    GradientNormClipping,
-)
+from skorch.callbacks import (Checkpoint, EarlyStopping, EpochScoring,
+                              GradientNormClipping)
 
 from tabsep import config
 from tabsep.dataProcessing.fileBasedDataset import FileBasedDataset
-from tabsep.modeling import TSTConfig, my_auprc, my_auroc
+from tabsep.modeling import TSTConfig, my_auprc, my_auroc, my_f1
 from tabsep.modeling.skorchPretrainEncoder import (
-    MaskedMSELoss,
-    MaskedMSELossSkorchConnector,
-)
+    MaskedMSELoss, MaskedMSELossSkorchConnector)
 
 TUNING_PARAMS = {
     "lr": 0.001,
@@ -36,7 +28,7 @@ TUNING_PARAMS = {
     "num_layers": 3,
     "n_heads": 16,
     "dim_feedforward": 256,
-    "batch_size": 128,
+    "batch_size": 32,
     "pos_encoding": "learnable",
     "activation": "gelu",
     "norm": "LayerNorm",
@@ -63,6 +55,8 @@ def skorch_tst_factory(
         ),
         EpochScoring(my_auroc, name="auroc", lower_is_better=False),
         EpochScoring(my_auprc, name="auprc", lower_is_better=False),
+        EpochScoring(my_f1, name="f1", lower_is_better=False)
+
     ]
 
     if pruner is not None:
@@ -104,7 +98,7 @@ def skorch_tst_factory(
 if __name__ == "__main__":
 
     pretraining_ds = FileBasedDataset(
-        "cache/train_examples.csv", standard_scale=True, top_n_features=100
+        "cache/train_examples.csv", standard_scale=True, top_n_features=150
     )
     tst_config = TSTConfig(save_path="cache/models/skorchTst", **TUNING_PARAMS)
 
