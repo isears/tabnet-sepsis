@@ -57,7 +57,7 @@ def skorch_tst_factory(
 
     tst_callbacks = [
         GradientNormClipping(gradient_clip_value=4.0),
-        EarlyStopping(patience=10),
+        EarlyStopping(patience=5),
         Checkpoint(
             load_best=True,
             fn_prefix=f"{tst_config.save_path}/",
