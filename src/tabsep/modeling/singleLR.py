@@ -29,19 +29,19 @@ def load_to_mem(train_ds):
         all_X = torch.cat((all_X, batch_X))
         all_y = torch.cat((all_y, batch_y))
 
-    return all_X, all_y, train_ds
+    return all_X, all_y
 
 
 if __name__ == "__main__":
     train_ds = FileBasedDataset("cache/train_examples.csv", standard_scale=True)
-    train_X, train_y, train_ds = load_to_mem(train_ds)
+    train_X, train_y = load_to_mem(train_ds)
     print("[*] Training data loaded data to memory")
 
     lr = LogisticRegression(max_iter=10000)
     lr.fit(train_X, train_y)
 
     test_ds = FileBasedDataset("cache/test_examples.csv", standard_scale=True)
-    test_X, test_y, test_ds = load_to_mem(test_ds)
+    test_X, test_y = load_to_mem(test_ds)
     print("[*] Testing data loaded to memory")
 
     final_auroc = roc_auc_score(test_y, lr.predict_proba(test_X)[:, 1])

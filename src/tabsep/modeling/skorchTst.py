@@ -8,18 +8,28 @@ import pickle
 import skorch
 import torch
 import torch.utils.data
-from mvtst.models.ts_transformer import (TSTransformerEncoder,
-                                         TSTransformerEncoderClassiregressor)
-from sklearn.metrics import average_precision_score, roc_auc_score
+from mvtst.models.ts_transformer import (
+    TSTransformerEncoder,
+    TSTransformerEncoderClassiregressor,
+)
+from sklearn.metrics import average_precision_score, f1_score, roc_auc_score
 from skorch import NeuralNet, NeuralNetBinaryClassifier
-from skorch.callbacks import (Checkpoint, EarlyStopping, EpochScoring,
-                              GradientNormClipping)
+from skorch.callbacks import (
+    Checkpoint,
+    EarlyStopping,
+    EpochScoring,
+    GradientNormClipping,
+    LRScheduler,
+)
 
 from tabsep import config
 from tabsep.dataProcessing.fileBasedDataset import FileBasedDataset
 from tabsep.modeling import TSTConfig, my_auprc, my_auroc, my_f1
+from tabsep.modeling.singleLR import load_to_mem
 from tabsep.modeling.skorchPretrainEncoder import (
-    MaskedMSELoss, MaskedMSELossSkorchConnector)
+    MaskedMSELoss,
+    MaskedMSELossSkorchConnector,
+)
 
 TUNING_PARAMS = {
     "lr": 0.001,
@@ -55,8 +65,8 @@ def skorch_tst_factory(
         ),
         EpochScoring(my_auroc, name="auroc", lower_is_better=False),
         EpochScoring(my_auprc, name="auprc", lower_is_better=False),
-        EpochScoring(my_f1, name="f1", lower_is_better=False)
-
+        EpochScoring(my_f1, name="f1", lower_is_better=False),
+        # LRScheduler("StepLR", step_size=2),
     ]
 
     if pruner is not None:
@@ -96,12 +106,24 @@ def skorch_tst_factory(
 
 
 if __name__ == "__main__":
-
     pretraining_ds = FileBasedDataset(
-        "cache/train_examples.csv", standard_scale=True, top_n_features=150
+        "cache/train_examples.csv", standard_scale=True, top_n_features=None
     )
     tst_config = TSTConfig(save_path="cache/models/skorchTst", **TUNING_PARAMS)
 
     tst = skorch_tst_factory(tst_config, pretraining_ds, pretrained_encoder=False)
 
     tst.fit(pretraining_ds, y=None)
+
+    test_ds = FileBasedDataset("cache/test_examples.csv", standard_scale=True)
+    X, y = load_to_mem(test_ds)
+    y_pred = tst.predict_proba(test_ds)[:, 1]
+
+    final_auroc = roc_auc_score(y, y_pred)
+    final_auprc = average_precision_score(y, y_pred)
+    final_f1 = f1_score(y, y_pred.round())
+
+    print("Final score:")
+    print(f"\tAUROC: {final_auroc}")
+    print(f"\tAverage precision: {final_auprc}")
+    print(f"\tF1: {final_f1}")
