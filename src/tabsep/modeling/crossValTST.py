@@ -16,7 +16,7 @@ from tabsep.modeling.skorchTst import TUNING_PARAMS, TSTConfig, skorch_tst_facto
 if __name__ == "__main__":
     all_scores = {"AUROC": list(), "Average precision": list(), "F1": list()}
 
-    for fold_idx, (train_ds, test_ds) in enumerate(cv_generator(n_splits=5)):
+    for fold_idx, (train_ds, test_ds) in enumerate(cv_generator(n_splits=10)):
         print(f"[*] Starting fold {fold_idx}")
 
         # Need to make sure max_len is the same so that the shapes don't change

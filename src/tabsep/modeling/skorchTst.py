@@ -32,18 +32,19 @@ from tabsep.modeling.skorchPretrainEncoder import (
 )
 
 TUNING_PARAMS = {
-    "lr": 0.001,
-    "dropout": 0.1,
+    "lr": 0.0006902481260359048,
+    "dropout": 0.46203984390654546,
     "d_model_multiplier": 8,
     "num_layers": 3,
-    "n_heads": 16,
-    "dim_feedforward": 256,
-    "batch_size": 32,
-    "pos_encoding": "learnable",
+    "n_heads": 32,
+    "dim_feedforward": 331,
+    "batch_size": 18,
+    "pos_encoding": "fixed",
     "activation": "gelu",
-    "norm": "LayerNorm",
-    "optimizer_name": "RAdam",
-    # "weight_decay": 0.01,
+    "norm": "BatchNorm",
+    "optimizer_name": "PlainRAdam",
+    "weight_decay": 0.1,
+    # "top_n_features": 100,
 }
 
 
@@ -66,7 +67,7 @@ def skorch_tst_factory(
         EpochScoring(my_auroc, name="auroc", lower_is_better=False),
         EpochScoring(my_auprc, name="auprc", lower_is_better=False),
         EpochScoring(my_f1, name="f1", lower_is_better=False),
-        # LRScheduler("StepLR", step_size=2),
+        LRScheduler("StepLR", step_size=2),
     ]
 
     if pruner is not None:
@@ -84,6 +85,7 @@ def skorch_tst_factory(
         device="cuda",
         callbacks=tst_callbacks,
         train_split=skorch.dataset.ValidSplit(0.1),
+        # train_split=None,
         # TST params
         module__feat_dim=ds.get_num_features(),
         module__max_len=ds.max_len,

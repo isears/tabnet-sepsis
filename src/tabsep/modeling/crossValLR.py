@@ -34,7 +34,7 @@ def load_to_mem(train_ds):
 if __name__ == "__main__":
     all_scores = {"AUROC": list(), "Average precision": list(), "F1": list()}
 
-    for fold_idx, (train_ds, test_ds) in enumerate(cv_generator(n_splits=5)):
+    for fold_idx, (train_ds, test_ds) in enumerate(cv_generator(n_splits=10)):
         print(f"[*] Starting fold {fold_idx}")
 
         train_X, train_y = load_to_mem(train_ds)
