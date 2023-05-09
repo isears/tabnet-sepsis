@@ -67,7 +67,7 @@ def skorch_tst_factory(
         EpochScoring(my_auroc, name="auroc", lower_is_better=False),
         EpochScoring(my_auprc, name="auprc", lower_is_better=False),
         EpochScoring(my_f1, name="f1", lower_is_better=False),
-        LRScheduler("StepLR", step_size=2),
+        # LRScheduler("StepLR", step_size=2),
     ]
 
     if pruner is not None:

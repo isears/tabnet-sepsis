@@ -3,12 +3,14 @@ Find optimal hyperparameters for TST
 """
 from dataclasses import fields
 
+import numpy as np
 import optuna
 import pandas as pd
 import torch
 from mvtst.optimizers import AdamW, PlainRAdam, RAdam
 from optuna.integration.skorch import SkorchPruningCallback
-from sklearn.metrics import average_precision_score, roc_auc_score
+from scipy.stats import sem
+from sklearn.metrics import average_precision_score, f1_score, roc_auc_score
 from sklearn.model_selection import KFold, cross_val_score, train_test_split
 from skorch.callbacks import (
     Checkpoint,
@@ -21,6 +23,7 @@ from tabsep import config
 from tabsep.dataProcessing.ensembleDataset import EnsembleDataset
 from tabsep.dataProcessing.fileBasedDataset import FileBasedDataset
 from tabsep.modeling import TSTConfig
+from tabsep.modeling.cvUtil import cv_generator
 from tabsep.modeling.skorchEnsembleTst import ensemble_tst_factory
 from tabsep.modeling.skorchTst import skorch_tst_factory
 
@@ -39,40 +42,54 @@ def objective(trial: optuna.Trial) -> float:
     trial.suggest_categorical("norm", ["BatchNorm", "LayerNorm"])
     trial.suggest_categorical("optimizer_name", ["AdamW", "PlainRAdam", "RAdam"])
     trial.suggest_categorical("weight_decay", [1e-3, 1e-2, 1e-1, 0])
-    trial.suggest_int("top_n_features", 10, 239)
 
-    pretraining_ds = FileBasedDataset(
-        "cache/train_examples.csv",
-        standard_scale=True,
-        top_n_features=trial.params["top_n_features"],
-    )
-    tst_config = TSTConfig(
-        save_path="cache/models/tstTuning",
-        **{k: v for k, v in trial.params.items() if k != "top_n_features"},
-    )
+    all_scores = {"AUROC": list(), "Average precision": list(), "F1": list()}
 
-    tst = skorch_tst_factory(
-        tst_config,
-        pretraining_ds,
-        # pruner=SkorchPruningCallback(trial=trial, monitor="auprc"),
-    )
+    for fold_idx, (train_ds, test_ds) in enumerate(cv_generator(n_splits=3)):
+        print(f"[*] Starting fold {fold_idx}")
 
-    try:
-        tst.fit(pretraining_ds, y=None)
-    except RuntimeError as e:
-        print(f"Warning, assumed runtime error: {e}")
-        del tst
-        torch.cuda.empty_cache()
-        # return float("nan")
-        return 100
+        # Need to make sure max_len is the same so that the shapes don't change
+        actual_max_len = max(train_ds.max_len, test_ds.max_len)
+        train_ds.max_len = actual_max_len
+        test_ds.max_len = actual_max_len
 
-    return min([h["valid_loss"] for h in tst.history])
+        tst_config = TSTConfig(save_path="cache/models/skorchCvTst", **trial.params)
+
+        tst = skorch_tst_factory(tst_config, train_ds, pretrained_encoder=False)
+
+        try:
+            tst.fit(train_ds, y=None)
+        except RuntimeError as e:
+            print(f"Warning, assumed runtime error: {e}")
+            del tst
+            torch.cuda.empty_cache()
+            # return float("nan")
+            return 0.0
+
+        test_y = test_ds.examples["label"].to_numpy()
+        preds = tst.predict_proba(test_ds)[:, 1]
+
+        all_scores["AUROC"].append(roc_auc_score(test_y, preds))
+        all_scores["Average precision"].append(average_precision_score(test_y, preds))
+        all_scores["F1"].append(f1_score(test_y, preds.round()))
+
+        print("[+] Fold complete")
+        for key, val in all_scores.items():
+            print(f"\t{key}: {val[-1]}")
+
+    print("[+] All folds complete")
+    for key, val in all_scores.items():
+        score_mean = np.mean(val)
+        standard_error = sem(val)
+        print(f"{key}: {score_mean:.5f} +/- {standard_error:.5f}")
+
+    return np.mean(all_scores["AUROC"])
 
 
 if __name__ == "__main__":
     pruner = None
     # pruner = optuna.pruners.PercentilePruner(25.0)
-    study = optuna.create_study(direction="minimize", pruner=pruner)
+    study = optuna.create_study(direction="maximize", pruner=pruner)
     study.optimize(objective, n_trials=10000)
 
     print("Best trial:")
