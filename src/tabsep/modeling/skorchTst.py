@@ -32,19 +32,18 @@ from tabsep.modeling.skorchPretrainEncoder import (
 )
 
 TUNING_PARAMS = {
-    "lr": 0.0006902481260359048,
-    "dropout": 0.46203984390654546,
-    "d_model_multiplier": 8,
+    "lr": 0.010573607193088362,
+    "dropout": 0.17431075675709043,
+    "d_model_multiplier": 4,
     "num_layers": 3,
-    "n_heads": 32,
-    "dim_feedforward": 331,
-    "batch_size": 18,
+    "n_heads": 8,
+    "dim_feedforward": 141,
+    "batch_size": 171,
     "pos_encoding": "fixed",
     "activation": "gelu",
-    "norm": "BatchNorm",
+    "norm": "LayerNorm",
     "optimizer_name": "PlainRAdam",
-    "weight_decay": 0.1,
-    # "top_n_features": 100,
+    "weight_decay": 0.001,
 }
 
 
@@ -58,7 +57,7 @@ def skorch_tst_factory(
 
     tst_callbacks = [
         GradientNormClipping(gradient_clip_value=4.0),
-        EarlyStopping(patience=5),
+        EarlyStopping(patience=10),
         Checkpoint(
             load_best=True,
             fn_prefix=f"{tst_config.save_path}/",
@@ -76,6 +75,7 @@ def skorch_tst_factory(
     tst = NeuralNetBinaryClassifier(
         TSTransformerEncoderClassiregressor,
         criterion=torch.nn.BCEWithLogitsLoss,
+        # criterion__pos_weight=torch.FloatTensor([10]),
         iterator_train__collate_fn=ds.maxlen_padmask_collate_skorch,
         iterator_valid__collate_fn=ds.maxlen_padmask_collate_skorch,
         iterator_train__num_workers=config.cores_available,

@@ -96,7 +96,7 @@ class InclusionCriteria:
     def get_included(self):
         order = [
             self._exclude_nodata,
-            self._include_sicu,
+            # self._include_sicu,
             self._exclude_short_stays,
             self._exclude_long_stays,
             self._exclude_early_sepsis,
