@@ -92,11 +92,13 @@ class DerivedDataset(torch.utils.data.Dataset):
             batch[idx] = (X_mod.T, y, pad_mask, stay_id)
 
         X = torch.stack([X for X, _, _, _ in batch], dim=0)
-        y = torch.stack([torch.tensor(Y) for _, Y, _, _ in batch], dim=0).unsqueeze(-1)
+        y = torch.stack(
+            [torch.tensor(Y) for _, Y, _, _ in batch], dim=0
+        )  # .unsqueeze(-1)
         pad_mask = torch.stack([pad_mask for _, _, pad_mask, _ in batch], dim=0)
         IDs = torch.tensor([stay_id for _, _, _, stay_id in batch])
 
-        return X, y, pad_mask.to(self.pm_type), IDs
+        return X.float(), y.float(), pad_mask.to(self.pm_type), IDs
 
     def maxlen_padmask_collate_skorch(self, batch):
         """

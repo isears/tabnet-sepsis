@@ -5,6 +5,7 @@ Run Skorch implementation of TST w/specific hyperparams
 import os
 import pickle
 
+import pandas as pd
 import skorch
 import torch
 import torch.utils.data
@@ -13,6 +14,7 @@ from mvtst.models.ts_transformer import (
     TSTransformerEncoderClassiregressor,
 )
 from sklearn.metrics import average_precision_score, f1_score, roc_auc_score
+from sklearn.model_selection import train_test_split
 from skorch import NeuralNet, NeuralNetBinaryClassifier
 from skorch.callbacks import (
     Checkpoint,
@@ -23,7 +25,7 @@ from skorch.callbacks import (
 )
 
 from tabsep import config
-from tabsep.dataProcessing.fileBasedDataset import FileBasedDataset
+from tabsep.dataProcessing.derivedDataset import DerivedDataset
 from tabsep.modeling import TSTConfig, my_auprc, my_auroc, my_f1
 from tabsep.modeling.singleLR import load_to_mem
 from tabsep.modeling.skorchPretrainEncoder import (
@@ -48,7 +50,7 @@ TUNING_PARAMS = {
 
 
 def skorch_tst_factory(
-    tst_config: TSTConfig, ds: FileBasedDataset, pruner=None, pretrained_encoder=False
+    tst_config: TSTConfig, ds: DerivedDataset, pruner=None, pretrained_encoder=False
 ):
     """
     Generate TSTs wrapped in standard skorch wrapper
@@ -87,7 +89,7 @@ def skorch_tst_factory(
         train_split=skorch.dataset.ValidSplit(0.1),
         # train_split=None,
         # TST params
-        module__feat_dim=ds.get_num_features(),
+        module__feat_dim=len(ds.features),
         module__max_len=ds.max_len,
         max_epochs=50,
         **tst_config.generate_skorch_full_params(),
@@ -108,16 +110,16 @@ def skorch_tst_factory(
 
 
 if __name__ == "__main__":
-    pretraining_ds = FileBasedDataset(
-        "cache/train_examples.csv", standard_scale=True, top_n_features=None
-    )
+    stay_ids = pd.read_csv("cache/included_stay_ids.csv").squeeze("columns")
+    train_sids, test_sids = train_test_split(stay_ids, test_size=0.1, random_state=42)
+    train_ds = DerivedDataset(stay_ids)
     tst_config = TSTConfig(save_path="cache/models/skorchTst", **TUNING_PARAMS)
 
-    tst = skorch_tst_factory(tst_config, pretraining_ds, pretrained_encoder=False)
+    tst = skorch_tst_factory(tst_config, train_ds, pretrained_encoder=False)
 
-    tst.fit(pretraining_ds, y=None)
+    tst.fit(train_ds, y=None)
 
-    test_ds = FileBasedDataset("cache/test_examples.csv", standard_scale=True)
+    test_ds = DerivedDataset(test_sids)
     X, y = load_to_mem(test_ds)
     y_pred = tst.predict_proba(test_ds)[:, 1]
 
