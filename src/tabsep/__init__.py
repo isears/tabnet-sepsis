@@ -18,12 +18,13 @@ class Config:
     gpus_available: int
 
 
-with open("mimicts/readme.txt", "r") as f:
-    mimicts_config = f.readlines()
+# with open("mimicts/readme.txt", "r") as f:
+#     mimicts_config = f.readlines()
 
-    for line in mimicts_config:
-        if "timestep" in line:
-            timestep_seconds = int(line.split("=")[-1])
+#     for line in mimicts_config:
+#         if "timestep" in line:
+#             timestep_seconds = int(line.split("=")[-1])
+timestep_seconds = 60 * 60
 
 
 config = Config(
@@ -33,5 +34,5 @@ config = Config(
     tst_path="cache/models/singleTst",
     lr_path="cache/models/singleLr",
     cores_available=len(os.sched_getaffinity(0)),
-    gpus_available=torch.cuda.device_count()
+    gpus_available=torch.cuda.device_count(),
 )

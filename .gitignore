@@ -1,4 +1,5 @@
 /mimiciv
+/mimiciv_derived
 /mimicts
 /.venv
 /logs
@@ -10,3 +11,4 @@
 /lightning_logs
 /dbg.ipynb
 /notes.txt
+/processed
