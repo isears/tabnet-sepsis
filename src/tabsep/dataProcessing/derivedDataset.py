@@ -20,6 +20,16 @@ class DerivedDataset(torch.utils.data.Dataset):
         "coagulation",
         "differential_detailed",
         "bg",
+        "enzyme",
+        "inflammation",
+        "dobutamine",
+        "epinephrine",
+        "invasive_line",
+        "milrinone",
+        "norepinephrine",
+        "phenylephrine",
+        "vasopressin",
+        "ventilation",
     ]
 
     def __init__(
@@ -57,9 +67,6 @@ class DerivedDataset(torch.utils.data.Dataset):
             feature_names += example_table.columns.to_list()
 
         return feature_names
-
-    def get_labels(self) -> torch.Tensor:
-        raise NotImplementedError()
 
     def __getitem_X__(self, stay_id: int) -> pd.DataFrame:
         loaded_dfs = list()
@@ -136,3 +143,5 @@ if __name__ == "__main__":
 
     for X, Y, stay_id in ds:
         print(X)
+
+        break
