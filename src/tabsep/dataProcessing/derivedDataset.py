@@ -1,3 +1,4 @@
+import datetime
 import glob
 import os
 import random
@@ -43,20 +44,7 @@ class DerivedDataset(torch.utils.data.Dataset):
         # self.max_len = self.examples["cutidx"].max() + 1
         # print(f"\tMax length: {self.max_len}")
 
-        # TODO: standard scaling?
-
-    def first_pass_processing(self):
-        """
-        Need to do one full pass of dataset in order to calculate:
-        - mean by feature
-        - std by feature
-        - max feature values
-        - min features values
-        - max seq len
-
-        Save to cache somehow?
-        """
-        raise NotImplementedError()
+        self.stats = pd.read_parquet("processed/stats.parquet")
 
     def _populate_features(self) -> list:
         feature_names = list()
@@ -73,7 +61,7 @@ class DerivedDataset(torch.utils.data.Dataset):
     def get_labels(self) -> torch.Tensor:
         raise NotImplementedError()
 
-    def __getitem_X__(self, stay_id: int):
+    def __getitem_X__(self, stay_id: int) -> pd.DataFrame:
         loaded_dfs = list()
 
         for table_name in self.used_tables:
@@ -87,14 +75,23 @@ class DerivedDataset(torch.utils.data.Dataset):
         # When that happens, just take the mean
         combined = combined.groupby(by=combined.columns, axis=1).mean()
 
-        # TODO: current nan filling strategy: ffill and 0 out anything at the beginning
-        # combined = combined.fillna(method="ffill")
+        # Min / max normalization
+        for col in combined.columns:
+            if col in self.stats.columns:
+                combined[col] = (combined[col] - self.stats[col].loc["min"]) / (
+                    self.stats[col].loc["max"] - self.stats[col].loc["min"]
+                )
+
+        # Fill nas w/-1
         combined = combined.fillna(-1.0)
 
         return combined
 
-    def __getitem_Y__(self, stay_id: int):
-        raise NotImplementedError()
+    def __getitem_Y__(self, stay_id: int) -> float:
+        if os.path.exists(f"processed/{stay_id}.sepsis3.parquet"):
+            return 1.0
+        else:
+            return 0.0
 
     def __len__(self):
         return len(self.stay_ids)
@@ -103,18 +100,39 @@ class DerivedDataset(torch.utils.data.Dataset):
         stay_id = self.stay_ids[index]
 
         X = self.__getitem_X__(stay_id)
-        # Y = self.__getitem_Y__(stay_id)
+        Y = self.__getitem_Y__(stay_id)
 
-        # assert not torch.isnan(X).any()
-        # assert not torch.isnan(Y).any()
+        if Y == 1.0:  # Do just-before-sepsis cut
+            sepsis_df = pd.read_parquet(f"processed/{stay_id}.sepsis3.parquet")
+            t_sepsis = sepsis_df[sepsis_df["sepsis3"] == 1].index[0]
+            t_cut = t_sepsis - datetime.timedelta(hours=12)
 
-        # return X, Y, stay_id
+            if t_cut > X.index[0]:
+                daterange = pd.date_range(X.index[0], t_cut, freq="H")
+                X = X.loc[daterange]
+            else:
+                print(
+                    f"[-] Warning: stay id {stay_id} doesn't have sufficient data to do pre-sepsis cut"
+                )
 
-        return X
+        else:  # Do random cut
+            # TODO: this should be coupled with inclusion criteria
+            if len(X.index) <= 24:
+                print(
+                    f"[-] Warning: stay id {stay_id} doesn't have sufficient data to do random cut"
+                )
+            else:
+                t_cut = random.choice(X.index[24:])
+                daterange = pd.date_range(X.index[0], t_cut, freq="H")
+                X = X.loc[daterange]
+
+        return X, Y, stay_id
 
 
 if __name__ == "__main__":
-    examples = pd.read_csv("cache/test_examples.csv")
-    ds = DerivedDataset(stay_ids=examples["stay_id"].to_list())
+    sids = list(set([s.split("/")[1].split(".")[0] for s in glob.glob("processed/*")]))
 
-    print(ds[0])
+    ds = DerivedDataset(stay_ids=sids)
+
+    for X, Y, stay_id in ds:
+        print(X)

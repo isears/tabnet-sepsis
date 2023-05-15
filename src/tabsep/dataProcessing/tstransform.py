@@ -234,18 +234,41 @@ class Derived2Ts:
         stay_group = stay_group.reindex(daterange)
         stay_group.to_parquet(f"{self.save_path}/{stay_id}.{name}.parquet")
 
+    def agg_med_group(self, stay_group, name):
+        """
+        Meds tables require their own processing
+        """
+        stay_id = int(stay_group.name)
+        daterange = self._generate_daterange(stay_id)
+        stay_group = self._convert_to_hourly_resolution(stay_group, "starttime")
+        stay_group = self._convert_to_hourly_resolution(stay_group, "endtime")
+        stay_group[name] = 1.0
+
+        stay_group["interval"] = stay_group.apply(
+            lambda x: pd.date_range(x["starttime"], x["endtime"], freq="H"), axis=1
+        )
+
+        stay_group = (
+            stay_group[[name, "interval"]].explode("interval").set_index("interval")
+        )
+        # Drop duplicates
+        stay_group = stay_group[~stay_group.index.duplicated(keep="first")]
+        stay_group = stay_group.reindex(daterange).fillna(0.0)
+
+        stay_group.to_parquet(f"{self.save_path}/{stay_id}.{name}.parquet")
+
     def run_all(self):
         print("[*] Aggregating sepsis3...")
         sepsis3 = pd.read_parquet("mimiciv_derived/sepsis3.parquet")
         sepsis3.groupby("stay_id").apply(self.agg_sepsis_group)
 
-        # print("[*] Aggregating vitals...")
-        # vitals = pd.read_parquet("mimiciv_derived/vitalsign.parquet")
-        # vitals.groupby("stay_id").apply(self.agg_vitals_group)
+        print("[*] Aggregating vitals...")
+        vitals = pd.read_parquet("mimiciv_derived/vitalsign.parquet")
+        vitals.groupby("stay_id").apply(self.agg_vitals_group)
 
-        # print("[*] Aggregating bg...")
-        # bg = self._load_clean("mimiciv_derived/bg.parquet")
-        # bg.groupby("stay_id").apply(self.agg_bg_group)
+        print("[*] Aggregating bg...")
+        bg = self._load_clean("mimiciv_derived/bg.parquet")
+        bg.groupby("stay_id").apply(self.agg_bg_group)
 
         for table_name in standard_tables:
             print(f"[*] Aggregating {table_name}...")
@@ -253,6 +276,11 @@ class Derived2Ts:
             df.groupby("stay_id").apply(
                 lambda g: self.agg_default_measurement_group(g, table_name)
             )
+
+        for table_name in meds_tables:
+            print(f"[*] Aggregating {table_name}...")
+            df = pd.read_parquet(f"mimiciv_derived/{table_name}.parquet")
+            df.groupby("stay_id").apply(lambda g: self.agg_med_group(g, table_name))
 
 
 if __name__ == "__main__":
