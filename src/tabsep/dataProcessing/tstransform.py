@@ -5,6 +5,30 @@ multiple individual icu stay timelines (time on axis 1, feature type on axis 2)
 
 import pandas as pd
 
+standard_tables = [
+    "chemistry",
+    "coagulation",
+    "differential_detailed",
+    "complete_blood_count",
+    "enzyme",
+    "inflammation",
+    "icp",
+]
+
+meds_tables = [
+    "dobutamine",
+    "dopamine",
+    "epinephrine",
+    "invasive_line",
+    "milrinone",
+    "norepinephrine",
+    "phenylephrine",
+    "vasopressin",
+    "ventilation",
+]
+
+zero_info_columns = ["rdwsd", "Microcytes"]
+
 
 class Derived2Ts:
     def __init__(self) -> None:
@@ -200,7 +224,9 @@ class Derived2Ts:
         aggable_columns = [
             c
             for c in stay_group.columns
-            if c not in ["subject_id", "stay_id", "hadm_id", "specimen_id"]
+            if c
+            not in ["subject_id", "stay_id", "hadm_id", "specimen_id"]
+            + zero_info_columns
         ]
 
         stay_group = stay_group[aggable_columns].groupby("charttime").agg("mean")
@@ -221,34 +247,12 @@ class Derived2Ts:
         # bg = self._load_clean("mimiciv_derived/bg.parquet")
         # bg.groupby("stay_id").apply(self.agg_bg_group)
 
-        standard_tables = [
-            "chemistry",
-            "coagulation",
-            "differential_detailed",
-            "complete_blood_count",
-            "enzyme",
-            "inflammation",
-            "icp",
-        ]
-
         for table_name in standard_tables:
             print(f"[*] Aggregating {table_name}...")
             df = self._load_clean(f"mimiciv_derived/{table_name}.parquet")
             df.groupby("stay_id").apply(
                 lambda g: self.agg_default_measurement_group(g, table_name)
             )
-
-        meds_tables = [
-            "dobutamine",
-            "dopamine",
-            "epinephrine",
-            "invasive_line",
-            "milrinone",
-            "norepinephrine",
-            "phenylephrine",
-            "vasopressin",
-            "ventilation",
-        ]
 
 
 if __name__ == "__main__":
