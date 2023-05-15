@@ -53,6 +53,7 @@ class DerivedDataset(torch.utils.data.Dataset):
         # TODO:
         # self.max_len = self.examples["cutidx"].max() + 1
         # print(f"\tMax length: {self.max_len}")
+        self.max_len = 14 * 24 + 1
 
         self.stats = pd.read_parquet("processed/stats.parquet")
 
@@ -67,6 +68,42 @@ class DerivedDataset(torch.utils.data.Dataset):
             feature_names += example_table.columns.to_list()
 
         return feature_names
+
+    def maxlen_padmask_collate(self, batch):
+        """
+        Pad and return third value (the pad mask)
+        Returns X, y, padmask, stay_ids
+        """
+        for idx, (X, y, stay_id) in enumerate(batch):
+            X = torch.tensor(X.transpose().to_numpy())
+            actual_len = X.shape[1]
+
+            assert (
+                actual_len <= self.max_len
+            ), f"Actual: {actual_len}, Max: {self.max_len}"
+
+            pad_mask = torch.ones(actual_len)
+            X_mod = pad(X, (0, self.max_len - actual_len), mode="constant", value=0.0)
+
+            pad_mask = pad(
+                pad_mask, (0, self.max_len - actual_len), mode="constant", value=0.0
+            )
+
+            batch[idx] = (X_mod.T, y, pad_mask, stay_id)
+
+        X = torch.stack([X for X, _, _, _ in batch], dim=0)
+        y = torch.stack([torch.tensor(Y) for _, Y, _, _ in batch], dim=0).unsqueeze(-1)
+        pad_mask = torch.stack([pad_mask for _, _, pad_mask, _ in batch], dim=0)
+        IDs = torch.tensor([stay_id for _, _, _, stay_id in batch])
+
+        return X, y, pad_mask.to(self.pm_type), IDs
+
+    def maxlen_padmask_collate_skorch(self, batch):
+        """
+        Skorch expects kwargs output
+        """
+        X, y, pad_mask, _ = self.maxlen_padmask_collate(batch)
+        return dict(X=X, padding_masks=pad_mask), y
 
     def __getitem_X__(self, stay_id: int) -> pd.DataFrame:
         loaded_dfs = list()
@@ -89,7 +126,10 @@ class DerivedDataset(torch.utils.data.Dataset):
                     self.stats[col].loc["max"] - self.stats[col].loc["min"]
                 )
 
+        combined = combined.reindex(columns=self.features)
+
         # Fill nas w/-1
+        # TODO: if no drug data exists, need to fill those nas w/0.0
         combined = combined.fillna(-1.0)
 
         return combined
@@ -136,12 +176,26 @@ class DerivedDataset(torch.utils.data.Dataset):
         return X, Y, stay_id
 
 
+def build_dl(stay_ids: list, batch_size: int):
+    ds = DerivedDataset(stay_ids=stay_ids)
+
+    dl = torch.utils.data.DataLoader(
+        ds,
+        collate_fn=ds.maxlen_padmask_collate_skorch,
+        num_workers=config.cores_available,
+        batch_size=batch_size,
+        pin_memory=True,
+    )
+
+    return dl
+
+
 if __name__ == "__main__":
-    sids = list(set([s.split("/")[1].split(".")[0] for s in glob.glob("processed/*")]))
+    sids = pd.read_csv("cache/included_stay_ids.csv").squeeze("columns").to_list()
 
-    ds = DerivedDataset(stay_ids=sids)
+    dl = build_dl(stay_ids=sids, batch_size=16)
 
-    for X, Y, stay_id in ds:
-        print(X)
+    for batch_X, batch_y in dl:
+        print(batch_X.shape)
 
         break
