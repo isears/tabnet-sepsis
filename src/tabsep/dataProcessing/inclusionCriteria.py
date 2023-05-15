@@ -2,8 +2,8 @@
 Apply inclusion criteria to generate a list of included stay ids
 """
 import datetime
+import glob
 
-import dask.dataframe as dd
 import pandas as pd
 
 from tabsep.dataProcessing.util import all_inclusive_dtypes
@@ -11,34 +11,27 @@ from tabsep.dataProcessing.util import all_inclusive_dtypes
 
 class InclusionCriteria:
     def __init__(self):
-        self.all_stays = pd.read_csv(
-            "mimiciv/icu/icustays.csv",
-            usecols=["stay_id", "intime", "outtime", "first_careunit"],
-            dtype={"stay_id": "int", "intime": "str", "outtime": "str"},
-            parse_dates=["intime", "outtime"],
-        )
+        self.all_stays = pd.read_parquet("mimiciv_derived/icustay_detail.parquet")
 
     def _exclude_nodata(self):
         """
-        Exclude patients w/no chartevents
+        Exclude patients w/no associated vitals measurements
         """
-        chartevents = dd.read_csv(
-            "mimiciv/icu/chartevents.csv",
-            usecols=["stay_id", "subject_id"],
-            blocksize=100e6,
+        sids = list(
+            set(
+                [
+                    int(s.split("/")[1].split(".")[0])
+                    for s in glob.glob("processed/*.vitalsign.parquet")
+                ]
+            )
         )
 
-        chartevents_stay_ids = (
-            chartevents["stay_id"].unique().compute(scheduler="processes")
-        )
-        self.all_stays = self.all_stays[
-            self.all_stays["stay_id"].isin(chartevents_stay_ids)
-        ]
+        self.all_stays = self.all_stays[self.all_stays["stay_id"].isin(sids)]
 
     def _exclude_short_stays(self, time_hours=24):
         self.all_stays = self.all_stays[
             self.all_stays.apply(
-                lambda row: (row["outtime"] - row["intime"])
+                lambda row: (row["icu_outtime"] - row["icu_intime"])
                 > datetime.timedelta(hours=time_hours),
                 axis=1,
             )
@@ -47,7 +40,7 @@ class InclusionCriteria:
     def _exclude_long_stays(self, time_hours=(24 * 14)):
         self.all_stays = self.all_stays[
             self.all_stays.apply(
-                lambda row: (row["outtime"] - row["intime"])
+                lambda row: (row["icu_outtime"] - row["icu_intime"])
                 < datetime.timedelta(hours=time_hours),
                 axis=1,
             )
@@ -57,26 +50,18 @@ class InclusionCriteria:
         """
         Exclude patients that arrive to the ICU qualifying for sepsis3
         """
-        sepsis_df = pd.read_csv(
-            "mimiciv/derived/sepsis3.csv",
-            parse_dates=[
-                "sofa_time",
-                "suspected_infection_time",
-                "culture_time",
-                "antibiotic_time",
-            ],
-        )
+        sepsis_df = pd.read_parquet("mimiciv_derived/sepsis3.parquet")
         sepsis_df["sepsis_time"] = sepsis_df.apply(
             lambda row: max(row["sofa_time"], row["suspected_infection_time"]), axis=1
         )
 
         sepsis_df = sepsis_df.merge(
-            self.all_stays[["stay_id", "intime"]], how="left", on="stay_id"
+            self.all_stays[["stay_id", "icu_intime"]], how="left", on="stay_id"
         )
 
         early_sepsis_stays = sepsis_df[
             sepsis_df.apply(
-                lambda row: row["sepsis_time"] - row["intime"]
+                lambda row: row["sepsis_time"] - row["icu_intime"]
                 < datetime.timedelta(hours=time_hours),
                 axis=1,
             )
@@ -110,9 +95,9 @@ class InclusionCriteria:
 
         print(f"Saving remaining {len(self.all_stays)} stay ids to disk")
         self.all_stays["stay_id"].to_csv("cache/included_stayids.csv", index=False)
-        return self.all_stays["stay_id"].to_list()
+        return self.all_stays["stay_id"]
 
 
 if __name__ == "__main__":
     ic = InclusionCriteria()
-    stay_ids = ic.get_included()
+    ic.get_included().to_csv("cache/included_stay_ids.csv", index=False)
