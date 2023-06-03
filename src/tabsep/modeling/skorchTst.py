@@ -59,7 +59,7 @@ def skorch_tst_factory(
 
     tst_callbacks = [
         GradientNormClipping(gradient_clip_value=4.0),
-        EarlyStopping(patience=10),
+        EarlyStopping(patience=3),
         Checkpoint(
             load_best=True,
             fn_prefix=f"{tst_config.save_path}/",
@@ -91,7 +91,7 @@ def skorch_tst_factory(
         # TST params
         module__feat_dim=len(ds.features),
         module__max_len=ds.max_len,
-        max_epochs=50,
+        max_epochs=100,
         **tst_config.generate_skorch_full_params(),
     )
 
@@ -110,9 +110,9 @@ def skorch_tst_factory(
 
 
 if __name__ == "__main__":
-    stay_ids = pd.read_csv("cache/included_stay_ids.csv").squeeze("columns")
+    stay_ids = pd.read_csv("cache/included_stay_ids.csv").squeeze("columns").to_list()
     train_sids, test_sids = train_test_split(stay_ids, test_size=0.1, random_state=42)
-    train_ds = DerivedDataset(stay_ids)
+    train_ds = DerivedDataset(train_sids)
     tst_config = TSTConfig(save_path="cache/models/skorchTst", **TUNING_PARAMS)
 
     tst = skorch_tst_factory(tst_config, train_ds, pretrained_encoder=False)

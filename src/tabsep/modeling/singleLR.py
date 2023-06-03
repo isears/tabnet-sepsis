@@ -6,12 +6,13 @@ import pandas as pd
 import torch
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import average_precision_score, f1_score, roc_auc_score
+from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 from torch.utils.data import DataLoader
 
 from tabsep import config
-from tabsep.dataProcessing.fileBasedDataset import FileBasedDataset
+from tabsep.dataProcessing.derivedDataset import DerivedDataset
 
 
 def load_to_mem(train_ds):
@@ -21,7 +22,7 @@ def load_to_mem(train_ds):
         train_ds,
         batch_size=16,  # Batch size only important for tuning # workers to load to mem
         num_workers=config.cores_available,
-        collate_fn=train_ds.last_nonzero_collate,
+        collate_fn=train_ds.last_available_collate,
         drop_last=False,
     )
 
@@ -33,14 +34,16 @@ def load_to_mem(train_ds):
 
 
 if __name__ == "__main__":
-    train_ds = FileBasedDataset("cache/train_examples.csv", standard_scale=True)
+    stay_ids = pd.read_csv("cache/included_stay_ids.csv").squeeze("columns").to_list()
+    train_sids, test_sids = train_test_split(stay_ids, test_size=0.1, random_state=42)
+    train_ds = DerivedDataset(train_sids)
     train_X, train_y = load_to_mem(train_ds)
     print("[*] Training data loaded data to memory")
 
     lr = LogisticRegression(max_iter=10000)
     lr.fit(train_X, train_y)
 
-    test_ds = FileBasedDataset("cache/test_examples.csv", standard_scale=True)
+    test_ds = DerivedDataset(test_sids)
     test_X, test_y = load_to_mem(test_ds)
     print("[*] Testing data loaded to memory")
 
@@ -58,22 +61,13 @@ if __name__ == "__main__":
     coefficients = lr.coef_
     odds_ratios_df = pd.DataFrame(
         data={
-            "Variable": train_ds.get_feature_labels(),
-            "itemid": train_ds.feature_ids,
+            "Variable": train_ds.features,
             "Odds Ratios": odds_ratios.squeeze(),
             "Coefficients": coefficients.squeeze(),
         }
     )
 
     odds_ratios_df.to_csv(f"{config.lr_path}/odds_ratios.csv", index=False)
-
-    # training_preds = lr.predict_proba(train_X)[:, 1]
-    # train_ds.examples["lr_pred"] = training_preds
-    # train_ds.examples.to_csv("cache/train_examples.csv", index=False)
-
-    # testing_preds = lr.predict_proba(test_X)[:, 1]
-    # test_ds.examples["lr_pred"] = testing_preds
-    # test_ds.examples.to_csv("cache/test_examples.csv", index=False)
 
     print("Final score:")
     print(f"\tAUROC: {final_auroc}")

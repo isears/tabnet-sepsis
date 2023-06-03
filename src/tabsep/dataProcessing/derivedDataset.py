@@ -9,6 +9,8 @@ from torch.nn.functional import pad
 from tqdm import tqdm
 
 from tabsep import config
+from tabsep.dataProcessing import derived_features
+from tabsep.dataProcessing.tstransform import meds_tables
 
 random.seed(42)
 
@@ -23,6 +25,7 @@ class DerivedDataset(torch.utils.data.Dataset):
         "enzyme",
         "inflammation",
         "dobutamine",
+        "dopamine",
         "epinephrine",
         "invasive_line",
         "milrinone",
@@ -46,7 +49,7 @@ class DerivedDataset(torch.utils.data.Dataset):
 
         print(f"\tExamples: {len(self.stay_ids)}")
 
-        self.features = self._populate_features()
+        self.features = derived_features
         print(f"\tFeatures: {len(self.features)}")
 
         self.pm_type = pm_type
@@ -56,18 +59,6 @@ class DerivedDataset(torch.utils.data.Dataset):
         self.max_len = 14 * 24 + 1
 
         self.stats = pd.read_parquet("processed/stats.parquet")
-
-    def _populate_features(self) -> list:
-        feature_names = list()
-
-        for table_name in self.used_tables:
-            example_table = pd.read_parquet(
-                glob.glob(f"processed/*.{table_name}.parquet")[0]
-            )
-
-            feature_names += example_table.columns.to_list()
-
-        return feature_names
 
     def maxlen_padmask_collate(self, batch):
         """
@@ -107,6 +98,23 @@ class DerivedDataset(torch.utils.data.Dataset):
         X, y, pad_mask, _ = self.maxlen_padmask_collate(batch)
         return dict(X=X, padding_masks=pad_mask), y
 
+    def last_available_collate(self, batch):
+        for idx, (X, y, stay_id) in enumerate(batch):
+            X_ffill = (
+                X.applymap(lambda item: float("nan") if item == -1 else item)
+                .fillna(method="ffill")
+                .fillna(-1)
+            )
+
+            last_available_x = torch.tensor(X_ffill.transpose().to_numpy()[:, -1])
+            batch[idx] = (last_available_x, y, stay_id)
+
+        X = torch.stack([X for X, _, _ in batch], dim=0)
+        X = torch.squeeze(X, dim=1)
+        y = torch.stack([torch.tensor(Y) for _, Y, _ in batch], dim=0)  # .unsqueeze(-1)
+
+        return X.float(), y.float()
+
     def __getitem_X__(self, stay_id: int) -> pd.DataFrame:
         loaded_dfs = list()
 
@@ -130,8 +138,9 @@ class DerivedDataset(torch.utils.data.Dataset):
 
         combined = combined.reindex(columns=self.features)
 
-        # Fill nas w/-1
-        # TODO: if no drug data exists, need to fill those nas w/0.0
+        # Fill meds related missing values w/0.0, b/c missingness implies drugs were not administered
+        combined[meds_tables] = combined[meds_tables].fillna(0.0)
+        # Fill all other missing values w/-1.0, b/c these values are truly missing
         combined = combined.fillna(-1.0)
 
         return combined
@@ -192,10 +201,24 @@ def build_dl(stay_ids: list, batch_size: int):
     return dl
 
 
+def build_static_dl(stay_ids: list, batch_size: int):
+    ds = DerivedDataset(stay_ids=stay_ids)
+
+    dl = torch.utils.data.DataLoader(
+        ds,
+        collate_fn=ds.last_available_collate,
+        num_workers=config.cores_available,
+        batch_size=batch_size,
+        pin_memory=True,
+    )
+
+    return dl
+
+
 if __name__ == "__main__":
     sids = pd.read_csv("cache/included_stay_ids.csv").squeeze("columns").to_list()
 
-    dl = build_dl(stay_ids=sids, batch_size=16)
+    dl = build_static_dl(stay_ids=sids, batch_size=16)
 
     for batch_X, batch_y in dl:
         print(batch_X.shape)
