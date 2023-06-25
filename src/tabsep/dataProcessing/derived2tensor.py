@@ -274,7 +274,11 @@ if __name__ == "__main__":
         combined_df["value"].values,
     )
 
-    lst = LabeledSparseTensor(stay_ids, features, sparse_tensor)
+    y = reader.icustays["sepsis_tidx"] != 0
+    y = y.reindex(stay_ids)
+    y = torch.tensor(y.values)
+
+    lst = LabeledSparseTensor(stay_ids, features, sparse_tensor, y)
 
     with open("cache/sparse_labeled.pkl", "wb") as f:
         pickle.dump(lst, f)
