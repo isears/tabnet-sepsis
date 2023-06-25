@@ -1,4 +1,5 @@
 import pickle
+import random
 
 import dask.dataframe as dd
 import numpy as np
@@ -9,7 +10,7 @@ from tabsep.dataProcessing import LabeledSparseTensor
 
 
 class DerivedDataReader:
-    def __init__(self, root_data_path) -> None:
+    def __init__(self, root_data_path, lookahead_hours=24) -> None:
         self.root = root_data_path
         self.icustays = pd.read_parquet(f"{root_data_path}/icustay_detail.parquet")
 
@@ -55,9 +56,26 @@ class DerivedDataReader:
         self.icustays = self.icustays[
             (self.icustays["sepsis_tidx"] == 0) | (self.icustays["sepsis_tidx"] > 48)
         ]
+
         print(
             f"[*] Dropped {before_len - len(self.icustays)} with sepsis within the first 48 hrs"
         )
+
+        # Set a truncation index that's either random between 24 hrs and end of icu stay or 24 hrs before sepsis
+        random.seed(42)
+
+        def set_truncation(row_in):
+            if row_in["sepsis_tidx"] > 0:
+                return row_in["sepsis_tidx"] - lookahead_hours
+            else:
+                return random.randint(24, int(row_in["los_icu"] * 24))
+
+        self.icustays["tidx_max"] = self.icustays.apply(set_truncation, axis=1)
+
+        # We're not going to use data that's more than 5 days older than the truncation index
+        self.icustays["tidx_min"] = self.icustays["tidx_max"] - (5 * 24)
+
+        assert not (self.icustays["tidx_max"] <= 0).any()
 
         print(f"Final n: {len(self.icustays)}")
         print(
@@ -101,8 +119,13 @@ class DerivedDataReader:
             df["stay_id"] = df.apply(self._populate_stay_ids, axis=1)
 
         df = df[~df["stay_id"].isna()]
+        df = df[df["stay_id"].isin(self.icustays.index)]
+
         df = df.merge(
-            self.icustays["icu_intime"], how="left", left_on="stay_id", right_index=True
+            self.icustays[["icu_intime", "tidx_max", "tidx_min"]],
+            how="left",
+            left_on="stay_id",
+            right_index=True,
         )
 
         df["tidx"] = df.apply(
@@ -112,7 +135,9 @@ class DerivedDataReader:
             axis=1,
         )
 
-        df = df.drop(columns=["icu_intime", "charttime"])
+        df = df[(df["tidx"] < df["tidx_max"]) & (df["tidx"] >= df["tidx_min"])]
+
+        df = df.drop(columns=["icu_intime", "charttime", "tidx_max", "tidx_min"])
 
         return df
 
@@ -171,28 +196,6 @@ class DerivedDataReader:
             ]
         ]
 
-    def load_sepsis_table(self, table_name):
-        df = pd.read_parquet(f"{self.root}/{table_name}.parquet")
-
-        df["sepsis_time"] = df.apply(
-            lambda x: max(x["sofa_time"], x["suspected_infection_time"]), axis=1
-        )
-
-        df = df.merge(
-            self.icustays["icu_intime"], how="left", left_on="stay_id", right_index=True
-        )
-
-        df["tidx"] = df.apply(
-            lambda x: int(
-                (x["sepsis_time"] - x["icu_intime"]).total_seconds() / (60 * 60)
-            ),
-            axis=1,
-        )
-
-        df["sepsis3"] = df["sepsis3"].astype(float)
-
-        return df[["stay_id", "tidx", "sepsis3"]]
-
     def load_measurement_table(self, table_name):
         df = self._load_common(f"{self.root}/{table_name}.parquet")
 
@@ -222,7 +225,6 @@ if __name__ == "__main__":
     reader = DerivedDataReader("./mimiciv_derived")
 
     tables = {
-        "sepsis3": reader.load_sepsis_table,
         "vitalsign": reader.load_vitals_table,
         "bg": reader.load_bg_table,
         "chemistry": reader.load_measurement_table,
