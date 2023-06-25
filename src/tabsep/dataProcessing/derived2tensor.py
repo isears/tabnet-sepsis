@@ -8,61 +8,10 @@ import torch
 from tabsep.dataProcessing import LabeledSparseTensor
 
 
-class NamedSparseTensor:
-    def __init__(self) -> None:
-        self.gathered_dfs = list()
-        self.sparse_tensor = None
-        self.stay_ids = list()
-        self.features = list()
-
-        # Columns containing either metadata or no useful information
-        self.unwanted_columns = [
-            "subject_id",
-            "hadm_id",
-            "stay_id",
-            "rdwsd",
-            "Microcytes",
-            "tidx",
-        ]
-
-        self.isinitialized
-
-    def add_data(self, df_in):
-        feature_columns = [c for c in df_in.columns if c not in self.unwanted_columns]
-        for c in feature_columns:
-            single_feature_df = df_in[["stay_id", c, "tidx"]]
-            single_feature_df["feature_name"] = c
-            single_feature_df = single_feature_df.rename(columns={c: "value"})
-            single_feature_df = single_feature_df.dropna(subset="value")
-
-            self.gathered_dfs.append(single_feature_df)
-
-    def build_tensor(self):
-        combined_df = pd.concat(self.gathered_dfs)
-        self.stay_ids = combined_df["stay_id"].unique().tolist()
-        self.features = combined_df["feature_name"].unique().tolist()
-
-        combined_df["stay_id"] = combined_df["stay_id"].apply(
-            lambda s: self.stay_ids.index(s)
-        )
-        combined_df["feature_name"] = combined_df["feature_name"].apply(
-            lambda f: self.features.index(f)
-        )
-        # Drop data that may have been repeated across multiple tables
-        combined_df = combined_df.drop_duplicates(
-            subset=["stay_id", "feature_name", "tidx"]
-        )
-
-        self.sparse_tensor = torch.sparse_coo_tensor(
-            combined_df[["stay_id", "feature_name", "tidx"]].values.transpose(),
-            combined_df["value"].values,
-        )
-
-
 class DerivedDataReader:
     def __init__(self, root_data_path) -> None:
         self.root = root_data_path
-        self.icustays = pd.read_parquet("mimiciv_derived/icustay_detail.parquet")
+        self.icustays = pd.read_parquet(f"{root_data_path}/icustay_detail.parquet")
 
         def agg_fn(hadm_group):
             return hadm_group.to_dict(orient="records")
@@ -74,14 +23,48 @@ class DerivedDataReader:
         )
 
         self.icustays = self.icustays.set_index("stay_id")
+        sepsis = pd.read_parquet(f"{root_data_path}/sepsis3.parquet").set_index(
+            "stay_id"
+        )
+        sepsis["sepsis_time"] = sepsis.apply(
+            lambda x: max(x["sofa_time"], x["suspected_infection_time"]), axis=1
+        )
 
-        # Decrease time resolution to hourly
-        for time_col in ["icu_intime", "icu_outtime"]:
-            self.icustays[time_col] = self.icustays[time_col].apply(
-                lambda x: x.replace(minute=0, second=0, microsecond=0)
+        self.icustays = self.icustays.merge(
+            sepsis["sepsis_time"], how="left", left_index=True, right_index=True
+        )
+
+        self.icustays["sepsis_tidx"] = self.icustays.apply(
+            lambda x: int(
+                (x["sepsis_time"] - x["icu_intime"]).total_seconds() / (60 * 60)
             )
+            if not pd.isna(x["sepsis_time"])
+            else 0,
+            axis=1,
+        )
 
-        self.save_path = "./processed"
+        # Drop stays < 24 hrs.
+        before_len = len(self.icustays)
+        self.icustays = self.icustays[self.icustays["los_icu"] > 1]
+        print(
+            f"[*] Dropped {before_len - len(self.icustays)} with icu stay length < 24 hrs"
+        )
+
+        # Drop sepsis within 48 hrs.
+        before_len = len(self.icustays)
+        self.icustays = self.icustays[
+            (self.icustays["sepsis_tidx"] == 0) | (self.icustays["sepsis_tidx"] > 48)
+        ]
+        print(
+            f"[*] Dropped {before_len - len(self.icustays)} with sepsis within the first 48 hrs"
+        )
+
+        print(f"Final n: {len(self.icustays)}")
+        print(
+            f"% Sepsis: {100* len(self.icustays[self.icustays['sepsis_tidx'] > 0]) / len(self.icustays)}"
+        )
+
+        print("[+] Setup complete")
 
     """
     UTIL FUNCTIONS
