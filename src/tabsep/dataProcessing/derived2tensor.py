@@ -73,7 +73,9 @@ class DerivedDataReader:
         self.icustays["tidx_max"] = self.icustays.apply(set_truncation, axis=1)
 
         # We're not going to use data that's more than 5 days older than the truncation index
-        self.icustays["tidx_min"] = self.icustays["tidx_max"] - (5 * 24)
+        self.icustays["tidx_min"] = self.icustays["tidx_max"].apply(
+            lambda t: t - (5 * 24) if t > (5 * 24) else 0
+        )
 
         assert not (self.icustays["tidx_max"] <= 0).any()
 
@@ -136,6 +138,7 @@ class DerivedDataReader:
         )
 
         df = df[(df["tidx"] < df["tidx_max"]) & (df["tidx"] >= df["tidx_min"])]
+        df["tidx"] = df["tidx"] - df["tidx_min"]
 
         df = df.drop(columns=["icu_intime", "charttime", "tidx_max", "tidx_min"])
 
