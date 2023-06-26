@@ -1,11 +1,14 @@
+import pickle
 from dataclasses import dataclass
 
 import torch
 
 
-def load_labeld_sparse_tensor(path: str):
-    raise NotImplementedError
-    return X, y
+def load_data_labeled_sparse(path: str):
+    with open(path, "rb") as f:
+        sparse_data = pickle.load(f)
+
+    return sparse_data
 
 
 @dataclass
