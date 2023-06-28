@@ -37,4 +37,10 @@ class LabeledSparseTensor:
             torch.sum(mu_diff_2, dim=(0, -1)).unsqueeze(0).unsqueeze(-1) / (n - 1)
         )
 
-        return torch.where(X_dense != 0.0, (X_dense - mu) / std, 0.0)
+        X_dense = torch.where(X_dense != 0.0, (X_dense - mu) / std, 0.0)
+
+        # shape (n_examples, seq_len, feat_dim)
+        return X_dense.permute(0, 2, 1).float()
+
+    def get_labels(self):
+        return self.y.float()
