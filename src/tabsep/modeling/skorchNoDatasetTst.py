@@ -33,10 +33,14 @@ from tabsep.modeling.skorchPretrainEncoder import (
 
 class AutoPadmaskingTST(TSTransformerEncoderClassiregressor):
     def forward(self, X):
-        # TODO: there can still be "holes" here where pm reads e.g. 1 1 1 0 1 1 0 0 0 0
-        # But maybe this doesn't matter?
-        pm = X.sum(dim=2) != 0.0
-        return super().forward(X, pm)
+        max_valid_idx = torch.amax(torch.count_nonzero(X != -1, dim=1), dim=-1)
+        pm = torch.zeros((X.shape[0], X.shape[1])).to(X.get_device())
+
+        # TODO: more efficient way to do this?
+        for bidx in range(0, X.shape[0]):
+            pm[bidx, 0 : max_valid_idx[bidx]] = 1
+
+        return super().forward(X, pm.bool())
 
 
 TUNING_PARAMS = {

@@ -18,7 +18,11 @@ class LabeledSparseTensor:
     X_sparse: torch.Tensor
     y: torch.Tensor
 
-    def get_dense_normalized(self):
+    def get_dense_standardized(self):
+        """
+        (x - mu) / sigma
+        filling 0.0 where no data
+        """
         X_dense = self.X_sparse.to_dense()
 
         n = torch.count_nonzero(X_dense, dim=(0, -1))
@@ -40,6 +44,33 @@ class LabeledSparseTensor:
         X_dense = torch.where(X_dense != 0.0, (X_dense - mu) / std, 0.0)
 
         # shape (n_examples, seq_len, feat_dim)
+        return X_dense.permute(0, 2, 1).float()
+
+    def get_dense_normalized(self):
+        """
+        Min / max normalization filling -1s where no data
+        """
+        # X_dense = self.X_sparse.to_dense()
+
+        # Need to manually densify to preserve nans
+        X_dense = torch.full(self.X_sparse.shape, float("nan"))
+        indices = self.X_sparse.coalesce().indices()
+        values = self.X_sparse.coalesce().values()
+        X_dense[indices[0, :], indices[1, :], indices[2, :]] = values.float()
+
+        nanmask = torch.isnan(X_dense)
+
+        X_dense[nanmask] = float("-inf")
+        maxvals = torch.amax(X_dense, dim=(0, -1)).unsqueeze(0).unsqueeze(-1)
+        X_dense[nanmask] = float("inf")
+        minvals = torch.amin(X_dense, dim=(0, -1)).unsqueeze(0).unsqueeze(-1)
+        X_dense[nanmask] = float("nan")
+
+        intervals = maxvals - minvals
+
+        X_dense = (X_dense - minvals) / intervals
+        X_dense = torch.nan_to_num(X_dense, -1.0)
+
         return X_dense.permute(0, 2, 1).float()
 
     def get_labels(self):
