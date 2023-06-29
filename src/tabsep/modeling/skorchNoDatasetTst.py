@@ -21,7 +21,7 @@ from skorch.callbacks import (
 )
 
 from tabsep import config
-from tabsep.dataProcessing import load_data_labeled_sparse
+from tabsep.dataProcessing import LabeledSparseTensor
 from tabsep.dataProcessing.derivedDataset import DerivedDataset
 from tabsep.modeling import TSTConfig, my_auprc, my_auroc, my_f1
 from tabsep.modeling.singleLR import load_to_mem
@@ -33,7 +33,14 @@ from tabsep.modeling.skorchPretrainEncoder import (
 
 class AutoPadmaskingTST(TSTransformerEncoderClassiregressor):
     def forward(self, X):
-        max_valid_idx = torch.amax(torch.count_nonzero(X != -1, dim=1), dim=-1)
+        # TODO: this still broken
+        # If argmax doesn't find a 'True' value it will return idx 0 (translated to 119); indifferentiable from if
+        # the given timeseries takes up the entire range (0, 119)
+        # Could add an extra "spacer" ts step at the end (idx 120) so that everybody is guaranteed to have at least
+        # one empty time step
+        max_valid_idx = (X.shape[1] - 1) - (
+            torch.argmax(((torch.flip(X, dims=(1,))) != -1).int(), dim=1, keepdim=False)
+        )
         pm = torch.zeros((X.shape[0], X.shape[1])).to(X.get_device())
 
         # TODO: more efficient way to do this?
@@ -103,7 +110,7 @@ def skorch_tst_factory(tst_config: TSTConfig, pruner=None):
 # TODO: maybe move this into dataprocessing
 
 if __name__ == "__main__":
-    d = load_data_labeled_sparse("cache/sparse_labeled.pkl")
+    d = LabeledSparseTensor.load_from_pickle("cache/sparse_labeled.pkl")
     X = d.get_dense_normalized()
     y = d.get_labels()
     print(X.shape)

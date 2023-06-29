@@ -1,14 +1,9 @@
+from __future__ import annotations
+
 import pickle
 from dataclasses import dataclass
 
 import torch
-
-
-def load_data_labeled_sparse(path: str):
-    with open(path, "rb") as f:
-        sparse_data = pickle.load(f)
-
-    return sparse_data
 
 
 @dataclass
@@ -17,6 +12,13 @@ class LabeledSparseTensor:
     features: list
     X_sparse: torch.Tensor
     y: torch.Tensor
+
+    @classmethod
+    def load_from_pickle(cls, path: str) -> LabeledSparseTensor:
+        with open(path, "rb") as f:
+            sparse_data = pickle.load(f)
+
+        return sparse_data
 
     def get_dense_standardized(self):
         """
@@ -72,6 +74,20 @@ class LabeledSparseTensor:
         X_dense = torch.nan_to_num(X_dense, -1.0)
 
         return X_dense.permute(0, 2, 1).float()
+
+    def get_snapshot(self):
+        X_dense = self.get_dense_normalized()
+
+        # TODO: could write tests to verify this
+        max_valid_idx = (X_dense.shape[1] - 1) - (
+            torch.argmax(
+                ((torch.flip(X_dense, dims=(1,))) != -1).int(), dim=1, keepdim=True
+            )
+        )
+
+        X_most_recent = torch.gather(X_dense, dim=1, index=max_valid_idx).squeeze()
+
+        return X_most_recent
 
     def get_labels(self):
         return self.y.float()
