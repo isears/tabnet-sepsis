@@ -6,7 +6,7 @@ from tabsep.modeling import CVResults, TabsepModelFactory
 
 
 def cv_runner(model_factory: TabsepModelFactory, X: torch.Tensor, y: torch.Tensor):
-    skf = StratifiedKFold(n_splits=5)
+    skf = StratifiedKFold(n_splits=10)
     tmp_model = model_factory()
     res = CVResults(tmp_model.__class__.__name__)
 
