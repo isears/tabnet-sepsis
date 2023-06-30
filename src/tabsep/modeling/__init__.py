@@ -1,4 +1,5 @@
 import pickle
+import sys
 from dataclasses import asdict, dataclass, fields
 from typing import Callable, Protocol
 
@@ -15,6 +16,29 @@ from sklearn.metrics import (
 )
 
 from tabsep import config
+
+
+class BaseModelRunner:
+    def __init__(self, default_cmd="cv") -> None:
+        self.default_cmd = default_cmd
+
+    def parse_cmdline(self):
+        if len(sys.argv) == 1:
+            cmd = self.default_cmd
+        else:
+            cmd = sys.argv[1]
+
+        f = getattr(self, cmd)
+        f()
+
+    def cv(self):
+        raise NotImplementedError()
+
+    def hparams(self):
+        raise NotImplementedError()
+
+    def importance(self):
+        raise NotImplementedError()
 
 
 class TabsepModelFactory(Protocol):

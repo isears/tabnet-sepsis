@@ -1,12 +1,8 @@
-import sys
-
 from sklearn.base import BaseEstimator
-from sklearn.metrics import roc_auc_score
-from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPClassifier
 
 from tabsep.dataProcessing import LabeledSparseTensor
-from tabsep.modeling import TabsepModelFactory
+from tabsep.modeling import BaseModelRunner, TabsepModelFactory
 from tabsep.modeling.cvCommon import cv_runner
 
 
@@ -21,12 +17,19 @@ class NNFactory(TabsepModelFactory):
         )
 
 
-def do_cv():
-    d = LabeledSparseTensor.load_from_pickle("cache/sparse_labeled.pkl")
-    X = d.get_snapshot()
-    y = d.get_labels()
-    cv_runner(NNFactory(), X, y)
+class NNRunner(BaseModelRunner):
+    def cv(self):
+        d = LabeledSparseTensor.load_from_pickle("cache/sparse_labeled.pkl")
+        X = d.get_snapshot()
+        y = d.get_labels()
+        cv_runner(NNFactory(), X, y)
+
+    def hparams(self):
+        raise NotImplementedError()
+
+    def importance(self):
+        raise NotImplementedError()
 
 
 if __name__ == "__main__":
-    do_cv()
+    NNRunner().parse_cmdline()
