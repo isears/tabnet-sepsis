@@ -1,5 +1,4 @@
 import torch
-from sklearn.base import ClassifierMixin
 from sklearn.model_selection import StratifiedKFold
 
 from tabsep.modeling import CVResults, TabsepModelFactory

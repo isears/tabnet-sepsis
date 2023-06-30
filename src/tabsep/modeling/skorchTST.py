@@ -28,7 +28,7 @@ from tabsep.modeling import (
     my_auroc,
     my_f1,
 )
-from tabsep.modeling.cvCommon import cv_runner
+from tabsep.modeling.commonCV import cv_runner
 
 
 class AutoPadmaskingTST(TSTransformerEncoderClassiregressor):

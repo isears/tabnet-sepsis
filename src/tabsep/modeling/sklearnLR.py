@@ -7,7 +7,7 @@ from sklearn.model_selection import train_test_split
 
 from tabsep.dataProcessing import LabeledSparseTensor
 from tabsep.modeling import BaseModelRunner, TabsepModelFactory
-from tabsep.modeling.cvCommon import cv_runner
+from tabsep.modeling.commonCV import cv_runner
 
 
 class LogisticRegressionFactory(TabsepModelFactory):
