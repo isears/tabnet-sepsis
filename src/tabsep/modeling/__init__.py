@@ -1,14 +1,25 @@
 import pickle
 from dataclasses import asdict, dataclass, fields
-from typing import Callable
+from typing import Callable, Protocol
 
 import numpy as np
 import scipy.stats as st
 from mvtst.optimizers import AdamW, PlainRAdam, RAdam
-from sklearn.metrics import (average_precision_score, f1_score, make_scorer,
-                             roc_auc_score, roc_curve)
+from sklearn.base import BaseEstimator
+from sklearn.metrics import (
+    average_precision_score,
+    f1_score,
+    make_scorer,
+    roc_auc_score,
+    roc_curve,
+)
 
 from tabsep import config
+
+
+class TabsepModelFactory(Protocol):
+    def __call__(self) -> BaseEstimator:
+        raise NotImplementedError()
 
 
 @dataclass
@@ -139,6 +150,7 @@ class SingleCVResult:
     tpr: np.ndarray
     thresholds: np.ndarray
     auc: float
+    avg_precision: float
 
 
 class CVResults:
@@ -158,7 +170,8 @@ class CVResults:
     def add_result(self, y_true, y_score) -> float:
         fpr, tpr, thresholds = roc_curve(y_true, y_score)
         auc = roc_auc_score(y_true, y_score)
-        self.results.append(SingleCVResult(fpr, tpr, thresholds, auc))
+        avg_precision = average_precision_score(y_true, y_score)
+        self.results.append(SingleCVResult(fpr, tpr, thresholds, auc, avg_precision))
 
         # For compatibility w/sklearn scorers
         return auc
@@ -169,12 +182,19 @@ class CVResults:
 
     def print_report(self) -> None:
         aucs = np.array([res.auc for res in self.results])
-        print(f"All scores: {aucs}")
-        print(f"Score mean: {aucs.mean()}")
-        print(f"Score std: {aucs.std()}")
-        print(
-            f"95% CI: {st.t.interval(alpha=0.95, df=len(aucs)-1, loc=aucs.mean(), scale=st.sem(aucs))}"
+        precisions = np.array([res.avg_precision for res in self.results])
+
+        auc_interval = st.t.interval(
+            alpha=0.95, df=len(aucs) - 1, loc=aucs.mean(), scale=st.sem(aucs)
         )
+        precision_interval = st.t.interval(
+            alpha=0.95,
+            df=len(precisions) - 1,
+            loc=precisions.mean(),
+            scale=st.sem(precisions),
+        )
+        print(f"AUROC: {aucs.mean()} {auc_interval}")
+        print(f"Avg Precision: {precisions.mean()} {precision_interval}")
 
         with open(f"results/{self.clf_name}.cvresult", "wb") as f:
             pickle.dump(self, f)
@@ -191,6 +211,7 @@ def my_auprc(net, X, y):
     y_proba = net.predict_proba(X)
     return average_precision_score(y, y_proba[:, 1])
 
+
 def my_f1(net, X, y):
     y_proba = net.predict_proba(X)
-    return f1_score(y, y_proba[:,1].round())
+    return f1_score(y, y_proba[:, 1].round())
