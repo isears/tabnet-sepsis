@@ -52,7 +52,6 @@ class LabeledSparseTensor:
         """
         Min / max normalization filling -1s where no data
         """
-        # X_dense = self.X_sparse.to_dense()
 
         # Need to manually densify to preserve nans
         X_dense = torch.full(self.X_sparse.shape, float("nan"))

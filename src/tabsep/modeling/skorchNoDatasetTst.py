@@ -33,14 +33,15 @@ from tabsep.modeling.skorchPretrainEncoder import (
 
 class AutoPadmaskingTST(TSTransformerEncoderClassiregressor):
     def forward(self, X):
-        # TODO: this still broken
-        # If argmax doesn't find a 'True' value it will return idx 0 (translated to 119); indifferentiable from if
-        # the given timeseries takes up the entire range (0, 119)
-        # Could add an extra "spacer" ts step at the end (idx 120) so that everybody is guaranteed to have at least
-        # one empty time step
+        # # examples x # feats
+        squeeze_feats = torch.sum(X != -1, dim=2) > 0
+
         max_valid_idx = (X.shape[1] - 1) - (
-            torch.argmax(((torch.flip(X, dims=(1,))) != -1).int(), dim=1, keepdim=False)
+            torch.argmax(
+                (torch.flip(squeeze_feats, dims=(1,))).int(), dim=1, keepdim=False
+            )
         )
+
         pm = torch.zeros((X.shape[0], X.shape[1])).to(X.get_device())
 
         # TODO: more efficient way to do this?
@@ -121,3 +122,6 @@ if __name__ == "__main__":
     tst = skorch_tst_factory(tst_config)
 
     tst.fit(X_train, y_train)
+
+    preds = tst.predict_proba(X_test)[:, 1]
+    print(roc_auc_score(y_test, preds))
