@@ -18,7 +18,7 @@ from tabsep.modeling.skorchTST import AutoPadmaskingTST, tst_factory
 
 def objective(trial: optuna.Trial) -> float:
     # Parameters to tune:
-    trial.suggest_float("lr", 1e-8, 0.1, log=True)
+    trial.suggest_float("lr", 1e-5, 0.1, log=True)
     trial.suggest_float("dropout", 0.1, 0.7)
     trial.suggest_categorical("d_model_multiplier", [1, 2, 4, 8, 16, 32, 64])
     trial.suggest_int("num_layers", 1, 15)
@@ -54,7 +54,7 @@ def objective(trial: optuna.Trial) -> float:
             cv_scores.append(average_precision_score(y[test_idx], preds))
     except RuntimeError as e:
         print(f"Warning, assumed memory error: {e}")
-        del tst
+        del model
         torch.cuda.empty_cache()
         # return float("nan")
         return 0.0

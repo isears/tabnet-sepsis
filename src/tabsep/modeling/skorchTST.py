@@ -59,7 +59,7 @@ def tst_factory(tst_config: TSTConfig):
 
     tst_callbacks = [
         GradientNormClipping(gradient_clip_value=4.0),
-        EarlyStopping(patience=10),
+        EarlyStopping(patience=3),
         Checkpoint(
             load_best=True,
             fn_prefix=f"{tst_config.save_path}/",
@@ -95,7 +95,7 @@ class TSTRunner(BaseModelRunner):
         d = LabeledSparseTensor.load_from_pickle("cache/sparse_labeled.pkl")
         X = d.get_dense_normalized()
         y = d.get_labels()
-        cv_runner(TSTModelFactory(), X, y)
+        cv_runner(tst_factory, X, y)
 
     def hparams(self):
         raise NotImplementedError()
