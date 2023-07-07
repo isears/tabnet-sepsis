@@ -1,10 +1,10 @@
 import torch
 from sklearn.model_selection import StratifiedKFold
 
-from tabsep.modeling import CVResults, TabsepModelFactory
+from tabsep.modeling import CVResults
 
 
-def cv_runner(model_factory: TabsepModelFactory, X: torch.Tensor, y: torch.Tensor):
+def cv_runner(model_factory: callable, X: torch.Tensor, y: torch.Tensor):
     skf = StratifiedKFold(n_splits=10)
     tmp_model = model_factory()
     res = CVResults(tmp_model.__class__.__name__)

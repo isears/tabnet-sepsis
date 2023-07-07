@@ -51,51 +51,42 @@ class AutoPadmaskingTST(TSTransformerEncoderClassiregressor):
         return super().forward(X, pm.bool())
 
 
-class TSTModelFactory(TabsepModelFactory):
-    def __init__(self, tst_config: TSTConfig = None) -> None:
-        super().__init__()
+def tst_factory(tst_config: TSTConfig):
+    """
+    Generate TSTs wrapped in standard skorch wrapper
+    """
+    os.makedirs(tst_config.save_path, exist_ok=True)
 
-        if tst_config == None:
-            self.tst_config = TSTConfig(save_path="cache/models/skorchTst")
-        else:
-            self.tst_config = tst_config
+    tst_callbacks = [
+        GradientNormClipping(gradient_clip_value=4.0),
+        EarlyStopping(patience=10),
+        Checkpoint(
+            load_best=True,
+            fn_prefix=f"{tst_config.save_path}/",
+            f_pickle="whole_model.pkl",
+        ),
+        EpochScoring(my_auroc, name="auroc", lower_is_better=False),
+        EpochScoring(my_auprc, name="auprc", lower_is_better=False),
+        EpochScoring(my_f1, name="f1", lower_is_better=False),
+        # LRScheduler("StepLR", step_size=2),
+    ]
 
-    def __call__(self):
-        """
-        Generate TSTs wrapped in standard skorch wrapper
-        """
-        os.makedirs(self.tst_config.save_path, exist_ok=True)
+    tst = NeuralNetBinaryClassifier(
+        AutoPadmaskingTST,
+        criterion=torch.nn.BCEWithLogitsLoss,
+        # criterion__pos_weight=torch.FloatTensor([10]),
+        device="cuda",
+        callbacks=tst_callbacks,
+        train_split=skorch.dataset.ValidSplit(0.1),
+        # train_split=None,
+        # TST params
+        module__feat_dim=88,
+        module__max_len=120,
+        max_epochs=50,
+        **tst_config.generate_skorch_full_params(),
+    )
 
-        tst_callbacks = [
-            GradientNormClipping(gradient_clip_value=4.0),
-            EarlyStopping(patience=10),
-            Checkpoint(
-                load_best=True,
-                fn_prefix=f"{self.tst_config.save_path}/",
-                f_pickle="whole_model.pkl",
-            ),
-            EpochScoring(my_auroc, name="auroc", lower_is_better=False),
-            EpochScoring(my_auprc, name="auprc", lower_is_better=False),
-            EpochScoring(my_f1, name="f1", lower_is_better=False),
-            # LRScheduler("StepLR", step_size=2),
-        ]
-
-        tst = NeuralNetBinaryClassifier(
-            AutoPadmaskingTST,
-            criterion=torch.nn.BCEWithLogitsLoss,
-            # criterion__pos_weight=torch.FloatTensor([10]),
-            device="cuda",
-            callbacks=tst_callbacks,
-            train_split=skorch.dataset.ValidSplit(0.1),
-            # train_split=None,
-            # TST params
-            module__feat_dim=88,
-            module__max_len=120,
-            max_epochs=50,
-            **self.tst_config.generate_skorch_full_params(),
-        )
-
-        return tst
+    return tst
 
 
 class TSTRunner(BaseModelRunner):
