@@ -1,4 +1,5 @@
 import os
+import sys
 
 import skorch
 import torch
@@ -28,6 +29,7 @@ from tabsep.modeling import (
     my_auroc,
     my_f1,
 )
+from tabsep.modeling.commonCaptum import captum_runner
 from tabsep.modeling.commonCV import cv_runner
 
 BEST_PARAMS = {
@@ -113,5 +115,24 @@ def do_cv():
     cv_runner(lambda: tst_factory(conf), X, y)
 
 
+def do_captum():
+    import pickle
+
+    with open("cache/models/skorchCvTst/whole_model.pkl", "rb") as f:
+        model = pickle.load(f)
+
+    d = LabeledSparseTensor.load_from_pickle("cache/sparse_labeled.pkl")
+    X = d.get_dense_normalized()
+    captum_runner(model.module_, X)
+
+
 if __name__ == "__main__":
-    do_cv()
+    if len(sys.argv) == 1:
+        do_captum()
+    else:
+        if sys.argv[1] == "cv":
+            do_cv()
+        elif sys.argv[1] == "captum":
+            do_captum()
+        else:
+            print(f"[-] Invalid cmd: {sys.argv[1]}")

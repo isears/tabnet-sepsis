@@ -49,7 +49,7 @@ class CompatibleTabnet(TabNetClassifier):
         super().fit(
             X_train,
             y_train,
-            patience=10,
+            patience=3,
             eval_set=[(X_valid, y_valid)],
             eval_metric=["logloss", "auc"],
         )
