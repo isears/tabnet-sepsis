@@ -28,11 +28,12 @@ def objective(trial: optuna.Trial) -> float:
     trial.suggest_categorical("pos_encoding", ["fixed", "learnable"])
     trial.suggest_categorical("activation", ["gelu", "relu"])
     trial.suggest_categorical("norm", ["BatchNorm", "LayerNorm"])
-    trial.suggest_categorical("optimizer_name", ["AdamW", "PlainRAdam", "RAdam"])
     trial.suggest_categorical("weight_decay", [1e-3, 1e-2, 1e-1, 0])
 
     skf = StratifiedKFold(n_splits=3)
-    tst_config = TSTConfig(save_path="cache/models/skorchCvTst", **trial.params)
+    tst_config = TSTConfig(
+        save_path="cache/models/skorchCvTst", optimizer_name="AdamW", **trial.params
+    )
 
     d = LabeledSparseTensor.load_from_pickle("cache/sparse_labeled.pkl")
     X = d.get_dense_normalized()
