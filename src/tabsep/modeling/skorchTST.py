@@ -30,6 +30,21 @@ from tabsep.modeling import (
 )
 from tabsep.modeling.commonCV import cv_runner
 
+BEST_PARAMS = {
+    "lr": 3.954336616242573e-05,
+    "dropout": 0.2553653431379216,
+    "d_model_multiplier": 1,
+    "num_layers": 11,
+    "n_heads": 32,
+    "dim_feedforward": 325,
+    "batch_size": 66,
+    "pos_encoding": "fixed",
+    "activation": "relu",
+    "norm": "BatchNorm",
+    "optimizer_name": "PlainRAdam",
+    "weight_decay": 0.1,
+}
+
 
 class AutoPadmaskingTST(TSTransformerEncoderClassiregressor):
     def forward(self, X):
@@ -89,20 +104,14 @@ def tst_factory(tst_config: TSTConfig):
     return tst
 
 
-class TSTRunner(BaseModelRunner):
-    def cv(self):
-        # TODO: when optimal hparams established, may add them here
-        d = LabeledSparseTensor.load_from_pickle("cache/sparse_labeled.pkl")
-        X = d.get_dense_normalized()
-        y = d.get_labels()
-        cv_runner(tst_factory, X, y)
+def do_cv():
+    d = LabeledSparseTensor.load_from_pickle("cache/sparse_labeled.pkl")
+    X = d.get_dense_normalized()
+    y = d.get_labels()
 
-    def hparams(self):
-        raise NotImplementedError()
-
-    def importance(self):
-        raise NotImplementedError()
+    conf = TSTConfig(save_path="cache/models/skorchCvTst", **BEST_PARAMS)
+    cv_runner(lambda: tst_factory(conf), X, y)
 
 
 if __name__ == "__main__":
-    TSTRunner().parse_cmdline()
+    do_cv()

@@ -27,6 +27,17 @@ from tabsep.modeling import (
 )
 from tabsep.modeling.commonCV import cv_runner
 
+BEST_PARAMS = {
+    "n_d": 64,
+    "n_a": 44,
+    "n_steps": 9,
+    "gamma": 1.472521619271299,
+    "n_independent": 1,
+    "momentum": 0.05692333567726392,
+    "mask_type": "sparsemax",
+    "optimizer": {"lr": 0.004280287778344044},
+}
+
 
 class CompatibleTabnet(TabNetClassifier):
     def fit(self, X: torch.Tensor, y: torch.Tensor):
@@ -44,29 +55,13 @@ class CompatibleTabnet(TabNetClassifier):
         )
 
 
-class TabnetFactory(TabsepModelFactory):
-    def __init__(self) -> None:
-        super().__init__()
+def do_cv():
+    d = LabeledSparseTensor.load_from_pickle("cache/sparse_labeled.pkl")
+    X = d.get_snapshot()
+    y = d.get_labels()
 
-    def __call__(self):
-        clf = CompatibleTabnet()
-
-        return clf
-
-
-class TabnetRunner(BaseModelRunner):
-    def cv(self):
-        d = LabeledSparseTensor.load_from_pickle("cache/sparse_labeled.pkl")
-        X = d.get_snapshot()
-        y = d.get_labels()
-        cv_runner(TabnetFactory(), X, y)
-
-    def hparams(self):
-        raise NotImplementedError()
-
-    def importance(self):
-        raise NotImplementedError()
+    cv_runner(lambda: CompatibleTabnet(**BEST_PARAMS), X, y)
 
 
 if __name__ == "__main__":
-    TabnetRunner().parse_cmdline()
+    do_cv()
