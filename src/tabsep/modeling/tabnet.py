@@ -35,7 +35,7 @@ BEST_PARAMS = {
     "n_independent": 1,
     "momentum": 0.05692333567726392,
     "mask_type": "sparsemax",
-    "optimizer": {"lr": 0.004280287778344044},
+    "optimizer_params": {"lr": 0.004280287778344044},
 }
 
 
@@ -60,7 +60,8 @@ def do_cv():
     X = d.get_snapshot()
     y = d.get_labels()
 
-    cv_runner(lambda: CompatibleTabnet(**BEST_PARAMS), X, y)
+    # cv_runner(lambda: CompatibleTabnet(**BEST_PARAMS), X, y)
+    cv_runner(lambda: CompatibleTabnet(), X, y)
 
 
 if __name__ == "__main__":

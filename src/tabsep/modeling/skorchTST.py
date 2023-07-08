@@ -1,4 +1,5 @@
 import os
+import pickle
 import sys
 
 import skorch
@@ -116,23 +117,51 @@ def do_cv():
 
 
 def do_captum():
-    import pickle
-
     with open("cache/models/skorchCvTst/whole_model.pkl", "rb") as f:
         model = pickle.load(f)
 
+    X = torch.load(f"cache/xxx/X_test.pt")
+    captum_runner(model.module_, X)
+
+
+def train_one():
     d = LabeledSparseTensor.load_from_pickle("cache/sparse_labeled.pkl")
     X = d.get_dense_normalized()
-    captum_runner(model.module_, X)
+    y = d.get_labels()
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+
+    m = tst_factory(TSTConfig(save_path="cache/models/skorchCvTst", **BEST_PARAMS))
+
+    m.fit(X_train, y_train)
+    preds = m.predict_proba(X_test)[:, 1]
+
+    print(f"Final AUROC: {roc_auc_score(y_test, preds)}")
+    print(f"Final AUPRC: {average_precision_score(y_test, preds)}")
+
+    save_dir = f"cache/{m.module_.__class__.__name__}"
+    os.makedirs(save_dir, exist_ok=True)
+
+    with open(f"{save_dir}/model.pkl", "wb") as f:
+        m.module_ = m.module_.to("cpu")
+        pickle.dump(m, f)
+
+    torch.save(X_train, f"{save_dir}/X_train.pt")
+    torch.save(X_test, f"{save_dir}/X_test.pt")
+
+    print(f"[+] Saved to {save_dir}")
 
 
 if __name__ == "__main__":
     if len(sys.argv) == 1:
         do_captum()
     else:
-        if sys.argv[1] == "cv":
+        cmd = sys.argv[1]
+        if cmd == "cv":
             do_cv()
-        elif sys.argv[1] == "captum":
+        elif cmd == "captum":
             do_captum()
+        elif cmd == "train":
+            train_one()
         else:
-            print(f"[-] Invalid cmd: {sys.argv[1]}")
+            print(f"[-] Invalid cmd: {cmd}")

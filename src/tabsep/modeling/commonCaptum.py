@@ -3,10 +3,13 @@ import os
 import numpy as np
 import torch
 from captum.attr import (
+    DeepLift,
+    FeaturePermutation,
     GuidedBackprop,
     GuidedGradCam,
     InputXGradient,
     IntegratedGradients,
+    Saliency,
     ShapleyValueSampling,
 )
 
@@ -19,7 +22,7 @@ os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
 CORES_AVAILABLE = len(os.sched_getaffinity(0))
 
 
-def captum_runner(trained_model: torch.nn.Module, X):
+def captum_runner(trained_model: torch.nn.Module, X, batch_size=16):
     X = X.to("cuda")
     trained_model = trained_model.to("cuda")
 
