@@ -117,10 +117,10 @@ def do_cv():
 
 
 def do_captum():
-    with open("cache/models/skorchCvTst/whole_model.pkl", "rb") as f:
+    with open("cache/AutoPadmaskingTST/model.pkl", "rb") as f:
         model = pickle.load(f)
 
-    X = torch.load(f"cache/xxx/X_test.pt")
+    X = torch.load(f"cache/AutoPadmaskingTST/X_test.pt")
     captum_runner(model.module_, X)
 
 

@@ -23,8 +23,8 @@ CORES_AVAILABLE = len(os.sched_getaffinity(0))
 
 
 def captum_runner(trained_model: torch.nn.Module, X, batch_size=16):
-    X = X.to("cuda")
-    trained_model = trained_model.to("cuda")
+    # X = X.to("cuda")
+    # trained_model = trained_model.to("cuda")
 
     model_name = trained_model.__class__.__name__
     trained_model.eval()
