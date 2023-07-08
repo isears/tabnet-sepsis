@@ -37,7 +37,9 @@ def captum_runner(trained_model: torch.nn.Module, X, batch_size=2):
 
     for batch_idx in tqdm(range(batch_size, X.shape[0], batch_size)):
         end_idx = min(batch_size + batch_idx, X.shape[0])
-        attributions.append(attributor.attribute(X[batch_idx:end_idx], target=0))
+        attributions.append(
+            attributor.attribute(X[batch_idx:end_idx], target=0).to("cpu")
+        )
 
     attributions = torch.concat(attributions, dim=0)
 
