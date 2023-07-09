@@ -25,7 +25,9 @@ class CompatibleTabnet(TabNetClassifier):
             for k, v in kwargs.items()
             if not k.startswith("optimizer_") and not k.startswith("fit_")
         }
-        constructor_args["n_a"] = constructor_args["n_d"]
+
+        if "n_a" in constructor_args:
+            constructor_args["n_a"] = constructor_args["n_d"]
 
         optimizer_params = {
             k[len("optimizer_") :]: v
@@ -49,7 +51,7 @@ class CompatibleTabnet(TabNetClassifier):
         super().fit(
             X_train,
             y_train,
-            patience=3,
+            patience=10,
             eval_set=[(X_valid, y_valid)],
             eval_metric=["logloss", "auc"],
             **self.fit_params
