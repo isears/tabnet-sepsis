@@ -30,7 +30,7 @@ if __name__ == "__main__":
         tprs = []
         aucs = []
 
-        cv_res = CVResults.load(f"cache/{name}/cvresult.pkl")
+        cv_res = CVResults.load(f"cache/{name}/sparse_labeled_cvresult.pkl")
 
         for res in cv_res.results:
             # plt.plot(res.fpr, res.tpr, colors[idx], lw=1, alpha=0.3)
