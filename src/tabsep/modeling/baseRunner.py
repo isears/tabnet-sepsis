@@ -23,7 +23,7 @@ class BaseModelRunner:
         raise NotImplementedError()
 
     def _save_model(self, m) -> None:
-        with open(f"{self.save_dir}/model.pkl", "wb") as f:
+        with open(f"{self.save_dir}/{self.data_src_label}_model.pkl", "wb") as f:
             pickle.dump(m, f)
 
     def parse_cmdline(self):
@@ -35,6 +35,7 @@ class BaseModelRunner:
         if len(sys.argv) == 3:
             self.data_src = sys.argv[2]
 
+        self.data_src_label = self.data_src.split("/")[-1].split(".")[0]
         print(f"[+] Runner instantiated with cmd: {cmd}")
         f = getattr(self, cmd)
         f()
@@ -56,8 +57,7 @@ class BaseModelRunner:
             res.add_result(y[test_idx], preds)
 
         res.print_report()
-        data_src_label = self.data_src.split("/")[-1].split(".")[0]
-        res.save_report(f"{self.save_dir}/{data_src_label}_cvresult.pkl")
+        res.save_report(f"{self.save_dir}/{self.data_src_label}_cvresult.pkl")
 
         return res
 
@@ -73,8 +73,10 @@ class BaseModelRunner:
 
         self._save_model(m)
 
-        torch.save(X_train, f"{self.save_dir}/X_train.pt")
-        torch.save(X_test, f"{self.save_dir}/X_test.pt")
-        torch.save(y_train, f"{self.save_dir}/y_train.pt")
-        torch.save(y_test, f"{self.save_dir}/y_test.pt")
-        torch.save(torch.Tensor(preds), f"{self.save_dir}/preds.pt")
+        torch.save(X_train, f"{self.save_dir}/{self.data_src_label}_X_train.pt")
+        torch.save(X_test, f"{self.save_dir}/{self.data_src_label}_X_test.pt")
+        torch.save(y_train, f"{self.save_dir}/{self.data_src_label}_y_train.pt")
+        torch.save(y_test, f"{self.save_dir}/{self.data_src_label}_y_test.pt")
+        torch.save(
+            torch.Tensor(preds), f"{self.save_dir}/{self.data_src_label}_preds.pt"
+        )

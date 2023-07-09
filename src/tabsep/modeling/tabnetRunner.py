@@ -43,8 +43,8 @@ class TabnetRunner(BaseModelRunner):
         with open(f"{self.save_dir}/model.pkl", "rb") as f:
             trained_model = pickle.load(f)
 
-        X = torch.load(f"{self.save_dir}/X_test.pt").to("cuda")
-        y = torch.load(f"{self.save_dir}/y_test.pt")
+        X = torch.load(f"{self.save_dir}/{self.data_src_label}_X_test.pt").to("cuda")
+        y = torch.load(f"{self.save_dir}/{self.data_src_label}_y_test.pt")
 
         trained_model.network.eval()
 
@@ -66,10 +66,14 @@ class TabnetRunner(BaseModelRunner):
         attributions = torch.concat(attributions, dim=0)
 
         assert attributions.shape == X.shape
-        torch.save(attributions, f"{self.save_dir}/attributions.pt")
+        torch.save(
+            attributions, f"{self.save_dir}/{self.data_src_label}_attributions.pt"
+        )
 
     def global_importance(self):
-        attributions = torch.load(f"{self.save_dir}/attributions.pt")
+        attributions = torch.load(
+            f"{self.save_dir}/{self.data_src_label}_attributions.pt"
+        )
         ordered_features = LabeledSparseTensor.load_from_pickle(
             "cache/sparse_labeled.pkl"
         ).features
@@ -92,9 +96,11 @@ class TabnetRunner(BaseModelRunner):
             x="Summed Attribution", y="Variable", data=topn, orient="h", color="blue"
         )
         plt.tight_layout()
-        plt.savefig(f"{self.save_dir}/global_importances.png")
+        plt.savefig(f"{self.save_dir}/{self.data_src_label}_global_importances.png")
         plt.clf()
-        topn.to_csv(f"{self.save_dir}/global_importances.csv", index=False)
+        topn.to_csv(
+            f"{self.save_dir}/{self.data_src_label}_global_importances.csv", index=False
+        )
 
         print("done")
 

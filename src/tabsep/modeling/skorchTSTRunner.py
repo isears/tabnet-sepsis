@@ -27,13 +27,15 @@ class TSTRunner(BaseModelRunner):
         return X, y
 
     def captum(self):
-        with open(f"{self.save_dir}/model.pkl", "rb") as f:
+        with open(f"{self.save_dir}/{self.data_src_label}_model.pkl", "rb") as f:
             model = pickle.load(f).module_
 
-        X = torch.load(f"{self.save_dir}/X_test.pt")
+        X = torch.load(f"{self.save_dir}/{self.data_src_label}_X_test.pt")
 
         attributions = captum_runner(model, X)
-        torch.save(attributions, f"{self.save_dir}/attributions.pt")
+        torch.save(
+            attributions, f"{self.save_dir}/{self.data_src_label}_attributions.pt"
+        )
 
 
 if __name__ == "__main__":
