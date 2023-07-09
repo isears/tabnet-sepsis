@@ -220,7 +220,7 @@ class CVResults:
         print(f"AUROC: {aucs.mean()} {auc_interval}")
         print(f"Avg Precision: {precisions.mean()} {precision_interval}")
 
-        with open(f"results/{self.clf_name}.cvresult", "wb") as f:
+        with open(f"cache/{self.clf_name}/cvresult.pkl", "wb") as f:
             pickle.dump(self, f)
 
 

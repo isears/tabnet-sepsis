@@ -113,15 +113,15 @@ def do_cv():
     y = d.get_labels()
 
     conf = TSTConfig(save_path="cache/models/skorchCvTst", **BEST_PARAMS)
-    cv_runner(lambda: tst_factory(conf), X, y)
+    cv_runner("TST", lambda: tst_factory(conf), X, y)
 
 
 def do_captum():
-    with open("cache/AutoPadmaskingTST/model.pkl", "rb") as f:
+    with open("cache/TST/model.pkl", "rb") as f:
         model = pickle.load(f)
 
-    X = torch.load(f"cache/AutoPadmaskingTST/X_test.pt")
-    captum_runner(model.module_, X)
+    X = torch.load(f"cache/TST/X_test.pt")
+    captum_runner("TST", model.module_, X)
 
 
 def train_one():
@@ -139,7 +139,7 @@ def train_one():
     print(f"Final AUROC: {roc_auc_score(y_test, preds)}")
     print(f"Final AUPRC: {average_precision_score(y_test, preds)}")
 
-    save_dir = f"cache/{m.module_.__class__.__name__}"
+    save_dir = f"cache/TST"
     os.makedirs(save_dir, exist_ok=True)
 
     with open(f"{save_dir}/model.pkl", "wb") as f:
