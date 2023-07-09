@@ -10,13 +10,13 @@ from tabsep.dataProcessing import LabeledSparseTensor
 def objective(trial: optuna.Trial) -> float:
     # Parameters to tune:
     trial.suggest_int("n_d", 8, 64)
-    trial.suggest_int("n_a", 8, 64)
     trial.suggest_int("n_steps", 3, 10)
     trial.suggest_float("gamma", 1.0, 2.0)
     trial.suggest_int("n_independent", 1, 5)
     trial.suggest_float("momentum", 0.01, 0.4, log=True)
     trial.suggest_categorical("mask_type", ["sparsemax", "entmax"])
     trial.suggest_float("optimizer_lr", 1e-5, 0.1, log=True)
+    trial.suggest_int("fit_batch_size", 16, 2048, log=True)
 
     skf = StratifiedKFold(n_splits=3)
 
@@ -26,14 +26,22 @@ def objective(trial: optuna.Trial) -> float:
 
     # Need to sub-dict the optimizer params
     tabnet_args = {
-        k: v for k, v in trial.params.items() if not k.startswith("optimizer_")
+        k: v
+        for k, v in trial.params.items()
+        if not k.startswith("optimizer_") and not k.startswith("fit_")
     }
+    tabnet_args["n_a"] = tabnet_args["n_d"]
+
     optimizer_params = {
         k[len("optimizer_") :]: v
         for k, v in tabnet_args.items()
         if k.startswith("optimizer_")
     }
     tabnet_args["optimizer_params"] = optimizer_params
+
+    fit_params = {
+        d[len("fit_") :]: v for k, v in tabnet_args.items() if k.startswith("fit_")
+    }
 
     cv_scores = list()
 
@@ -55,6 +63,7 @@ def objective(trial: optuna.Trial) -> float:
                 eval_set=[(X_valid, y_valid)],
                 patience=3,
                 eval_metric=["logloss"],
+                **fit_params,
             )
             preds = model.predict(X[test_idx])
 

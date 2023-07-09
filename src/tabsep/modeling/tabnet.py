@@ -12,11 +12,34 @@ BEST_PARAMS = {
     "n_independent": 1,
     "momentum": 0.19130622869056657,
     "mask_type": "entmax",
-    "optimizer_params": {"lr": 0.01147088774852625},
+    "optimizer_lr": 0.01147088774852625,
+    "fit_batch_size": 1024,
 }
 
 
 class CompatibleTabnet(TabNetClassifier):
+    def __init__(self, **kwargs):
+        # Convert tuning params to constructor params
+        constructor_args = {
+            k: v
+            for k, v in kwargs.items()
+            if not k.startswith("optimizer_") and not k.startswith("fit_")
+        }
+        constructor_args["n_a"] = constructor_args["n_d"]
+
+        optimizer_params = {
+            k[len("optimizer_") :]: v
+            for k, v in kwargs.items()
+            if k.startswith("optimizer_")
+        }
+        constructor_args["optimizer_params"] = optimizer_params
+
+        self.fit_params = {
+            k[len("fit_") :]: v for k, v in kwargs.items() if k.startswith("fit_")
+        }
+
+        super().__init__(**constructor_args)
+
     def fit(self, X: torch.Tensor, y: torch.Tensor):
         X = X.numpy()
         y = y.numpy()
@@ -29,6 +52,7 @@ class CompatibleTabnet(TabNetClassifier):
             patience=3,
             eval_set=[(X_valid, y_valid)],
             eval_metric=["logloss", "auc"],
+            **self.fit_params
         )
 
     # For captum compatibility

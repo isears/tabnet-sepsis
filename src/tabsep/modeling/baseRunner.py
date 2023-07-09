@@ -35,7 +35,7 @@ class BaseModelRunner:
         if len(sys.argv) == 3:
             self.data_src = sys.argv[2]
 
-        print(f"[+] Runner instatiated with cmd: {cmd}")
+        print(f"[+] Runner instantiated with cmd: {cmd}")
         f = getattr(self, cmd)
         f()
 
