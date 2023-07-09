@@ -56,7 +56,7 @@ class BaseModelRunner:
             res.add_result(y[test_idx], preds)
 
         res.print_report()
-        res.save_report(f"{self.save_dir}/cvresult.pkl")
+        res.save_report(f"{self.save_dir}/{self.data_src.split('/')[-1]}cvresult.pkl")
 
         return res
 
