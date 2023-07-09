@@ -1,5 +1,6 @@
 import pickle
 import random
+import sys
 
 import dask.dataframe as dd
 import numpy as np
@@ -12,6 +13,7 @@ from tabsep.dataProcessing import LabeledSparseTensor
 class DerivedDataReader:
     def __init__(self, root_data_path, lookahead_hours=24) -> None:
         self.root = root_data_path
+        self.lookahead_hours = lookahead_hours
         self.icustays = pd.read_parquet(f"{root_data_path}/icustay_detail.parquet")
 
         def agg_fn(hadm_group):
@@ -51,10 +53,11 @@ class DerivedDataReader:
             f"[*] Dropped {before_len - len(self.icustays)} with icu stay length < 24 hrs"
         )
 
-        # Drop sepsis within 48 hrs.
+        # Drop sepsis with less than 6 hrs data before prediction window
         before_len = len(self.icustays)
         self.icustays = self.icustays[
-            (self.icustays["sepsis_tidx"] == 0) | (self.icustays["sepsis_tidx"] > 48)
+            (self.icustays["sepsis_tidx"] == 0)
+            | (self.icustays["sepsis_tidx"] > (lookahead_hrs + 6))
         ]
 
         print(
@@ -225,7 +228,12 @@ class DerivedDataReader:
 if __name__ == "__main__":
     pd.set_option("mode.chained_assignment", None)
 
-    reader = DerivedDataReader("./mimiciv_derived")
+    if len(sys.argv) < 2:
+        lookahead_hrs = 6
+    else:
+        lookahead_hrs = int(sys.argv[1])
+
+    reader = DerivedDataReader("./mimiciv_derived", lookahead_hrs)
 
     tables = {
         "vitalsign": reader.load_vitals_table,
@@ -283,7 +291,7 @@ if __name__ == "__main__":
 
     lst = LabeledSparseTensor(stay_ids, features, sparse_tensor, y)
 
-    with open("cache/sparse_labeled.pkl", "wb") as f:
+    with open(f"cache/sparse_labeled_{lookahead_hrs}.pkl", "wb") as f:
         pickle.dump(lst, f)
 
     print("done")

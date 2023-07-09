@@ -2,10 +2,11 @@ import os
 import pickle
 import sys
 from dataclasses import asdict, dataclass, fields
-from typing import Callable, Protocol
+from typing import Callable, Protocol, Tuple
 
 import numpy as np
 import scipy.stats as st
+import torch
 from mvtst.optimizers import AdamW, PlainRAdam, RAdam
 from sklearn.base import BaseEstimator
 from sklearn.metrics import (
@@ -17,38 +18,6 @@ from sklearn.metrics import (
 )
 
 from tabsep import config
-
-
-class BaseModelRunner:
-    save_dir: str
-    name: str
-
-    def __init__(self, default_cmd="cv") -> None:
-        os.makedirs(self.save_dir, exist_ok=True)
-        self.default_cmd = default_cmd
-
-    def parse_cmdline(self):
-        if len(sys.argv) == 1:
-            cmd = self.default_cmd
-        else:
-            cmd = sys.argv[1]
-
-        f = getattr(self, cmd)
-        f()
-
-    def cv(self):
-        raise NotImplementedError()
-
-    def tuning(self):
-        raise NotImplementedError()
-
-    def importance(self):
-        raise NotImplementedError()
-
-
-class TabsepModelFactory(Protocol):
-    def __call__(self) -> BaseEstimator:
-        raise NotImplementedError()
 
 
 @dataclass
