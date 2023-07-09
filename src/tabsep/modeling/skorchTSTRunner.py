@@ -6,7 +6,7 @@ import torch
 from tabsep.dataProcessing import LabeledSparseTensor
 from tabsep.modeling import TSTConfig
 from tabsep.modeling.baseRunner import BaseModelRunner
-from tabsep.modeling.commonCaptum import captum_runner
+from tabsep.modeling.captumUtil import captum_runner
 from tabsep.modeling.skorchTST import BEST_PARAMS, tst_factory
 
 
@@ -31,6 +31,7 @@ class TSTRunner(BaseModelRunner):
             model = pickle.load(f).module_
 
         X = torch.load(f"{self.save_dir}/X_test.pt")
+
         attributions = captum_runner(model.module_, X)
         torch.save(attributions, f"{self.save_dir}/attributions.pt")
 

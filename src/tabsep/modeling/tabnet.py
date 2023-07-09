@@ -1,3 +1,5 @@
+from typing import Any
+
 import torch
 from pytorch_tabnet.tab_model import TabNetClassifier
 from sklearn.model_selection import train_test_split
@@ -28,3 +30,10 @@ class CompatibleTabnet(TabNetClassifier):
             eval_set=[(X_valid, y_valid)],
             eval_metric=["logloss", "auc"],
         )
+
+    # For captum compatibility
+    def __call__(self, X):
+        # Based on: https://github.com/dreamquark-ai/tabnet/blob/9ba89918ab6e6dec4f9ea10060b005fe64e7f9ef/pytorch_tabnet/tab_model.py#L102C13-L103C81
+        output, _ = self.network(X)
+        predictions = torch.nn.Softmax(dim=1)(output)
+        return torch.unsqueeze(predictions[:, 1], dim=-1)

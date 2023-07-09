@@ -73,9 +73,3 @@ class BaseModelRunner:
         torch.save(y_train, f"{self.save_dir}/y_train.pt")
         torch.save(y_test, f"{self.save_dir}/y_test.pt")
         torch.save(torch.Tensor(preds), f"{self.save_dir}/preds.pt")
-
-    def tuning(self):
-        raise NotImplementedError()
-
-    def importance(self):
-        raise NotImplementedError()

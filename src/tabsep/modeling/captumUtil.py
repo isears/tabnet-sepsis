@@ -16,14 +16,14 @@ from tqdm import tqdm
 
 torch.manual_seed(42)
 np.random.seed(42)
-torch.use_deterministic_algorithms(True)
+torch.use_deterministic_algorithms(True, warn_only=True)
 os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
 
 
 CORES_AVAILABLE = len(os.sched_getaffinity(0))
 
 
-def captum_runner(model_name: str, trained_model: torch.nn.Module, X, batch_size=128):
+def captum_runner(trained_model: torch.nn.Module, X, batch_size=128):
     X = X.to("cuda")
     trained_model = trained_model.to("cuda")
 
