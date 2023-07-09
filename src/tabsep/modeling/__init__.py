@@ -1,3 +1,4 @@
+import os
 import pickle
 import sys
 from dataclasses import asdict, dataclass, fields
@@ -19,7 +20,11 @@ from tabsep import config
 
 
 class BaseModelRunner:
+    save_dir: str
+    name: str
+
     def __init__(self, default_cmd="cv") -> None:
+        os.makedirs(self.save_dir, exist_ok=True)
         self.default_cmd = default_cmd
 
     def parse_cmdline(self):
@@ -34,7 +39,7 @@ class BaseModelRunner:
     def cv(self):
         raise NotImplementedError()
 
-    def hparams(self):
+    def tuning(self):
         raise NotImplementedError()
 
     def importance(self):
@@ -187,22 +192,14 @@ class CVResults:
         with open(filename, "rb") as f:
             return pickle.load(f)
 
-    def __init__(self, clf_name) -> None:
+    def __init__(self) -> None:
         self.results = list()
-        self.clf_name = clf_name
 
-    def add_result(self, y_true, y_score) -> float:
+    def add_result(self, y_true, y_score) -> None:
         fpr, tpr, thresholds = roc_curve(y_true, y_score)
         auc = roc_auc_score(y_true, y_score)
         avg_precision = average_precision_score(y_true, y_score)
         self.results.append(SingleCVResult(fpr, tpr, thresholds, auc, avg_precision))
-
-        # For compatibility w/sklearn scorers
-        return auc
-
-    def get_scorer(self) -> Callable:
-        metric = lambda y_t, y_s: self.add_result(y_t, y_s)
-        return make_scorer(metric, needs_proba=False)
 
     def print_report(self) -> None:
         aucs = np.array([res.auc for res in self.results])
@@ -220,7 +217,8 @@ class CVResults:
         print(f"AUROC: {aucs.mean()} {auc_interval}")
         print(f"Avg Precision: {precisions.mean()} {precision_interval}")
 
-        with open(f"cache/{self.clf_name}/cvresult.pkl", "wb") as f:
+    def save_report(self, path) -> None:
+        with open(path, "wb") as f:
             pickle.dump(self, f)
 
 

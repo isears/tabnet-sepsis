@@ -4,16 +4,14 @@ from sklearn.model_selection import StratifiedKFold
 from tabsep.modeling import CVResults
 
 
-def cv_runner(
-    model_name: str, model_factory: callable, X: torch.Tensor, y: torch.Tensor
-):
+def cv_runner(model_factory: callable, X: torch.Tensor, y: torch.Tensor):
     skf = StratifiedKFold(n_splits=10)
-    res = CVResults(model_name)
+    res = CVResults()
 
     for fold_idx, (train_idx, test_idx) in enumerate(skf.split(X, y)):
         model = model_factory()
 
-        print(f"[CrossValidation] Starting fold {fold_idx} for {model_name}")
+        print(f"[CrossValidation] Starting fold {fold_idx}")
 
         model.fit(X[train_idx], y[train_idx])
         preds = model.predict_proba(X[test_idx])[:, 1]
@@ -21,3 +19,5 @@ def cv_runner(
         res.add_result(y[test_idx], preds)
 
     res.print_report()
+
+    return res
