@@ -61,7 +61,7 @@ class AutoPadmaskingTST(TSTransformerEncoderClassiregressor):
             )
         )
 
-        pm = torch.zeros((X.shape[0], X.shape[1])).to(X.get_device())
+        pm = torch.zeros((X.shape[0], X.shape[1])).to(X.device)
 
         # TODO: more efficient way to do this?
         for bidx in range(0, X.shape[0]):
@@ -155,7 +155,7 @@ def train_one():
     torch.save(X_test, f"{save_dir}/X_test.pt")
     torch.save(y_train, f"{save_dir}/y_train.pt")
     torch.save(y_test, f"{save_dir}/y_test.pt")
-    torch.save(preds, f"{save_dir}/preds.pt")
+    torch.save(torch.Tensor(preds), f"{save_dir}/preds.pt")
 
     print(f"[+] Saved to {save_dir}")
 

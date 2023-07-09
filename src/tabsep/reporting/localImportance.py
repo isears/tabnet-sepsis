@@ -15,19 +15,22 @@ if __name__ == "__main__":
     preds = torch.load("cache/TST/preds.pt")
     attributions = torch.load("cache/TST/attributions.pt")
 
+    # TODO: remove
+    preds = torch.Tensor(preds)
+
     ordered_features = LabeledSparseTensor.load_from_pickle(
         "cache/sparse_labeled.pkl"
     ).features
 
-    pad_masks = AutoPadmaskingTST.autopadmask(X_test)
+    pad_masks = AutoPadmaskingTST.autopadmask(X_test).bool()
 
     sample_idx = np.argmax(
         torch.logical_and(
             torch.logical_and(
                 y_test == 1,
-                torch.sum(X_test[:, :, -1], dim=1) > 5,
+                torch.sum(pad_masks, dim=1) > 5,
             ),
-            torch.logical_and(torch.sum(X_test[:, :, -1], dim=1) < 25, preds > 0.5),
+            torch.logical_and(torch.sum(pad_masks, dim=1) < 25, preds > 0.1),
         )
     )
 
@@ -36,7 +39,7 @@ if __name__ == "__main__":
     # Simplify for poster presentation
     sample_case_attrs_values = np.abs(sample_case_attrs_values)
     sample_case_attrs = pd.DataFrame(sample_case_attrs_values)
-    sample_case_values = pd.DataFrame(X_test[sample_idx, :, :-1].cpu().detach().numpy())
+    sample_case_values = pd.DataFrame(X_test[sample_idx, :, :].cpu().detach().numpy())
 
     sample_case_attrs.columns = ordered_features
     sample_case_values.columns = ordered_features
