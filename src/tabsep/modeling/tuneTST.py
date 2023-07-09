@@ -4,15 +4,7 @@ from sklearn.metrics import average_precision_score, f1_score, roc_auc_score
 from sklearn.model_selection import StratifiedKFold
 
 from tabsep.dataProcessing import LabeledSparseTensor
-from tabsep.modeling import (
-    BaseModelRunner,
-    TabsepModelFactory,
-    TSTConfig,
-    my_auprc,
-    my_auroc,
-    my_f1,
-)
-from tabsep.modeling.commonCV import cv_runner
+from tabsep.modeling import TSTConfig, my_auprc, my_auroc, my_f1
 from tabsep.modeling.skorchTST import AutoPadmaskingTST, tst_factory
 
 

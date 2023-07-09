@@ -28,33 +28,9 @@ class TSTRunner(BaseModelRunner):
 
         return X, y
 
-    def train(self):
-        X, y = self._load_data()
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
-
-        m = tst_factory(TSTConfig(save_path="cache/models/skorchCvTst", **BEST_PARAMS))
-
-        m.fit(X_train, y_train)
-        preds = m.predict_proba(X_test)[:, 1]
-
-        print(f"Final AUROC: {roc_auc_score(y_test, preds)}")
-        print(f"Final AUPRC: {average_precision_score(y_test, preds)}")
-
-        with open(f"{self.save_dir}/model.pkl", "wb") as f:
-            m.module_ = m.module_.to("cpu")
-            pickle.dump(m, f)
-
-        torch.save(X_train, f"{self.save_dir}/X_train.pt")
-        torch.save(X_test, f"{self.save_dir}/X_test.pt")
-        torch.save(y_train, f"{self.save_dir}/y_train.pt")
-        torch.save(y_test, f"{self.save_dir}/y_test.pt")
-        torch.save(torch.Tensor(preds), f"{self.save_dir}/preds.pt")
-
-        print(f"[+] Saved to {self.save_dir}")
-
     def captum(self):
         with open(f"{self.save_dir}/model.pkl", "rb") as f:
-            model = pickle.load(f)
+            model = pickle.load(f).module_
 
         X = torch.load(f"{self.save_dir}/X_test.pt")
         attributions = captum_runner(model.module_, X)

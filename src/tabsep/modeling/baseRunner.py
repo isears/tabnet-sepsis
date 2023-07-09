@@ -1,9 +1,10 @@
 import os
+import pickle
 import sys
-from typing import Tuple
 
 import torch
-from sklearn.model_selection import StratifiedKFold
+from sklearn.metrics import average_precision_score, roc_auc_score
+from sklearn.model_selection import StratifiedKFold, train_test_split
 
 from tabsep.modeling import CVResults
 
@@ -17,8 +18,12 @@ class BaseModelRunner:
         os.makedirs(self.save_dir, exist_ok=True)
         self.default_cmd = default_cmd
 
-    def _load_data(self) -> Tuple(torch.Tensor, torch.Tensor):
+    def _load_data(self):
         raise NotImplementedError()
+
+    def _save_model(self, m) -> None:
+        with open(f"{self.save_dir}/model.pkl", "wb") as f:
+            pickle.dump(m, f)
 
     def parse_cmdline(self):
         if len(sys.argv) == 1:
@@ -49,6 +54,24 @@ class BaseModelRunner:
         res.save_report(f"{self.save_dir}/cvresult.pkl")
 
         return res
+
+    def train(self):
+        X, y = self._load_data()
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+        m = self.configured_model_factory()
+        m.fit(X_train, y_train)
+        preds = m.predict_proba(X_test)[:, 1]
+
+        print(f"Final AUROC: {roc_auc_score(y_test, preds)}")
+        print(f"Final AUPRC: {average_precision_score(y_test, preds)}")
+
+        self._save_model(m)
+
+        torch.save(X_train, f"{self.save_dir}/X_train.pt")
+        torch.save(X_test, f"{self.save_dir}/X_test.pt")
+        torch.save(y_train, f"{self.save_dir}/y_train.pt")
+        torch.save(y_test, f"{self.save_dir}/y_test.pt")
+        torch.save(torch.Tensor(preds), f"{self.save_dir}/preds.pt")
 
     def tuning(self):
         raise NotImplementedError()
