@@ -61,7 +61,7 @@ class DerivedDataReader:
         ]
 
         print(
-            f"[*] Dropped {before_len - len(self.icustays)} with sepsis within the first 48 hrs"
+            f"[*] Dropped {before_len - len(self.icustays)} with sepsis within the first {lookahead_hours + 6} hrs"
         )
 
         # Set a truncation index that's either random between 24 hrs and end of icu stay or 24 hrs before sepsis

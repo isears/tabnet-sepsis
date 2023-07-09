@@ -33,7 +33,7 @@ class TabnetRunner(BaseModelRunner):
         super().__init__(default_cmd)
 
     def _load_data(self):
-        d = LabeledSparseTensor.load_from_pickle("cache/sparse_labeled.pkl")
+        d = LabeledSparseTensor.load_from_pickle(self.data_src)
         X = d.get_snapshot()
         y = d.get_labels()
 

@@ -20,7 +20,7 @@ class TSTRunner(BaseModelRunner):
         super().__init__(default_cmd)
 
     def _load_data(self):
-        d = LabeledSparseTensor.load_from_pickle("cache/sparse_labeled.pkl")
+        d = LabeledSparseTensor.load_from_pickle(self.data_src)
         X = d.get_dense_normalized()
         y = d.get_labels()
 

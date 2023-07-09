@@ -17,6 +17,7 @@ class BaseModelRunner:
     def __init__(self, default_cmd="cv") -> None:
         os.makedirs(self.save_dir, exist_ok=True)
         self.default_cmd = default_cmd
+        self.data_src = "cache/sparse_labeled.pkl"
 
     def _load_data(self):
         raise NotImplementedError()
@@ -30,6 +31,9 @@ class BaseModelRunner:
             cmd = self.default_cmd
         else:
             cmd = sys.argv[1]
+
+        if len(sys.argv) == 3:
+            self.data_src = sys.argv[2]
 
         print(f"[+] Runner instatiated with cmd: {cmd}")
         f = getattr(self, cmd)
