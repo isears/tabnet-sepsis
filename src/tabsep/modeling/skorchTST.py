@@ -50,7 +50,8 @@ BEST_PARAMS = {
 
 
 class AutoPadmaskingTST(TSTransformerEncoderClassiregressor):
-    def forward(self, X):
+    @staticmethod
+    def autopadmask(X) -> torch.Tensor:
         # # examples x # feats
         squeeze_feats = torch.sum(X != -1, dim=2) > 0
 
@@ -66,6 +67,10 @@ class AutoPadmaskingTST(TSTransformerEncoderClassiregressor):
         for bidx in range(0, X.shape[0]):
             pm[bidx, 0 : max_valid_idx[bidx]] = 1
 
+        return pm
+
+    def forward(self, X):
+        pm = self.autopadmask(X)
         return super().forward(X, pm.bool())
 
 
@@ -150,6 +155,7 @@ def train_one():
     torch.save(X_test, f"{save_dir}/X_test.pt")
     torch.save(y_train, f"{save_dir}/y_train.pt")
     torch.save(y_test, f"{save_dir}/y_test.pt")
+    torch.save(preds, f"{save_dir}/preds.pt")
 
     print(f"[+] Saved to {save_dir}")
 

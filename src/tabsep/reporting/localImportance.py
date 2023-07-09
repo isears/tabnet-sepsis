@@ -6,21 +6,27 @@ import torch
 from matplotlib.colors import ListedColormap
 
 from tabsep import config
-from tabsep.dataProcessing.fileBasedDataset import get_feature_labels
-from tabsep.reporting import pretty_feature_names
+from tabsep.dataProcessing import LabeledSparseTensor
+from tabsep.modeling.skorchTST import AutoPadmaskingTST
 
 if __name__ == "__main__":
-    X_test = torch.load(f"{config.model_path}/X_test.pt")
-    y_test = torch.load(f"{config.model_path}/y_test.pt")
-    preds = torch.load(f"{config.model_path}/preds.pt")
-    attributions = torch.load(f"{config.model_path}/attributions.pt")
+    X_test = torch.load("cache/TST/X_test.pt")
+    y_test = torch.load("cache/TST/y_test.pt")
+    preds = torch.load("cache/TST/preds.pt")
+    attributions = torch.load("cache/TST/attributions.pt")
 
-    pad_masks = X_test[:, :, -1] == 1
-    # X_test = X_test[:, :, :-1]
+    ordered_features = LabeledSparseTensor.load_from_pickle(
+        "cache/sparse_labeled.pkl"
+    ).features
+
+    pad_masks = AutoPadmaskingTST.autopadmask(X_test)
 
     sample_idx = np.argmax(
         torch.logical_and(
-            torch.logical_and(y_test == 1, torch.sum(X_test[:, :, -1], dim=1) > 5,),
+            torch.logical_and(
+                y_test == 1,
+                torch.sum(X_test[:, :, -1], dim=1) > 5,
+            ),
             torch.logical_and(torch.sum(X_test[:, :, -1], dim=1) < 25, preds > 0.5),
         )
     )
@@ -32,8 +38,8 @@ if __name__ == "__main__":
     sample_case_attrs = pd.DataFrame(sample_case_attrs_values)
     sample_case_values = pd.DataFrame(X_test[sample_idx, :, :-1].cpu().detach().numpy())
 
-    sample_case_attrs.columns = get_feature_labels()
-    sample_case_values.columns = get_feature_labels()
+    sample_case_attrs.columns = ordered_features
+    sample_case_values.columns = ordered_features
 
     # Truncate by padding mask
     sample_case_attrs = sample_case_attrs[pad_masks[sample_idx].tolist()]
@@ -59,7 +65,7 @@ if __name__ == "__main__":
 
     sample_case_attrs.index.name = "Time in ICU (hours)"
     sample_case_attrs.index = sample_case_attrs.index.astype(int)
-    sample_case_attrs = sample_case_attrs.rename(columns=pretty_feature_names)
+    # sample_case_attrs = sample_case_attrs.rename(columns=pretty_features)
 
     sns.set(font_scale=2)
     fig, ax = plt.subplots(figsize=(20, 12))
@@ -82,7 +88,7 @@ if __name__ == "__main__":
     # ax.set_title(
     #     f"Validation set idx {sample_idx} prediction {preds[sample_idx]:.2f} actual {y_test[sample_idx]:.2f}"
     # )
-    plt.savefig("results/local_importance.png", bbox_inches="tight")
+    plt.savefig("cache/TST/local_importance.png", bbox_inches="tight")
 
     plt.clf()
 
@@ -103,6 +109,6 @@ if __name__ == "__main__":
     # ax.set_title(
     #     f"Validation set idx {sample_idx} prediction {preds[sample_idx]:.2f} actual {y_test[sample_idx]:.2f}"
     # )
-    plt.savefig("results/local_importance_blank.png", bbox_inches="tight")
+    plt.savefig("cache/TST/local_importance_blank.png", bbox_inches="tight")
 
     plt.clf()
