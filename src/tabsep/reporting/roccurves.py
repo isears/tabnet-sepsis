@@ -10,9 +10,9 @@ from tabsep.modeling import CVResults
 
 if __name__ == "__main__":
     fancy_names = {
-        "LogisticRegression": "Logistic Regression (Snapshot)",
-        "MLPClassifier": "Feed-forward Neural Network (Snapshot)",
-        "NeuralNetBinaryClassifier": "Time Series Transformer (Time Series)",
+        "TST": "Time Series Transformer",
+        "Tabnet": "Tabnet",
+        "LR": "Logistic Regression",
     }
 
     colors = ["r", "b", "g", "y"]
@@ -30,7 +30,7 @@ if __name__ == "__main__":
         tprs = []
         aucs = []
 
-        cv_res = CVResults.load(f"results/{name}.cvresult")
+        cv_res = CVResults.load(f"cache/{name}/cvresult.pkl")
 
         for res in cv_res.results:
             # plt.plot(res.fpr, res.tpr, colors[idx], lw=1, alpha=0.3)
