@@ -1,6 +1,9 @@
 import os
 import pickle
 
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
 import torch
 from captum.attr import (
     DeepLift,
@@ -65,7 +68,37 @@ class TabnetRunner(BaseModelRunner):
         assert attributions.shape == X.shape
         torch.save(attributions, f"{self.save_dir}/attributions.pt")
 
+    def global_importance(self):
+        attributions = torch.load(f"{self.save_dir}/attributions.pt")
+        ordered_features = LabeledSparseTensor.load_from_pickle(
+            "cache/sparse_labeled.pkl"
+        ).features
+        importances = torch.sum(torch.abs(attributions), dim=0)
+
+        importances = pd.DataFrame(
+            data={
+                "Variable": ordered_features,
+                "Summed Attribution": torch.sum(torch.abs(attributions), dim=0)
+                .cpu()
+                .detach()
+                .numpy(),
+            }
+        )
+
+        topn = importances.nlargest(10, columns="Summed Attribution")
+        # sns.set_theme()
+        sns.set(rc={"figure.figsize": (7, 7)})
+        ax = sns.barplot(
+            x="Summed Attribution", y="Variable", data=topn, orient="h", color="blue"
+        )
+        plt.tight_layout()
+        plt.savefig(f"{self.save_dir}/global_importances.png")
+        plt.clf()
+        topn.to_csv(f"{self.save_dir}/global_importances.csv", index=False)
+
+        print("done")
+
 
 if __name__ == "__main__":
-    r = TabnetRunner(default_cmd="captum")
+    r = TabnetRunner(default_cmd="global_importance")
     r.parse_cmdline()
