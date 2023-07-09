@@ -31,6 +31,7 @@ class BaseModelRunner:
         else:
             cmd = sys.argv[1]
 
+        print(f"[+] Runner instatiated with cmd: {cmd}")
         f = getattr(self, cmd)
         f()
 

@@ -1,41 +1,16 @@
-import tempfile
-
-import skorch
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
 from pytorch_tabnet.tab_model import TabNetClassifier
-from sklearn.base import BaseEstimator
 from sklearn.model_selection import train_test_split
-from sklearn.neural_network import MLPClassifier
-from skorch import NeuralNet, NeuralNetBinaryClassifier
-from skorch.callbacks import (
-    Checkpoint,
-    EarlyStopping,
-    EpochScoring,
-    GradientNormClipping,
-    LRScheduler,
-)
-
-from tabsep.dataProcessing import LabeledSparseTensor
-from tabsep.modeling import (
-    BaseModelRunner,
-    TabsepModelFactory,
-    my_auprc,
-    my_auroc,
-    my_f1,
-)
-from tabsep.modeling.commonCV import cv_runner
 
 BEST_PARAMS = {
-    "n_d": 64,
-    "n_a": 44,
+    "n_d": 63,
+    "n_a": 61,
     "n_steps": 9,
-    "gamma": 1.472521619271299,
+    "gamma": 1.3614767469824574,
     "n_independent": 1,
-    "momentum": 0.05692333567726392,
-    "mask_type": "sparsemax",
-    "optimizer_params": {"lr": 0.004280287778344044},
+    "momentum": 0.19130622869056657,
+    "mask_type": "entmax",
+    "optimizer_params": {"lr": 0.01147088774852625},
 }
 
 
@@ -53,16 +28,3 @@ class CompatibleTabnet(TabNetClassifier):
             eval_set=[(X_valid, y_valid)],
             eval_metric=["logloss", "auc"],
         )
-
-
-def do_cv():
-    d = LabeledSparseTensor.load_from_pickle("cache/sparse_labeled.pkl")
-    X = d.get_snapshot()
-    y = d.get_labels()
-
-    # cv_runner(lambda: CompatibleTabnet(**BEST_PARAMS), X, y)
-    cv_runner(lambda: CompatibleTabnet(), X, y)
-
-
-if __name__ == "__main__":
-    do_cv()

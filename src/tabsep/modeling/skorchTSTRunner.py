@@ -2,8 +2,6 @@ import os
 import pickle
 
 import torch
-from sklearn.metrics import average_precision_score, roc_auc_score
-from sklearn.model_selection import train_test_split
 
 from tabsep.dataProcessing import LabeledSparseTensor
 from tabsep.modeling import TSTConfig
