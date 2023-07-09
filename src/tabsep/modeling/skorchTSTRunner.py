@@ -60,6 +60,7 @@ class TSTRunner(BaseModelRunner):
 
         X = torch.load(f"{self.save_dir}/X_test.pt")
         attributions = captum_runner(model.module_, X)
+        torch.save(attributions, f"{self.save_dir}/attributions.pt")
 
 
 if __name__ == "__main__":

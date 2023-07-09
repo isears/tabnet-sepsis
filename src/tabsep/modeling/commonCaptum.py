@@ -44,6 +44,4 @@ def captum_runner(model_name: str, trained_model: torch.nn.Module, X, batch_size
 
     assert attributions.shape == X.shape
 
-    os.makedirs(f"cache/{model_name}", exist_ok=True)
-    torch.save(attributions, f"cache/{model_name}/attributions.pt")
-    torch.save(X, f"cache/{model_name}/X.pt")
+    return attributions
