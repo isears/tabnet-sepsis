@@ -148,6 +148,8 @@ def train_one():
 
     torch.save(X_train, f"{save_dir}/X_train.pt")
     torch.save(X_test, f"{save_dir}/X_test.pt")
+    torch.save(y_train, f"{save_dir}/y_train.pt")
+    torch.save(y_test, f"{save_dir}/y_test.pt")
 
     print(f"[+] Saved to {save_dir}")
 
