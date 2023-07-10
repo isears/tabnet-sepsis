@@ -36,7 +36,7 @@ class BaseModelRunner:
             self.data_src = sys.argv[2]
 
         self.data_src_label = self.data_src.split("/")[-1].split(".")[0]
-        print(f"[+] Runner instantiated with cmd: {cmd}")
+        print(f"[+] Runner instantiated with cmd {cmd} and data {self.data_src}")
         f = getattr(self, cmd)
         f()
 
