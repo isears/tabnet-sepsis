@@ -20,7 +20,7 @@ def objective(trial: optuna.Trial) -> float:
 
     skf = StratifiedKFold(n_splits=3)
 
-    d = LabeledSparseTensor.load_from_pickle("cache/sparse_labeled.pkl")
+    d = LabeledSparseTensor.load_from_pickle("cache/sparse_labeled_12.pkl")
     X = d.get_snapshot().numpy()
     y = d.get_labels().numpy()
 
