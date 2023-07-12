@@ -20,17 +20,16 @@ from tabsep import config
 from tabsep.modeling import TSTConfig, my_auprc, my_auroc, my_f1
 
 BEST_PARAMS = {
-    "lr": 3.954336616242573e-05,
-    "dropout": 0.2553653431379216,
-    "d_model_multiplier": 1,
-    "num_layers": 11,
-    "n_heads": 32,
-    "dim_feedforward": 325,
-    "batch_size": 66,
+    "lr": 0.00010308957527304121,
+    "dropout": 0.11668207225515034,
+    "d_model_multiplier": 4,
+    "num_layers": 7,
+    "n_heads": 8,
+    "dim_feedforward": 155,
+    "batch_size": 195,
     "pos_encoding": "fixed",
-    "activation": "relu",
-    "norm": "BatchNorm",
-    "optimizer_name": "PlainRAdam",
+    "activation": "gelu",
+    "norm": "LayerNorm",
     "weight_decay": 0.1,
 }
 
@@ -73,7 +72,7 @@ def tst_factory(tst_config: TSTConfig):
 
     tst_callbacks = [
         GradientNormClipping(gradient_clip_value=4.0),
-        EarlyStopping(patience=3),
+        EarlyStopping(patience=10),
         Checkpoint(
             load_best=True,
             fn_prefix=f"{tst_config.save_path}/",

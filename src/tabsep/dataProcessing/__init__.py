@@ -5,6 +5,8 @@ from dataclasses import dataclass
 
 import torch
 
+from tabsep.modeling.skorchTST import AutoPadmaskingTST
+
 
 @dataclass
 class LabeledSparseTensor:
@@ -90,7 +92,20 @@ class LabeledSparseTensor:
 
     def get_snapshot_los(self):
         X_dense = self.get_dense_normalized()
-        ...
+        # Divide by 5 b/c max LOS is 5 days
+        los = (AutoPadmaskingTST.autopadmask(X_dense).sum(dim=1) - 1) / (5.0 * 24)
+
+        # TODO: could write tests to verify this
+        max_valid_idx = (X_dense.shape[1] - 1) - (
+            torch.argmax(
+                ((torch.flip(X_dense, dims=(1,))) != -1).int(), dim=1, keepdim=True
+            )
+        )
+
+        X_most_recent = torch.gather(X_dense, dim=1, index=max_valid_idx).squeeze()
+        X_with_los = torch.concat([X_most_recent, los.unsqueeze(-1)], dim=1)
+
+        return X_with_los
 
     def get_labels(self):
         return self.y.float()

@@ -16,7 +16,7 @@ class LogisticRegressionRunner(BaseModelRunner):
 
     def _load_data(self):
         d = LabeledSparseTensor.load_from_pickle(self.data_src)
-        X = d.get_snapshot()
+        X = d.get_snapshot_los()
         y = d.get_labels()
 
         return X, y

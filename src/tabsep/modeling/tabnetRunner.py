@@ -34,7 +34,7 @@ class TabnetRunner(BaseModelRunner):
 
     def _load_data(self):
         d = LabeledSparseTensor.load_from_pickle(self.data_src)
-        X = d.get_snapshot()
+        X = d.get_snapshot_los()
         y = d.get_labels()
 
         return X, y
@@ -76,7 +76,7 @@ class TabnetRunner(BaseModelRunner):
         )
         ordered_features = LabeledSparseTensor.load_from_pickle(
             "cache/sparse_labeled.pkl"
-        ).features
+        ).features + ["los"]
         importances = torch.sum(torch.abs(attributions), dim=0)
 
         importances = pd.DataFrame(
