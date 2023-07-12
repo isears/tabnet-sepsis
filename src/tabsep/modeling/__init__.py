@@ -186,6 +186,17 @@ class CVResults:
         print(f"AUROC: {aucs.mean()} {auc_interval}")
         print(f"Avg Precision: {precisions.mean()} {precision_interval}")
 
+    def get_precisions(self) -> list:
+        return [res.avg_precision for res in self.results]
+
+    def get_precision_avg(self) -> float:
+        precisions = np.array([res.avg_precision for res in self.results])
+        return np.mean(precisions)
+
+    def get_precision_std(self) -> float:
+        precisions = np.array([res.avg_precision for res in self.results])
+        return np.std(precisions)
+
     def save_report(self, path) -> None:
         with open(path, "wb") as f:
             pickle.dump(self, f)
