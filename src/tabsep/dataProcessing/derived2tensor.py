@@ -64,14 +64,14 @@ class DerivedDataReader:
             f"[*] Dropped {before_len - len(self.icustays)} with sepsis within the first {lookahead_hours + 6} hrs"
         )
 
-        # Set a truncation index that's either random between 24 hrs and end of icu stay or 24 hrs before sepsis
+        # Set a truncation index that's either random between 24 hrs and end of icu stay or $lookahead_hours hrs before sepsis
         random.seed(42)
 
         def set_truncation(row_in):
             if row_in["sepsis_tidx"] > 0:
                 return row_in["sepsis_tidx"] - lookahead_hours
             else:
-                return random.randint(24, int(row_in["los_icu"] * 24))
+                return random.randint(6, int(row_in["los_icu"] * 24))
 
         self.icustays["tidx_max"] = self.icustays.apply(set_truncation, axis=1)
 

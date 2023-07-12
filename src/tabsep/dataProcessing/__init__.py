@@ -88,5 +88,9 @@ class LabeledSparseTensor:
 
         return X_most_recent
 
+    def get_snapshot_los(self):
+        X_dense = self.get_dense_normalized()
+        ...
+
     def get_labels(self):
         return self.y.float()
