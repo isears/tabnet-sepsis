@@ -27,7 +27,7 @@ def objective(trial: optuna.Trial) -> float:
         save_path="cache/models/skorchCvTst", optimizer_name="AdamW", **trial.params
     )
 
-    d = LabeledSparseTensor.load_from_pickle("cache/sparse_labeled.pkl")
+    d = LabeledSparseTensor.load_from_pickle("cache/sparse_labeled_12.pkl")
     X = d.get_dense_normalized()
     y = d.get_labels()
 
@@ -35,7 +35,7 @@ def objective(trial: optuna.Trial) -> float:
 
     try:
         for fold_idx, (train_idx, test_idx) in enumerate(skf.split(X, y)):
-            model = tst_factory(tst_config)
+            model = tst_factory(tst_config, patience=3)
 
             print(
                 f"[CrossValidation] Starting fold {fold_idx} for {model.__class__.__name__}"

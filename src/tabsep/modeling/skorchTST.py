@@ -64,7 +64,7 @@ class AutoPadmaskingTST(TSTransformerEncoderClassiregressor):
         return out
 
 
-def tst_factory(tst_config: TSTConfig):
+def tst_factory(tst_config: TSTConfig, patience=10):
     """
     Generate TSTs wrapped in standard skorch wrapper
     """
@@ -72,7 +72,7 @@ def tst_factory(tst_config: TSTConfig):
 
     tst_callbacks = [
         GradientNormClipping(gradient_clip_value=4.0),
-        EarlyStopping(patience=10),
+        EarlyStopping(patience=patience),
         Checkpoint(
             load_best=True,
             fn_prefix=f"{tst_config.save_path}/",
