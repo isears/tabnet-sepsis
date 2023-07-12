@@ -39,5 +39,5 @@ class TSTRunner(BaseModelRunner):
 
 
 if __name__ == "__main__":
-    r = TSTRunner()
+    r = TSTRunner(default_cmd="train")
     r.parse_cmdline()

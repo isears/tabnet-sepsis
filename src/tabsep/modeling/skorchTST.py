@@ -41,7 +41,7 @@ class AutoPadmaskingTST(TSTransformerEncoderClassiregressor):
         # # examples x # feats
         squeeze_feats = torch.sum(X != -1, dim=2) > 0
 
-        max_valid_idx = (X.shape[1] - 1) - (
+        max_valid_idx = X.shape[1] - (
             torch.argmax(
                 (torch.flip(squeeze_feats, dims=(1,))).int(), dim=1, keepdim=False
             )
@@ -53,11 +53,16 @@ class AutoPadmaskingTST(TSTransformerEncoderClassiregressor):
         for bidx in range(0, X.shape[0]):
             pm[bidx, 0 : max_valid_idx[bidx]] = 1
 
+        # TODO: if there are examples w/no data, the transformer encoder will freak out and return nans
+        assert torch.sum(pm, dim=1).min() > 0.0
         return pm
 
     def forward(self, X):
         pm = self.autopadmask(X)
-        return super().forward(X, pm.bool())
+
+        out = super(AutoPadmaskingTST, self).forward(X, pm.bool())
+
+        return out
 
 
 def tst_factory(tst_config: TSTConfig):
