@@ -21,12 +21,12 @@ if __name__ == "__main__":
         "Prediction Window (Hrs.)": list(),
     }
     pretty_model_names = {
+        "TST": "Time Series Transformer",
         "LR": "Logistic Regression",
         "Tabnet": "TabNet",
-        "TST": "Time Series Transformer",
     }
 
-    for window_idx in [6, 9, 12, 15, 18, 21, 24]:
+    for window_idx in [3, 6, 9, 12, 15, 18, 21, 24]:
         for model in ["LR", "Tabnet", "TST"]:
             r = load_cvresult(f"cache/{model}/sparse_labeled_{window_idx}_cvresult.pkl")
             precisions = r.get_precisions()
@@ -40,7 +40,9 @@ if __name__ == "__main__":
         x="Prediction Window (Hrs.)",
         y="AUPRC Scores",
         hue="Model",
-        capsize=0.1,
+        hue_order=pretty_model_names.values(),
+        # capsize=0.1,
+        errorbar=None,
     )
     plt.savefig("results/performanceVsTime.png")
 

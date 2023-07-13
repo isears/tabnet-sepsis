@@ -1,7 +1,7 @@
 #!/bin/bash
 # Do everything
 
-for i in 6 9 12 15 18 21 24
+for i in 3 6 9 12 15 18 21 24
 do
     # Training
     python src/tabsep/modeling/lrRunner.py train cache/sparse_labeled_$i.pkl
