@@ -53,15 +53,14 @@ class DerivedDataReader:
             f"[*] Dropped {before_len - len(self.icustays)} with icu stay length < 24 hrs"
         )
 
-        # Drop sepsis with less than 6 hrs data before prediction window
+        # Drop sepsis within first 24 hrs
         before_len = len(self.icustays)
         self.icustays = self.icustays[
-            (self.icustays["sepsis_tidx"] == 0)
-            | (self.icustays["sepsis_tidx"] > (lookahead_hrs + 6))
+            (self.icustays["sepsis_tidx"] == 0) | (self.icustays["sepsis_tidx"] > (24))
         ]
 
         print(
-            f"[*] Dropped {before_len - len(self.icustays)} with sepsis within the first {lookahead_hours + 6} hrs"
+            f"[*] Dropped {before_len - len(self.icustays)} with sepsis within the first {24} hrs"
         )
 
         # Set a truncation index that's either random between 24 hrs and end of icu stay or $lookahead_hours hrs before sepsis

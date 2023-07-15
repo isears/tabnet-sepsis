@@ -40,7 +40,7 @@ class TabnetRunner(BaseModelRunner):
         return X, y
 
     def captum(self):
-        with open(f"{self.save_dir}/model.pkl", "rb") as f:
+        with open(f"{self.save_dir}/{self.data_src_label}_model.pkl", "rb") as f:
             trained_model = pickle.load(f)
 
         X = torch.load(f"{self.save_dir}/{self.data_src_label}_X_test.pt").to("cuda")
@@ -75,7 +75,7 @@ class TabnetRunner(BaseModelRunner):
             f"{self.save_dir}/{self.data_src_label}_attributions.pt"
         )
         ordered_features = LabeledSparseTensor.load_from_pickle(
-            "cache/sparse_labeled.pkl"
+            f"cache/{self.data_src_label}.pkl"
         ).features + ["los"]
         importances = torch.sum(torch.abs(attributions), dim=0)
 
@@ -106,5 +106,5 @@ class TabnetRunner(BaseModelRunner):
 
 
 if __name__ == "__main__":
-    r = TabnetRunner(default_cmd="global_importance")
+    r = TabnetRunner(default_cmd="train")
     r.parse_cmdline()

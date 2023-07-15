@@ -20,15 +20,15 @@ from tabsep import config
 from tabsep.modeling import TSTConfig, my_auprc, my_auroc, my_f1
 
 BEST_PARAMS = {
-    "lr": 0.00010308957527304121,
-    "dropout": 0.11668207225515034,
-    "d_model_multiplier": 4,
-    "num_layers": 7,
-    "n_heads": 8,
-    "dim_feedforward": 155,
-    "batch_size": 195,
+    "lr": 1.030930107062219e-05,
+    "dropout": 0.11112006454363599,
+    "d_model_multiplier": 16,
+    "num_layers": 5,
+    "n_heads": 32,
+    "dim_feedforward": 429,
+    "batch_size": 149,
     "pos_encoding": "fixed",
-    "activation": "gelu",
+    "activation": "relu",
     "norm": "LayerNorm",
     "weight_decay": 0.1,
 }
