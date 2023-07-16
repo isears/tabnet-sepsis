@@ -56,7 +56,8 @@ class DerivedDataReader:
         # Drop sepsis within first 24 hrs
         before_len = len(self.icustays)
         self.icustays = self.icustays[
-            (self.icustays["sepsis_tidx"] == 0) | (self.icustays["sepsis_tidx"] > (24))
+            (self.icustays["sepsis_tidx"] == 0)
+            | (self.icustays["sepsis_tidx"] > (lookahead_hours + 6))
         ]
 
         print(
@@ -214,6 +215,9 @@ class DerivedDataReader:
                 "specimen_id",
                 "rdwsd",
                 "Microcytes",
+                "ventilator_mode",
+                "ventilator_mode_hamilton",
+                "ventilator_type",
             ]
         ]
 
@@ -221,29 +225,87 @@ class DerivedDataReader:
 
     def load_meds_table(self, table_name):
         # TODO
-        raise NotImplementedError()
+        """
+        Meds tables require their own processing
+        """
+        df = pd.read_parquet(f"{self.root}/{table_name}.parquet")
+
+        # Annoying
+        if table_name == "antibiotic":
+            df = df.rename(columns={"stoptime": "endtime"})
+            df = df[~df["endtime"].isna()]
+            df["vaso_rate"] = 1
+
+        df = df.merge(
+            self.icustays[["icu_intime", "tidx_max", "tidx_min"]],
+            how="left",
+            left_on="stay_id",
+            right_index=True,
+        )
+        df = df[~df["icu_intime"].isna()]
+
+        def generate_interval(row):
+            start_tidx = int(
+                (row["starttime"] - row["icu_intime"]).total_seconds() / (60 * 60)
+            )
+            end_tidx = int(
+                (row["endtime"] - row["icu_intime"]).total_seconds() / (60 * 60)
+            )
+
+            if start_tidx < row["tidx_min"]:
+                start_tidx = row["tidx_min"]
+
+            elif start_tidx > row["tidx_max"]:
+                start_tidx = row["tidx_max"]
+
+            if end_tidx < row["tidx_min"]:
+                end_tidx = row["tidx_min"]
+
+            elif end_tidx > row["tidx_max"]:
+                end_tidx = row["tidx_max"]
+
+            start_tidx = start_tidx - row["tidx_min"]
+            end_tidx = end_tidx - row["tidx_min"]
+            return list(range(int(start_tidx), int(end_tidx)))
+
+        df["tidx_interval"] = df.apply(generate_interval, axis=1)
+        df[table_name] = df["vaso_rate"]
+
+        df = df.explode("tidx_interval").rename(columns={"tidx_interval": "tidx"})
+        df = df[~df["tidx"].isna()]
+        df["tidx"] = df["tidx"].astype("int")
+
+        return df[["stay_id", "tidx", table_name]]
 
 
 if __name__ == "__main__":
     pd.set_option("mode.chained_assignment", None)
 
     if len(sys.argv) < 2:
-        lookahead_hrs = 6
+        lookahead_hrs = 0
     else:
         lookahead_hrs = int(sys.argv[1])
 
     reader = DerivedDataReader("./mimiciv_derived", lookahead_hrs)
 
     tables = {
+        # "epinephrine": reader.load_meds_table,
+        # "dopamine": reader.load_meds_table,
+        # "norepinephrine": reader.load_meds_table,
+        # "milrinone": reader.load_meds_table,
+        # "phenylephrine": reader.load_meds_table,
+        # "antibiotic": reader.load_meds_table,
+        # "dobutamine": reader.load_meds_table,
         "vitalsign": reader.load_vitals_table,
         "bg": reader.load_bg_table,
         "chemistry": reader.load_measurement_table,
         "coagulation": reader.load_measurement_table,
         "differential_detailed": reader.load_measurement_table,
         "complete_blood_count": reader.load_measurement_table,
-        "enzyme": reader.load_measurement_table,
-        "inflammation": reader.load_measurement_table,
-        "icp": reader.load_measurement_table,
+        "ventilator_setting": reader.load_measurement_table,
+        # "enzyme": reader.load_measurement_table,
+        # "inflammation": reader.load_measurement_table,
+        # "icp": reader.load_measurement_table,
     }
 
     gathered_dfs = list()

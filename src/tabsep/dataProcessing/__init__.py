@@ -62,7 +62,8 @@ class LabeledSparseTensor:
         X_dense[indices[0, :], indices[1, :], indices[2, :]] = values.float()
 
         nanmask = torch.isnan(X_dense)
-
+        # TODO: this process will "delete" variables that only take on one value (e.g. meds that are only ever 1)
+        # Right now this is the reason we can't use the antibiotics table
         X_dense[nanmask] = float("-inf")
         maxvals = torch.amax(X_dense, dim=(0, -1)).unsqueeze(0).unsqueeze(-1)
         X_dense[nanmask] = float("inf")

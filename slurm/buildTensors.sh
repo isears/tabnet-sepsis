@@ -7,10 +7,9 @@
 #SBATCH --output ./logs/buildTensors.log
 
 export PYTHONUNBUFFERED=TRUE
-for i in 6 12 21
-# for i in 15 18 21 24
+for i in 3 6 9 12 15 18 21 24
 do
-    python src/tabsep/dataProcessing/derived2tensor.py $i &
+    python src/tabsep/dataProcessing/derived2tensor.py $i
 done
 
-wait $(jobs -p)
+# wait $(jobs -p)

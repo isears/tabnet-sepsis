@@ -93,9 +93,9 @@ def tst_factory(tst_config: TSTConfig, patience=10):
         train_split=skorch.dataset.ValidSplit(0.1),
         # train_split=None,
         # TST params
-        module__feat_dim=88,
+        module__feat_dim=85,
         module__max_len=120,
-        max_epochs=50,
+        max_epochs=100,
         **tst_config.generate_skorch_full_params(),
     )
 
