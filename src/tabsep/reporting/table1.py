@@ -1,8 +1,11 @@
-from dataclasses import dataclass
-import pandas as pd
-from typing import List
-import matplotlib.pyplot as plt
 import json
+from dataclasses import dataclass
+from typing import List
+
+import matplotlib.pyplot as plt
+import pandas as pd
+
+from tabsep.dataProcessing import LabeledSparseTensor
 
 
 class Table1Generator(object):
@@ -16,7 +19,7 @@ class Table1Generator(object):
 
         # Create df with all demographic data
         self.all_df = self.all_df.merge(
-            pd.read_csv("mimiciv/derived/sepsis3.csv"),
+            pd.read_parquet("mimiciv_derived/sepsis3.parquet"),
             how="left",
             on=["stay_id", "subject_id"],
         )
@@ -233,8 +236,9 @@ class Table1Generator(object):
 
 
 if __name__ == "__main__":
-    sids = pd.read_csv("cache/included_stayids.csv").squeeze("columns")
-    t1generator = Table1Generator(sids.to_list())
+    data = LabeledSparseTensor.load_from_pickle("cache/sparse_labeled_24.pkl")
+    sids = [int(s) for s in data.stay_ids]
+    t1generator = Table1Generator(sids)
     t1 = t1generator.populate()
 
     print(t1)

@@ -38,11 +38,9 @@ class DerivedDataReader:
         )
 
         self.icustays["sepsis_tidx"] = self.icustays.apply(
-            lambda x: int(
-                (x["sepsis_time"] - x["icu_intime"]).total_seconds() / (60 * 60)
-            )
+            lambda x: (x["sepsis_time"] - x["icu_intime"]).total_seconds() / (60 * 60)
             if not pd.isna(x["sepsis_time"])
-            else 0,
+            else float("nan"),
             axis=1,
         )
 
@@ -56,13 +54,16 @@ class DerivedDataReader:
         # Drop sepsis within first 24 hrs
         before_len = len(self.icustays)
         self.icustays = self.icustays[
-            (self.icustays["sepsis_tidx"] == 0)
+            (pd.isna(self.icustays["sepsis_tidx"]))
             | (self.icustays["sepsis_tidx"] > (lookahead_hours + 6))
         ]
 
         print(
-            f"[*] Dropped {before_len - len(self.icustays)} with sepsis within the first {24} hrs"
+            f"[*] Dropped {before_len - len(self.icustays)} with sepsis within the first {lookahead_hours + 6} hrs"
         )
+
+        self.icustays["sepsis_tidx"] = self.icustays["sepsis_tidx"].fillna(0)
+        self.icustays["sepsis_tidx"] = self.icustays["sepsis_tidx"].astype("int")
 
         # Set a truncation index that's either random between 24 hrs and end of icu stay or $lookahead_hours hrs before sepsis
         random.seed(42)
@@ -144,6 +145,7 @@ class DerivedDataReader:
         df["tidx"] = df["tidx"] - df["tidx_min"]
 
         df = df.drop(columns=["icu_intime", "charttime", "tidx_max", "tidx_min"])
+        df["stay_id"] = df["stay_id"].astype("int")
 
         return df
 
