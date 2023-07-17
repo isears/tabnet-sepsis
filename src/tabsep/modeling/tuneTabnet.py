@@ -7,7 +7,7 @@ from sklearn.model_selection import StratifiedKFold, train_test_split
 from tabsep.dataProcessing import LabeledSparseTensor
 
 
-def objective(trial: optuna.Trial) -> float:
+def objective(trial: optuna.Trial, X, y) -> float:
     # Parameters to tune:
     trial.suggest_int("n_d", 8, 64)
     trial.suggest_int("n_steps", 3, 10)
@@ -19,10 +19,6 @@ def objective(trial: optuna.Trial) -> float:
     trial.suggest_int("fit_batch_size", 16, 2048, log=True)
 
     skf = StratifiedKFold(n_splits=3)
-
-    d = LabeledSparseTensor.load_from_pickle("cache/sparse_labeled_12.pkl")
-    X = d.get_snapshot().numpy()
-    y = d.get_labels().numpy()
 
     # Need to sub-dict the optimizer params
     tabnet_args = {
@@ -81,8 +77,15 @@ def objective(trial: optuna.Trial) -> float:
 
 if __name__ == "__main__":
     study = optuna.create_study(direction="maximize")
-    study.optimize(objective, n_trials=10000)
+    d = LabeledSparseTensor.load_from_pickle("cache/sparse_labeled_12.pkl")
+    X = d.get_snapshot_los().numpy()
+    y = d.get_labels().numpy()
 
+    # Saving a hold-out set for
+    X_tune, X_test, y_tune, y_test = train_test_split(
+        X, y, test_size=0.1, random_state=42
+    )
+    study.optimize(lambda trial: objective(trial, X_tune, y_tune), n_trials=10000)
     print("Best trial:")
     trial = study.best_trial
 

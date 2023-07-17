@@ -1,14 +1,14 @@
 import optuna
 import torch
 from sklearn.metrics import average_precision_score, f1_score, roc_auc_score
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import StratifiedKFold, train_test_split
 
 from tabsep.dataProcessing import LabeledSparseTensor
 from tabsep.modeling import TSTConfig, my_auprc, my_auroc, my_f1
 from tabsep.modeling.skorchTST import AutoPadmaskingTST, tst_factory
 
 
-def objective(trial: optuna.Trial) -> float:
+def objective(trial: optuna.Trial, X, y) -> float:
     # Parameters to tune:
     trial.suggest_float("lr", 1e-5, 0.1, log=True)
     trial.suggest_float("dropout", 0.1, 0.7)
@@ -26,10 +26,6 @@ def objective(trial: optuna.Trial) -> float:
     tst_config = TSTConfig(
         save_path="cache/models/skorchCvTst", optimizer_name="AdamW", **trial.params
     )
-
-    d = LabeledSparseTensor.load_from_pickle("cache/sparse_labeled_12.pkl")
-    X = d.get_dense_normalized()
-    y = d.get_labels()
 
     cv_scores = list()
 
@@ -57,7 +53,16 @@ def objective(trial: optuna.Trial) -> float:
 
 if __name__ == "__main__":
     study = optuna.create_study(direction="maximize")
-    study.optimize(objective, n_trials=10000)
+
+    d = LabeledSparseTensor.load_from_pickle("cache/sparse_labeled_12.pkl")
+    X = d.get_dense_normalized()
+    y = d.get_labels()
+
+    # Saving a hold-out set for
+    X_tune, X_test, y_tune, y_test = train_test_split(
+        X, y, test_size=0.1, random_state=42
+    )
+    study.optimize(lambda trial: objective(trial, X_tune, y_tune), n_trials=10000)
 
     print("Best trial:")
     trial = study.best_trial
