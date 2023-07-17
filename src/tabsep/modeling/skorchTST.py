@@ -64,7 +64,7 @@ class AutoPadmaskingTST(TSTransformerEncoderClassiregressor):
         return out
 
 
-def tst_factory(tst_config: TSTConfig, patience=10):
+def tst_factory(tst_config: TSTConfig, patience=3):
     """
     Generate TSTs wrapped in standard skorch wrapper
     """

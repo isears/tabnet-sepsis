@@ -55,11 +55,11 @@ class DerivedDataReader:
         before_len = len(self.icustays)
         self.icustays = self.icustays[
             (pd.isna(self.icustays["sepsis_tidx"]))
-            | (self.icustays["sepsis_tidx"] > (lookahead_hours + 6))
+            | (self.icustays["sepsis_tidx"] > (lookahead_hours + 24))
         ]
 
         print(
-            f"[*] Dropped {before_len - len(self.icustays)} with sepsis within the first {lookahead_hours + 6} hrs"
+            f"[*] Dropped {before_len - len(self.icustays)} with sepsis within the first {lookahead_hours + 24} hrs"
         )
 
         self.icustays["sepsis_tidx"] = self.icustays["sepsis_tidx"].fillna(0)
@@ -72,7 +72,7 @@ class DerivedDataReader:
             if row_in["sepsis_tidx"] > 0:
                 return row_in["sepsis_tidx"] - lookahead_hours
             else:
-                return random.randint(6, int(row_in["los_icu"] * 24))
+                return random.randint(24, int(row_in["los_icu"] * 24))
 
         self.icustays["tidx_max"] = self.icustays.apply(set_truncation, axis=1)
 

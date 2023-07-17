@@ -3,21 +3,16 @@ import pickle
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
+import torch
+from sklearn.metrics import average_precision_score, roc_auc_score
 
 from tabsep.modeling import CVResults
-
-
-def load_cvresult(path: str) -> CVResults:
-    with open(path, "rb") as f:
-        res = pickle.load(f)
-
-    return res
-
 
 if __name__ == "__main__":
     plottable = {
         "Model": list(),
         "AUPRC Scores": list(),
+        "AUROC Scores": list(),
         "Prediction Window (Hrs.)": list(),
     }
     pretty_model_names = {
@@ -26,13 +21,17 @@ if __name__ == "__main__":
         "Tabnet": "TabNet",
     }
 
-    for window_idx in [3, 6, 9, 12, 15, 18, 21, 24]:
+    for window_idx in [3, 6, 9, 12, 15, 18]:
         for model in ["LR", "Tabnet", "TST"]:
-            r = load_cvresult(f"cache/{model}/sparse_labeled_{window_idx}_cvresult.pkl")
-            precisions = r.get_precisions()
-            plottable["Model"] += [pretty_model_names[model]] * len(precisions)
-            plottable["AUPRC Scores"] += precisions
-            plottable["Prediction Window (Hrs.)"] += [window_idx] * len(precisions)
+            y_test = torch.load(f"cache/{model}/sparse_labeled_{window_idx}_y_test.pt")
+            preds = torch.load(f"cache/{model}/sparse_labeled_{window_idx}_preds.pt")
+            auprc = average_precision_score(y_test, preds)
+            auroc = roc_auc_score(y_test, preds)
+
+            plottable["Model"].append(pretty_model_names[model])
+            plottable["AUPRC Scores"].append(auprc)
+            plottable["AUROC Scores"].append(auroc)
+            plottable["Prediction Window (Hrs.)"].append(window_idx)
 
     plottable = pd.DataFrame(data=plottable)
     sns.barplot(
@@ -41,8 +40,6 @@ if __name__ == "__main__":
         y="AUPRC Scores",
         hue="Model",
         hue_order=pretty_model_names.values(),
-        # capsize=0.1,
-        errorbar=None,
     )
     plt.savefig("results/performanceVsTime.png")
 
