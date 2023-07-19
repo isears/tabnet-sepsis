@@ -1,3 +1,5 @@
+import sys
+
 import optuna
 import torch
 from pytorch_tabnet.tab_model import TabNetClassifier
@@ -76,8 +78,13 @@ def objective(trial: optuna.Trial, X, y) -> float:
 
 
 if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        datapath = "cache/sparse_labeled_12.pkl"
+    else:
+        datapath = sys.argv[1]
+        
     study = optuna.create_study(direction="maximize")
-    d = LabeledSparseTensor.load_from_pickle("cache/sparse_labeled_12.pkl")
+    d = LabeledSparseTensor.load_from_pickle(datapath)
     X = d.get_snapshot_los().numpy()
     y = d.get_labels().numpy()
 

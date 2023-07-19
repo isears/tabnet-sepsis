@@ -1,3 +1,5 @@
+import sys
+
 import optuna
 import torch
 from sklearn.metrics import average_precision_score, f1_score, roc_auc_score
@@ -53,8 +55,12 @@ def objective(trial: optuna.Trial, X, y) -> float:
 
 if __name__ == "__main__":
     study = optuna.create_study(direction="maximize")
+    if len(sys.argv) < 2:
+        datapath = "cache/sparse_labeled_12.pkl"
+    else:
+        datapath = sys.argv[1]
 
-    d = LabeledSparseTensor.load_from_pickle("cache/sparse_labeled_12.pkl")
+    d = LabeledSparseTensor.load_from_pickle(datapath)
     X = d.get_dense_normalized()
     y = d.get_labels()
 
