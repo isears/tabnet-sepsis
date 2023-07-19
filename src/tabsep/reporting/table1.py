@@ -236,7 +236,7 @@ class Table1Generator(object):
 
 
 if __name__ == "__main__":
-    data = LabeledSparseTensor.load_from_pickle("cache/sparse_labeled_24.pkl")
+    data = LabeledSparseTensor.load_from_pickle("cache/sparse_labeled_3.pkl")
     sids = [int(s) for s in data.stay_ids]
     t1generator = Table1Generator(sids)
     t1 = t1generator.populate()

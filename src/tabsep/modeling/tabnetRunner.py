@@ -28,9 +28,24 @@ class TabnetRunner(BaseModelRunner):
     name = "Tabnet"
     save_dir = "cache/Tabnet"
 
+    params_by_window = {
+        12: {
+            "n_d": 64,
+            "n_steps": 3,
+            "gamma": 1.6940171928168515,
+            "n_independent": 2,
+            "momentum": 0.017399860200337933,
+            "mask_type": "entmax",
+            "optimizer_lr": 0.028302691823119782,
+            "fit_batch_size": 281,
+        }
+    }
+
     def __init__(self, default_cmd="cv") -> None:
-        self.configured_model_factory = lambda: CompatibleTabnet(**BEST_PARAMS)
         super().__init__(default_cmd)
+        self.configured_model_factory = lambda: CompatibleTabnet(
+            **self.params_by_window[self.prediction_window]
+        )
 
     def _load_data(self):
         d = LabeledSparseTensor.load_from_pickle(self.data_src)

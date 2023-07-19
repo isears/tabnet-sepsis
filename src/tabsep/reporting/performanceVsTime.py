@@ -21,7 +21,7 @@ if __name__ == "__main__":
         "Tabnet": "TabNet",
     }
 
-    for window_idx in [3, 6, 9, 12, 15, 18]:
+    for window_idx in [3, 6, 12, 24]:
         for model in ["LR", "Tabnet", "TST"]:
             y_test = torch.load(f"cache/{model}/sparse_labeled_{window_idx}_y_test.pt")
             preds = torch.load(f"cache/{model}/sparse_labeled_{window_idx}_preds.pt")

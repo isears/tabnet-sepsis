@@ -14,10 +14,29 @@ class TSTRunner(BaseModelRunner):
     name = "TST"
     save_dir = "cache/TST"
 
+    params_by_window = {
+        12: {
+            "lr": 2.1256858803320374e-05,
+            "dropout": 0.11238558423398054,
+            "d_model_multiplier": 4,
+            "num_layers": 6,
+            "n_heads": 8,
+            "dim_feedforward": 342,
+            "batch_size": 101,
+            "pos_encoding": "fixed",
+            "activation": "relu",
+            "norm": "BatchNorm",
+            "weight_decay": 0.01,
+        }
+    }
+
     def __init__(self, default_cmd="cv") -> None:
-        conf = TSTConfig(save_path="cache/models/skorchCvTst", **BEST_PARAMS)
-        self.configured_model_factory = lambda: tst_factory(conf)
         super().__init__(default_cmd)
+        conf = TSTConfig(
+            save_path="cache/models/skorchCvTst",
+            **self.params_by_window[self.prediction_window],
+        )
+        self.configured_model_factory = lambda: tst_factory(conf)
 
     def _load_data(self):
         d = LabeledSparseTensor.load_from_pickle(self.data_src)

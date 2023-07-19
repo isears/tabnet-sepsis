@@ -19,14 +19,6 @@ class BaseModelRunner:
         self.default_cmd = default_cmd
         self.data_src = "cache/sparse_labeled_12.pkl"
 
-    def _load_data(self):
-        raise NotImplementedError()
-
-    def _save_model(self, m) -> None:
-        with open(f"{self.save_dir}/{self.data_src_label}_model.pkl", "wb") as f:
-            pickle.dump(m, f)
-
-    def parse_cmdline(self):
         if len(sys.argv) == 1:
             cmd = self.default_cmd
         else:
@@ -36,8 +28,19 @@ class BaseModelRunner:
             self.data_src = sys.argv[2]
 
         self.data_src_label = self.data_src.split("/")[-1].split(".")[0]
+        self.prediction_window = int(self.data_src_label.split("_")[-1])
+        self.cmd = cmd
         print(f"[+] Runner instantiated with cmd {cmd} and data {self.data_src}")
-        f = getattr(self, cmd)
+
+    def _load_data(self):
+        raise NotImplementedError()
+
+    def _save_model(self, m) -> None:
+        with open(f"{self.save_dir}/{self.data_src_label}_model.pkl", "wb") as f:
+            pickle.dump(m, f)
+
+    def parse_cmdline(self):
+        f = getattr(self, self.cmd)
         f()
 
     def cv(self):

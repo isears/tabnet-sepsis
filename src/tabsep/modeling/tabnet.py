@@ -5,14 +5,14 @@ from pytorch_tabnet.tab_model import TabNetClassifier
 from sklearn.model_selection import train_test_split
 
 BEST_PARAMS = {
-    "n_d": 31,
+    "n_d": 64,
     "n_steps": 3,
-    "gamma": 1.4874373288679326,
-    "n_independent": 1,
-    "momentum": 0.01316972924034124,
+    "gamma": 1.4878496190779058,
+    "n_independent": 2,
+    "momentum": 0.10253630292451005,
     "mask_type": "entmax",
-    "optimizer_lr": 0.00042921042538076953,
-    "fit_batch_size": 381,
+    "optimizer_lr": 0.0008586224162169336,
+    "fit_batch_size": 17,
 }
 
 
