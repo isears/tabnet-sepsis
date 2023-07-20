@@ -20,7 +20,8 @@ def objective(trial: optuna.Trial, X, y) -> float:
     trial.suggest_float("optimizer_lr", 1e-5, 0.1, log=True)
     trial.suggest_int("fit_batch_size", 16, 2048, log=True)
 
-    skf = StratifiedKFold(n_splits=3)
+    # Tabnet appears to be sensitive to length
+    skf = StratifiedKFold(n_splits=10)
 
     # Need to sub-dict the optimizer params
     tabnet_args = {
@@ -82,7 +83,7 @@ if __name__ == "__main__":
         datapath = "cache/sparse_labeled_12.pkl"
     else:
         datapath = sys.argv[1]
-        
+
     study = optuna.create_study(direction="maximize")
     d = LabeledSparseTensor.load_from_pickle(datapath)
     X = d.get_snapshot_los().numpy()
