@@ -15,6 +15,32 @@ class TSTRunner(BaseModelRunner):
     save_dir = "cache/TST"
 
     params_by_window = {
+        3: {
+            "lr": 5.93763555473408e-05,
+            "dropout": 0.16165102138970905,
+            "d_model_multiplier": 2,
+            "num_layers": 13,
+            "n_heads": 16,
+            "dim_feedforward": 227,
+            "batch_size": 44,
+            "pos_encoding": "fixed",
+            "activation": "relu",
+            "norm": "BatchNorm",
+            "weight_decay": 0,
+        },
+        6: {
+            "lr": 4.17144588637386e-05,
+            "dropout": 0.1674977719562643,
+            "d_model_multiplier": 8,
+            "num_layers": 12,
+            "n_heads": 4,
+            "dim_feedforward": 260,
+            "batch_size": 34,
+            "pos_encoding": "fixed",
+            "activation": "gelu",
+            "norm": "BatchNorm",
+            "weight_decay": 0.01,
+        },
         12: {
             "lr": 2.1256858803320374e-05,
             "dropout": 0.11238558423398054,
@@ -27,7 +53,20 @@ class TSTRunner(BaseModelRunner):
             "activation": "relu",
             "norm": "BatchNorm",
             "weight_decay": 0.01,
-        }
+        },
+        24: {
+            "lr": 4.0149853574390136e-05,
+            "dropout": 0.1281287413929199,
+            "d_model_multiplier": 2,
+            "num_layers": 9,
+            "n_heads": 8,
+            "dim_feedforward": 394,
+            "batch_size": 233,
+            "pos_encoding": "fixed",
+            "activation": "gelu",
+            "norm": "BatchNorm",
+            "weight_decay": 0,
+        },
     }
 
     def __init__(self, default_cmd="cv") -> None:

@@ -29,6 +29,26 @@ class TabnetRunner(BaseModelRunner):
     save_dir = "cache/Tabnet"
 
     params_by_window = {
+        3: {
+            "n_d": 64,
+            "n_steps": 3,
+            "gamma": 1.6940171928168515,
+            "n_independent": 2,
+            "momentum": 0.017399860200337933,
+            "mask_type": "entmax",
+            "optimizer_lr": 0.028302691823119782,
+            "fit_batch_size": 281,
+        },
+        6: {
+            "n_d": 64,
+            "n_steps": 3,
+            "gamma": 1.3337442677169153,
+            "n_independent": 2,
+            "momentum": 0.06488416946319822,
+            "mask_type": "entmax",
+            "optimizer_lr": 0.0016921220452452079,
+            "fit_batch_size": 108,
+        },
         12: {
             "n_d": 64,
             "n_steps": 3,
@@ -38,7 +58,17 @@ class TabnetRunner(BaseModelRunner):
             "mask_type": "entmax",
             "optimizer_lr": 0.028302691823119782,
             "fit_batch_size": 281,
-        }
+        },
+        24: {
+            "n_d": 64,
+            "n_steps": 3,
+            "gamma": 1.6940171928168515,
+            "n_independent": 2,
+            "momentum": 0.017399860200337933,
+            "mask_type": "entmax",
+            "optimizer_lr": 0.028302691823119782,
+            "fit_batch_size": 281,
+        },
     }
 
     def __init__(self, default_cmd="cv") -> None:

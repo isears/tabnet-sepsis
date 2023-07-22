@@ -18,7 +18,7 @@ def objective(trial: optuna.Trial, X, y) -> float:
     trial.suggest_float("momentum", 0.01, 0.4, log=True)
     trial.suggest_categorical("mask_type", ["sparsemax", "entmax"])
     trial.suggest_float("optimizer_lr", 1e-5, 0.1, log=True)
-    trial.suggest_int("fit_batch_size", 16, 2048, log=True)
+    trial.suggest_int("fit_batch_size", 256, 4096, log=True)
 
     # Tabnet appears to be sensitive to length
     skf = StratifiedKFold(n_splits=10)
