@@ -3,6 +3,9 @@ from typing import Any
 import torch
 from pytorch_tabnet.tab_model import TabNetClassifier
 from sklearn.model_selection import train_test_split
+from pytorch_tabnet.metrics import Metric
+from sklearn.metrics import average_precision_score
+
 
 BEST_PARAMS = {
     "n_d": 64,
@@ -14,6 +17,15 @@ BEST_PARAMS = {
     "optimizer_lr": 0.0008586224162169336,
     "fit_batch_size": 17,
 }
+
+
+class AUPRC(Metric):
+    def __init__(self):
+        self._name = "AUPRC"
+        self._maximize = True
+
+    def __call__(self, y_true, y_score):
+        return average_precision_score(y_true, y_score[:, 1])
 
 
 class CompatibleTabnet(TabNetClassifier):
@@ -50,9 +62,9 @@ class CompatibleTabnet(TabNetClassifier):
         super().fit(
             X_train,
             y_train,
-            patience=10,
+            patience=7,
             eval_set=[(X_valid, y_valid)],
-            eval_metric=["logloss", "auc"],
+            eval_metric=["auc", "logloss", AUPRC],
             **self.fit_params
         )
 

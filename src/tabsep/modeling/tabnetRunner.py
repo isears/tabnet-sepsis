@@ -42,12 +42,12 @@ class TabnetRunner(BaseModelRunner):
         6: {
             "n_d": 64,
             "n_steps": 3,
-            "gamma": 1.3337442677169153,
+            "gamma": 1.6940171928168515,
             "n_independent": 2,
-            "momentum": 0.06488416946319822,
+            "momentum": 0.017399860200337933,
             "mask_type": "entmax",
-            "optimizer_lr": 0.0016921220452452079,
-            "fit_batch_size": 108,
+            "optimizer_lr": 0.028302691823119782,
+            "fit_batch_size": 281,
         },
         12: {
             "n_d": 64,
@@ -60,14 +60,14 @@ class TabnetRunner(BaseModelRunner):
             "fit_batch_size": 281,
         },
         24: {
-            "n_d": 64,
+            "n_d": 43,
             "n_steps": 3,
-            "gamma": 1.6940171928168515,
-            "n_independent": 2,
-            "momentum": 0.017399860200337933,
+            "gamma": 1.3638923056332224,
+            "n_independent": 1,
+            "momentum": 0.021954235767485453,
             "mask_type": "entmax",
-            "optimizer_lr": 0.028302691823119782,
-            "fit_batch_size": 281,
+            "optimizer_lr": 0.0016202378710285389,
+            "fit_batch_size": 2431,
         },
     }
 
