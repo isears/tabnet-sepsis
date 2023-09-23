@@ -14,10 +14,30 @@ class NNRunner(BaseModelRunner):
     save_dir = "cache/NN"
 
     params_by_window = {
-        3: {},
-        6: {},
-        12: {},
-        24: {},
+        3: {
+            "lr": 0.0018927017342011572,
+            "n_hidden": 1,
+            "width": 84,
+            "activation_fn": "relu",
+        },
+        6: {
+            "lr": 0.0018927017342011572,
+            "n_hidden": 1,
+            "width": 84,
+            "activation_fn": "relu",
+        },
+        12: {
+            "lr": 0.0018927017342011572,
+            "n_hidden": 1,
+            "width": 84,
+            "activation_fn": "relu",
+        },
+        24: {
+            "lr": 0.0018927017342011572,
+            "n_hidden": 1,
+            "width": 84,
+            "activation_fn": "relu",
+        },
     }
 
     def __init__(self, default_cmd="cv") -> None:

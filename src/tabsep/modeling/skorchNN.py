@@ -57,7 +57,7 @@ def nn_factory(
     n_hidden: int = 1,
     width: int = 10,
     activation_fn: str = "relu",
-    patience=3,
+    patience=5,
 ):
     checkpoint_dir = tempfile.TemporaryDirectory()
     cbs = [
