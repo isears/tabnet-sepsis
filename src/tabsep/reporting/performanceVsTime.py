@@ -17,12 +17,12 @@ if __name__ == "__main__":
     }
     pretty_model_names = {
         "TST": "Time Series Transformer",
-        "FFNN": "Neural Network",
+        "NN": "Neural Network",
         "LR": "Logistic Regression",
     }
 
     for window_idx in [3, 6, 12, 24]:
-        for model in ["LR", "FFNN", "TST"]:
+        for model in ["LR", "NN", "TST"]:
             y_test = torch.load(f"cache/{model}/sparse_labeled_{window_idx}_y_test.pt")
             preds = torch.load(f"cache/{model}/sparse_labeled_{window_idx}_preds.pt")
 
@@ -36,6 +36,9 @@ if __name__ == "__main__":
             print(f"{model} window {window_idx}: AUPRC {auprc}")
 
     plottable = pd.DataFrame(data=plottable)
+
+    sns.set(rc={"figure.figsize": (11.7, 8.27)})
+
     sns.barplot(
         data=plottable,
         x="Prediction Window (Hrs.)",
@@ -43,6 +46,7 @@ if __name__ == "__main__":
         hue="Model",
         hue_order=pretty_model_names.values(),
     )
+
     plt.savefig("results/performanceVsTime.png")
 
     print("done")

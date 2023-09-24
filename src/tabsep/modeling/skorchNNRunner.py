@@ -21,21 +21,21 @@ class NNRunner(BaseModelRunner):
             "activation_fn": "relu",
         },
         6: {
-            "lr": 0.0018927017342011572,
+            "lr": 0.0012574142014765064,
             "n_hidden": 1,
-            "width": 84,
+            "width": 47,
             "activation_fn": "relu",
         },
         12: {
-            "lr": 0.0018927017342011572,
+            "lr": 0.0002559482975839968,
             "n_hidden": 1,
-            "width": 84,
+            "width": 67,
             "activation_fn": "relu",
         },
         24: {
-            "lr": 0.0018927017342011572,
+            "lr": 0.0011491971930051492,
             "n_hidden": 1,
-            "width": 84,
+            "width": 47,
             "activation_fn": "relu",
         },
     }
