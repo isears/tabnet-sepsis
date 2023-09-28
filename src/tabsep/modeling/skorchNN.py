@@ -22,12 +22,20 @@ from tabsep.modeling import (
 
 
 class SimpleFFNN(nn.Module):
-    def __init__(self, n_hidden: int, width: int, n_features: int, activation_fn: str):
+    def __init__(
+        self,
+        n_hidden: int,
+        width: int,
+        n_features: int,
+        activation_fn: str,
+        dropout: float,
+    ):
         super(SimpleFFNN, self).__init__()
         self.input_layer = nn.Linear(n_features, width)
         self.hidden_layers = nn.ModuleList(
             [nn.Linear(width, width) for i in range(n_hidden)]
         )
+        self.dropout = torch.nn.Dropout(dropout)
         self.output_layer = nn.Linear(width, 1)
         self.activation_fn = F.relu
 
@@ -45,9 +53,11 @@ class SimpleFFNN(nn.Module):
         x = self.activation_fn(x)
 
         for l in self.hidden_layers:
+            x = self.dropout(x)
             x = l(x)
             x = self.activation_fn(x)
 
+        x = self.dropout(x)
         x = self.output_layer(x)
         return x
 
@@ -57,6 +67,7 @@ def nn_factory(
     n_hidden: int = 1,
     width: int = 10,
     activation_fn: str = "relu",
+    dropout=0.01,
     patience=5,
 ):
     checkpoint_dir = tempfile.TemporaryDirectory()
@@ -77,6 +88,7 @@ def nn_factory(
         module__width=width,
         module__n_features=86,
         module__activation_fn=activation_fn,
+        module__dropout=dropout,
         criterion=torch.nn.BCEWithLogitsLoss,
         # criterion__pos_weight=torch.FloatTensor([10]),
         device="cuda",

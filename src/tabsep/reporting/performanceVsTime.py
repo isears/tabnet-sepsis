@@ -14,18 +14,17 @@ import random
 
 def bootstrapping_auprc(y_test, preds):
     random.seed(42)
-    bootstraps = 100
+    bootstraps = 50
     n = preds.shape[0]
     assert n == y_test.shape[0]
     assert n != 1
 
-    sample_size = n // 10
     indices = list(range(0, n))
 
     auprcs = list()
 
     for bootstrap_idx in range(0, bootstraps):
-        this_group_indices = random.sample(indices, sample_size)
+        this_group_indices = random.choices(indices, k=n)
         group_labels = y_test[this_group_indices]
         group_preds = preds[this_group_indices]
 
@@ -46,11 +45,13 @@ if __name__ == "__main__":
     }
     pretty_model_names = {
         "TST": "Time Series Transformer",
-        "NN": "Neural Network",
+        "Tabnet": "TabNet",
         "LR": "Logistic Regression",
     }
 
-    for window_idx in [3, 6, 12, 24]:
+    for window_idx in [3, 6, 9, 12, 15, 18, 24]:
+        saved_distrib = {}
+
         for model in pretty_model_names.keys():
             y_test = torch.load(f"cache/{model}/sparse_labeled_{window_idx}_y_test.pt")
             preds = torch.load(f"cache/{model}/sparse_labeled_{window_idx}_preds.pt")
@@ -73,6 +74,17 @@ if __name__ == "__main__":
             print(
                 f"{model[0]} window {window_idx:02d}: AUPRC {avg_auprc:.5f} +/- {avg_auprc - lower_ci:.5f} (normtest {p:.3f})"
             )
+
+            saved_distrib[model] = bootstrapped_auprcs
+
+        _, p_tst_nn = scipy.stats.ttest_ind(
+            saved_distrib["TST"], saved_distrib["Tabnet"]
+        )
+        _, p_tst_lr = scipy.stats.ttest_ind(saved_distrib["TST"], saved_distrib["LR"])
+        _, p_nn_lr = scipy.stats.ttest_ind(saved_distrib["Tabnet"], saved_distrib["LR"])
+        print(f"P TST vs Tabnet: {p_tst_nn}")
+        print(f"P TST vs LR: {p_tst_lr}")
+        print(f"P Tabnet vs LR: {p_nn_lr}")
 
     plottable = pd.DataFrame(data=plottable)
 

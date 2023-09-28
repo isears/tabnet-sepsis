@@ -15,37 +15,39 @@ class NNRunner(BaseModelRunner):
 
     params_by_window = {
         3: {
-            "lr": 0.0018927017342011572,
+            "lr": 0.0013592479407959538,
             "n_hidden": 1,
-            "width": 84,
-            "activation_fn": "relu",
+            "width": 69,
+            "activation_fn": "gelu",
+            "dropout": 0.09347208003350312,
         },
         6: {
-            "lr": 0.0012574142014765064,
+            "lr": 0.001033376851484741,
             "n_hidden": 1,
-            "width": 47,
+            "width": 34,
             "activation_fn": "relu",
+            "dropout": 0.32048896548777234,
         },
         12: {
-            "lr": 0.0002559482975839968,
-            "n_hidden": 1,
-            "width": 67,
-            "activation_fn": "relu",
+            "lr": 0.0007867486036619998,
+            "n_hidden": 2,
+            "width": 92,
+            "activation_fn": "gelu",
+            "dropout": 0.02450165042644283,
         },
         24: {
-            "lr": 0.0011491971930051492,
+            "lr": 0.0008210625383263098,
             "n_hidden": 1,
-            "width": 47,
+            "width": 80,
             "activation_fn": "relu",
+            "dropout": 0.12238394095872322,
         },
     }
 
     def __init__(self, default_cmd="cv") -> None:
         super().__init__(default_cmd)
 
-        self.configured_model_factory = lambda: nn_factory(
-            **self.params_by_window[self.prediction_window]
-        )
+        self.configured_model_factory = lambda: nn_factory(**self.params_by_window[24])
 
     def _load_data(self):
         d = LabeledSparseTensor.load_from_pickle(self.data_src)

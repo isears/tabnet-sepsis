@@ -17,6 +17,7 @@ def objective(trial: optuna.Trial, X, y) -> float:
     trial.suggest_int("width", 5, 100)
     # trial.suggest_int("batch_size", 8, 256)
     trial.suggest_categorical("activation_fn", ["gelu", "relu"])
+    trial.suggest_float("dropout", 0.01, 0.5)
 
     skf = StratifiedKFold(n_splits=3)
 

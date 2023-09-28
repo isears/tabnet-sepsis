@@ -1,4 +1,3 @@
-import os
 import pickle
 
 import matplotlib.pyplot as plt
@@ -28,54 +27,20 @@ class TabnetRunner(BaseModelRunner):
     name = "Tabnet"
     save_dir = "cache/Tabnet"
 
-    params_by_window = {
-        3: {
-            "n_d": 64,
-            "n_steps": 3,
-            "gamma": 1.6940171928168515,
-            "n_independent": 2,
-            "momentum": 0.017399860200337933,
-            "mask_type": "entmax",
-            "optimizer_lr": 0.028302691823119782,
-            "fit_batch_size": 281,
-        },
-        6: {
-            "n_d": 64,
-            "n_steps": 3,
-            "gamma": 1.6940171928168515,
-            "n_independent": 2,
-            "momentum": 0.017399860200337933,
-            "mask_type": "entmax",
-            "optimizer_lr": 0.028302691823119782,
-            "fit_batch_size": 281,
-        },
-        12: {
-            "n_d": 64,
-            "n_steps": 3,
-            "gamma": 1.6940171928168515,
-            "n_independent": 2,
-            "momentum": 0.017399860200337933,
-            "mask_type": "entmax",
-            "optimizer_lr": 0.028302691823119782,
-            "fit_batch_size": 281,
-        },
-        24: {
-            "n_d": 43,
-            "n_steps": 3,
-            "gamma": 1.3638923056332224,
-            "n_independent": 1,
-            "momentum": 0.021954235767485453,
-            "mask_type": "entmax",
-            "optimizer_lr": 0.0016202378710285389,
-            "fit_batch_size": 2431,
-        },
+    tuning_params = {
+        "n_d": 64,
+        "n_steps": 3,
+        "gamma": 1.6940171928168515,
+        "n_independent": 2,
+        "momentum": 0.017399860200337933,
+        "mask_type": "entmax",
+        "optimizer_lr": 0.028302691823119782,
+        "fit_batch_size": 281,
     }
 
     def __init__(self, default_cmd="cv") -> None:
         super().__init__(default_cmd)
-        self.configured_model_factory = lambda: CompatibleTabnet(
-            **self.params_by_window[self.prediction_window]
-        )
+        self.configured_model_factory = lambda: CompatibleTabnet(**self.tuning_params)
 
     def _load_data(self):
         d = LabeledSparseTensor.load_from_pickle(self.data_src)
