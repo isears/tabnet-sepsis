@@ -49,7 +49,7 @@ if __name__ == "__main__":
         "LR": "Logistic Regression",
     }
 
-    for window_idx in [3, 6, 9, 12, 15, 18, 24]:
+    for window_idx in [3, 6, 12, 24]:
         saved_distrib = {}
 
         for model in pretty_model_names.keys():
@@ -98,7 +98,7 @@ if __name__ == "__main__":
         hue_order=pretty_model_names.values(),
         errorbar=(
             lambda x: scipy.stats.norm.interval(
-                0.95,
+                0.99,
                 loc=x.mean(),
                 scale=scipy.stats.sem(x),
             )
