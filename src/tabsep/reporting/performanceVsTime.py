@@ -66,7 +66,7 @@ if __name__ == "__main__":
 
             avg_auprc = sum(bootstrapped_auprcs) / len(bootstrapped_auprcs)
             lower_ci, upper_ci = scipy.stats.norm.interval(
-                0.95,
+                0.99,
                 loc=avg_auprc,
                 scale=scipy.stats.sem(bootstrapped_auprcs),
             )

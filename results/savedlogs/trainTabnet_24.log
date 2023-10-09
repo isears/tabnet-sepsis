@@ -1,0 +1,36 @@
+[+] Runner instantiated with cmd train and data cache/sparse_labeled_24.pkl
+epoch 0  | loss: 0.25459 | val_0_auc: 0.7157  | val_0_logloss: 0.20968 | val_0_AUPRC: 0.15106 |  0:00:02s
+epoch 1  | loss: 0.20102 | val_0_auc: 0.80795 | val_0_logloss: 0.19082 | val_0_AUPRC: 0.23318 |  0:00:05s
+epoch 2  | loss: 0.18669 | val_0_auc: 0.80761 | val_0_logloss: 0.18498 | val_0_AUPRC: 0.26545 |  0:00:07s
+epoch 3  | loss: 0.18267 | val_0_auc: 0.80782 | val_0_logloss: 0.18471 | val_0_AUPRC: 0.26941 |  0:00:09s
+epoch 4  | loss: 0.18184 | val_0_auc: 0.80605 | val_0_logloss: 0.18351 | val_0_AUPRC: 0.27997 |  0:00:11s
+epoch 5  | loss: 0.18008 | val_0_auc: 0.82888 | val_0_logloss: 0.17917 | val_0_AUPRC: 0.32845 |  0:00:13s
+epoch 6  | loss: 0.17713 | val_0_auc: 0.81638 | val_0_logloss: 0.17838 | val_0_AUPRC: 0.33108 |  0:00:15s
+epoch 7  | loss: 0.1755  | val_0_auc: 0.82169 | val_0_logloss: 0.18044 | val_0_AUPRC: 0.31858 |  0:00:17s
+epoch 8  | loss: 0.1741  | val_0_auc: 0.82198 | val_0_logloss: 0.17764 | val_0_AUPRC: 0.33351 |  0:00:20s
+epoch 9  | loss: 0.17226 | val_0_auc: 0.83374 | val_0_logloss: 0.17558 | val_0_AUPRC: 0.33208 |  0:00:22s
+epoch 10 | loss: 0.17226 | val_0_auc: 0.82964 | val_0_logloss: 0.17943 | val_0_AUPRC: 0.33054 |  0:00:24s
+epoch 11 | loss: 0.17125 | val_0_auc: 0.82548 | val_0_logloss: 0.17528 | val_0_AUPRC: 0.33777 |  0:00:26s
+epoch 12 | loss: 0.16917 | val_0_auc: 0.82432 | val_0_logloss: 0.17816 | val_0_AUPRC: 0.32945 |  0:00:28s
+epoch 13 | loss: 0.17    | val_0_auc: 0.83532 | val_0_logloss: 0.17356 | val_0_AUPRC: 0.34774 |  0:00:31s
+epoch 14 | loss: 0.16875 | val_0_auc: 0.83338 | val_0_logloss: 0.17551 | val_0_AUPRC: 0.33683 |  0:00:33s
+epoch 15 | loss: 0.16715 | val_0_auc: 0.84216 | val_0_logloss: 0.17132 | val_0_AUPRC: 0.34844 |  0:00:36s
+epoch 16 | loss: 0.16784 | val_0_auc: 0.83929 | val_0_logloss: 0.17239 | val_0_AUPRC: 0.35354 |  0:00:38s
+epoch 17 | loss: 0.16712 | val_0_auc: 0.84189 | val_0_logloss: 0.17182 | val_0_AUPRC: 0.35225 |  0:00:40s
+epoch 18 | loss: 0.16714 | val_0_auc: 0.83483 | val_0_logloss: 0.17421 | val_0_AUPRC: 0.33365 |  0:00:42s
+epoch 19 | loss: 0.16674 | val_0_auc: 0.83637 | val_0_logloss: 0.17437 | val_0_AUPRC: 0.35064 |  0:00:45s
+epoch 20 | loss: 0.16599 | val_0_auc: 0.83925 | val_0_logloss: 0.17229 | val_0_AUPRC: 0.35039 |  0:00:47s
+epoch 21 | loss: 0.16482 | val_0_auc: 0.84483 | val_0_logloss: 0.16985 | val_0_AUPRC: 0.36387 |  0:00:50s
+epoch 22 | loss: 0.16482 | val_0_auc: 0.84107 | val_0_logloss: 0.17042 | val_0_AUPRC: 0.36217 |  0:00:53s
+epoch 23 | loss: 0.16539 | val_0_auc: 0.83348 | val_0_logloss: 0.1742  | val_0_AUPRC: 0.34693 |  0:00:55s
+epoch 24 | loss: 0.1647  | val_0_auc: 0.83601 | val_0_logloss: 0.17277 | val_0_AUPRC: 0.36145 |  0:00:58s
+epoch 25 | loss: 0.16543 | val_0_auc: 0.836   | val_0_logloss: 0.17206 | val_0_AUPRC: 0.37454 |  0:01:01s
+epoch 26 | loss: 0.16467 | val_0_auc: 0.82481 | val_0_logloss: 0.17684 | val_0_AUPRC: 0.36088 |  0:01:03s
+epoch 27 | loss: 0.16355 | val_0_auc: 0.8271  | val_0_logloss: 0.17528 | val_0_AUPRC: 0.35307 |  0:01:06s
+epoch 28 | loss: 0.16298 | val_0_auc: 0.82903 | val_0_logloss: 0.17695 | val_0_AUPRC: 0.33942 |  0:01:09s
+epoch 29 | loss: 0.16005 | val_0_auc: 0.83261 | val_0_logloss: 0.173   | val_0_AUPRC: 0.35216 |  0:01:12s
+epoch 30 | loss: 0.16098 | val_0_auc: 0.84221 | val_0_logloss: 0.17066 | val_0_AUPRC: 0.35773 |  0:01:15s
+
+Early stopping occurred at epoch 30 with best_epoch = 25 and best_val_0_AUPRC = 0.37454
+Final AUROC: 0.8611771307849739
+Final AUPRC: 0.3300178035401447

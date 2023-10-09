@@ -19,10 +19,7 @@ class LogisticRegressionRunner(BaseModelRunner):
         X = d.get_snapshot_los()
         y = d.get_labels()
 
-        # To make things fair with the deep learning models, that use a validation set
-        X_train, _, y_train, _ = train_test_split(X, y, test_size=0.1, random_state=42)
-
-        return X_train, y_train
+        return X, y
 
 
 if __name__ == "__main__":

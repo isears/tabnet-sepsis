@@ -1,0 +1,25 @@
+[+] Runner instantiated with cmd train and data cache/sparse_labeled_12.pkl
+epoch 0  | loss: 0.28227 | val_0_auc: 0.77418 | val_0_logloss: 0.21319 | val_0_AUPRC: 0.24937 |  0:00:03s
+epoch 1  | loss: 0.22609 | val_0_auc: 0.81268 | val_0_logloss: 0.20299 | val_0_AUPRC: 0.27165 |  0:00:05s
+epoch 2  | loss: 0.21146 | val_0_auc: 0.82585 | val_0_logloss: 0.19727 | val_0_AUPRC: 0.30293 |  0:00:07s
+epoch 3  | loss: 0.20834 | val_0_auc: 0.82394 | val_0_logloss: 0.1941  | val_0_AUPRC: 0.29051 |  0:00:09s
+epoch 4  | loss: 0.20417 | val_0_auc: 0.83348 | val_0_logloss: 0.19109 | val_0_AUPRC: 0.31272 |  0:00:11s
+epoch 5  | loss: 0.20367 | val_0_auc: 0.82865 | val_0_logloss: 0.19188 | val_0_AUPRC: 0.32253 |  0:00:13s
+epoch 6  | loss: 0.20147 | val_0_auc: 0.83369 | val_0_logloss: 0.19274 | val_0_AUPRC: 0.325   |  0:00:16s
+epoch 7  | loss: 0.19865 | val_0_auc: 0.83784 | val_0_logloss: 0.19406 | val_0_AUPRC: 0.29911 |  0:00:18s
+epoch 8  | loss: 0.19624 | val_0_auc: 0.84074 | val_0_logloss: 0.18809 | val_0_AUPRC: 0.33395 |  0:00:20s
+epoch 9  | loss: 0.19381 | val_0_auc: 0.84299 | val_0_logloss: 0.18556 | val_0_AUPRC: 0.35198 |  0:00:22s
+epoch 10 | loss: 0.19406 | val_0_auc: 0.84326 | val_0_logloss: 0.18806 | val_0_AUPRC: 0.33716 |  0:00:24s
+epoch 11 | loss: 0.19268 | val_0_auc: 0.82902 | val_0_logloss: 0.19316 | val_0_AUPRC: 0.31978 |  0:00:26s
+epoch 12 | loss: 0.19149 | val_0_auc: 0.83508 | val_0_logloss: 0.19114 | val_0_AUPRC: 0.33563 |  0:00:28s
+epoch 13 | loss: 0.19304 | val_0_auc: 0.8257  | val_0_logloss: 0.18986 | val_0_AUPRC: 0.35442 |  0:00:31s
+epoch 14 | loss: 0.19142 | val_0_auc: 0.84905 | val_0_logloss: 0.19109 | val_0_AUPRC: 0.36791 |  0:00:33s
+epoch 15 | loss: 0.19038 | val_0_auc: 0.84237 | val_0_logloss: 0.18652 | val_0_AUPRC: 0.36536 |  0:00:36s
+epoch 16 | loss: 0.1885  | val_0_auc: 0.84102 | val_0_logloss: 0.1879  | val_0_AUPRC: 0.34208 |  0:00:38s
+epoch 17 | loss: 0.18554 | val_0_auc: 0.84031 | val_0_logloss: 0.18762 | val_0_AUPRC: 0.35216 |  0:00:40s
+epoch 18 | loss: 0.18784 | val_0_auc: 0.84381 | val_0_logloss: 0.18604 | val_0_AUPRC: 0.34886 |  0:00:42s
+epoch 19 | loss: 0.18604 | val_0_auc: 0.83339 | val_0_logloss: 0.19331 | val_0_AUPRC: 0.33962 |  0:00:44s
+
+Early stopping occurred at epoch 19 with best_epoch = 14 and best_val_0_AUPRC = 0.36791
+Final AUROC: 0.8328714307253785
+Final AUPRC: 0.35159110346084693

@@ -1,0 +1,20 @@
+[+] Runner instantiated with cmd train and data cache/sparse_labeled_6.pkl
+epoch 0  | loss: 0.28836 | val_0_auc: 0.78487 | val_0_logloss: 0.23444 | val_0_AUPRC: 0.30192 |  0:00:03s
+epoch 1  | loss: 0.23385 | val_0_auc: 0.81092 | val_0_logloss: 0.22436 | val_0_AUPRC: 0.32832 |  0:00:06s
+epoch 2  | loss: 0.22396 | val_0_auc: 0.81456 | val_0_logloss: 0.214   | val_0_AUPRC: 0.36989 |  0:00:08s
+epoch 3  | loss: 0.22025 | val_0_auc: 0.81279 | val_0_logloss: 0.21885 | val_0_AUPRC: 0.3557  |  0:00:10s
+epoch 4  | loss: 0.21788 | val_0_auc: 0.81928 | val_0_logloss: 0.21547 | val_0_AUPRC: 0.31305 |  0:00:13s
+epoch 5  | loss: 0.21327 | val_0_auc: 0.81893 | val_0_logloss: 0.21133 | val_0_AUPRC: 0.37416 |  0:00:15s
+epoch 6  | loss: 0.21044 | val_0_auc: 0.82116 | val_0_logloss: 0.2098  | val_0_AUPRC: 0.3833  |  0:00:17s
+epoch 7  | loss: 0.20846 | val_0_auc: 0.82389 | val_0_logloss: 0.20922 | val_0_AUPRC: 0.39818 |  0:00:19s
+epoch 8  | loss: 0.20584 | val_0_auc: 0.82681 | val_0_logloss: 0.20903 | val_0_AUPRC: 0.38464 |  0:00:22s
+epoch 9  | loss: 0.20661 | val_0_auc: 0.82891 | val_0_logloss: 0.20536 | val_0_AUPRC: 0.41038 |  0:00:24s
+epoch 10 | loss: 0.20558 | val_0_auc: 0.82606 | val_0_logloss: 0.21308 | val_0_AUPRC: 0.38651 |  0:00:26s
+epoch 11 | loss: 0.20289 | val_0_auc: 0.8318  | val_0_logloss: 0.20883 | val_0_AUPRC: 0.39292 |  0:00:28s
+epoch 12 | loss: 0.20178 | val_0_auc: 0.83042 | val_0_logloss: 0.20732 | val_0_AUPRC: 0.40878 |  0:00:31s
+epoch 13 | loss: 0.19943 | val_0_auc: 0.8218  | val_0_logloss: 0.2112  | val_0_AUPRC: 0.39488 |  0:00:33s
+epoch 14 | loss: 0.19959 | val_0_auc: 0.82546 | val_0_logloss: 0.20916 | val_0_AUPRC: 0.4002  |  0:00:35s
+
+Early stopping occurred at epoch 14 with best_epoch = 9 and best_val_0_AUPRC = 0.41038
+Final AUROC: 0.843551776659533
+Final AUPRC: 0.3594867695557109

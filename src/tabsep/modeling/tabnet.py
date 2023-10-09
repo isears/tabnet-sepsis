@@ -7,18 +7,6 @@ from pytorch_tabnet.metrics import Metric
 from sklearn.metrics import average_precision_score
 
 
-BEST_PARAMS = {
-    "n_d": 64,
-    "n_steps": 3,
-    "gamma": 1.4878496190779058,
-    "n_independent": 2,
-    "momentum": 0.10253630292451005,
-    "mask_type": "entmax",
-    "optimizer_lr": 0.0008586224162169336,
-    "fit_batch_size": 17,
-}
-
-
 class AUPRC(Metric):
     def __init__(self):
         self._name = "AUPRC"
@@ -57,12 +45,14 @@ class CompatibleTabnet(TabNetClassifier):
         X = X.numpy()
         y = y.numpy()
 
-        X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.1)
+        X_train, X_valid, y_train, y_valid = train_test_split(
+            X, y, test_size=0.1, random_state=42
+        )
 
         super().fit(
             X_train,
             y_train,
-            patience=7,
+            patience=5,
             eval_set=[(X_valid, y_valid)],
             eval_metric=["auc", "logloss", AUPRC],
             **self.fit_params

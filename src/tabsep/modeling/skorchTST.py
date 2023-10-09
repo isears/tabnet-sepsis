@@ -90,7 +90,7 @@ def tst_factory(tst_config: TSTConfig, patience=3):
         # criterion__pos_weight=torch.FloatTensor([10]),
         device="cuda",
         callbacks=tst_callbacks,
-        train_split=skorch.dataset.ValidSplit(0.1),
+        train_split=skorch.dataset.ValidSplit(0.1, random_state=42),
         # train_split=None,
         # TST params
         module__feat_dim=85,

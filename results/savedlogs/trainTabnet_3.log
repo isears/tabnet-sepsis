@@ -1,0 +1,23 @@
+[+] Runner instantiated with cmd train and data cache/sparse_labeled_3.pkl
+epoch 0  | loss: 0.30388 | val_0_auc: 0.77291 | val_0_logloss: 0.25388 | val_0_AUPRC: 0.30857 |  0:00:03s
+epoch 1  | loss: 0.23898 | val_0_auc: 0.82    | val_0_logloss: 0.23586 | val_0_AUPRC: 0.34616 |  0:00:06s
+epoch 2  | loss: 0.22735 | val_0_auc: 0.81822 | val_0_logloss: 0.22799 | val_0_AUPRC: 0.38201 |  0:00:09s
+epoch 3  | loss: 0.22028 | val_0_auc: 0.83226 | val_0_logloss: 0.22459 | val_0_AUPRC: 0.36506 |  0:00:11s
+epoch 4  | loss: 0.21965 | val_0_auc: 0.83303 | val_0_logloss: 0.2245  | val_0_AUPRC: 0.40627 |  0:00:14s
+epoch 5  | loss: 0.21517 | val_0_auc: 0.83666 | val_0_logloss: 0.22052 | val_0_AUPRC: 0.39625 |  0:00:16s
+epoch 6  | loss: 0.21254 | val_0_auc: 0.83976 | val_0_logloss: 0.21943 | val_0_AUPRC: 0.39504 |  0:00:18s
+epoch 7  | loss: 0.21084 | val_0_auc: 0.82734 | val_0_logloss: 0.22498 | val_0_AUPRC: 0.3977  |  0:00:20s
+epoch 8  | loss: 0.21016 | val_0_auc: 0.85047 | val_0_logloss: 0.21475 | val_0_AUPRC: 0.41605 |  0:00:23s
+epoch 9  | loss: 0.20852 | val_0_auc: 0.8451  | val_0_logloss: 0.2168  | val_0_AUPRC: 0.41325 |  0:00:25s
+epoch 10 | loss: 0.20768 | val_0_auc: 0.83977 | val_0_logloss: 0.22223 | val_0_AUPRC: 0.42094 |  0:00:27s
+epoch 11 | loss: 0.20558 | val_0_auc: 0.83858 | val_0_logloss: 0.22023 | val_0_AUPRC: 0.42193 |  0:00:29s
+epoch 12 | loss: 0.20465 | val_0_auc: 0.84082 | val_0_logloss: 0.21654 | val_0_AUPRC: 0.42826 |  0:00:31s
+epoch 13 | loss: 0.20419 | val_0_auc: 0.84422 | val_0_logloss: 0.21771 | val_0_AUPRC: 0.42656 |  0:00:34s
+epoch 14 | loss: 0.20429 | val_0_auc: 0.84118 | val_0_logloss: 0.21744 | val_0_AUPRC: 0.42487 |  0:00:36s
+epoch 15 | loss: 0.20215 | val_0_auc: 0.8419  | val_0_logloss: 0.21797 | val_0_AUPRC: 0.42303 |  0:00:38s
+epoch 16 | loss: 0.20144 | val_0_auc: 0.84224 | val_0_logloss: 0.21858 | val_0_AUPRC: 0.40665 |  0:00:40s
+epoch 17 | loss: 0.20109 | val_0_auc: 0.83837 | val_0_logloss: 0.22213 | val_0_AUPRC: 0.41195 |  0:00:43s
+
+Early stopping occurred at epoch 17 with best_epoch = 12 and best_val_0_AUPRC = 0.42826
+Final AUROC: 0.8500981852654389
+Final AUPRC: 0.3901258865829613

@@ -20,7 +20,7 @@ from tqdm import tqdm
 from tabsep.dataProcessing import LabeledSparseTensor
 from tabsep.modeling import TSTConfig
 from tabsep.modeling.baseRunner import BaseModelRunner
-from tabsep.modeling.tabnet import BEST_PARAMS, CompatibleTabnet
+from tabsep.modeling.tabnet import CompatibleTabnet
 
 
 class TabnetRunner(BaseModelRunner):
@@ -28,14 +28,14 @@ class TabnetRunner(BaseModelRunner):
     save_dir = "cache/Tabnet"
 
     tuning_params = {
-        "n_d": 64,
+        "n_d": 43,
         "n_steps": 3,
-        "gamma": 1.6940171928168515,
-        "n_independent": 2,
-        "momentum": 0.017399860200337933,
+        "gamma": 1.0197386155084536,
+        "n_independent": 1,
+        "momentum": 0.0650212053821212,
         "mask_type": "entmax",
-        "optimizer_lr": 0.028302691823119782,
-        "fit_batch_size": 281,
+        "optimizer_lr": 0.008125514275405706,
+        "fit_batch_size": 256,
     }
 
     def __init__(self, default_cmd="cv") -> None:
