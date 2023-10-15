@@ -1,13 +1,10 @@
-import pickle
-
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 import torch
-from sklearn.metrics import average_precision_score, precision_recall_curve
+from sklearn.metrics import precision_recall_curve
 from sklearn.metrics import auc
 
-from tabsep.modeling import CVResults
 import scipy.stats
 import random
 

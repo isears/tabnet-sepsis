@@ -77,6 +77,24 @@ class LabeledSparseTensor:
 
         return X_dense.permute(0, 2, 1).float()
 
+    def get_dense_raw(self):
+        """
+        No normalization / standardization
+        """
+        X_dense = torch.full(self.X_sparse.shape, float("nan"))
+        indices = self.X_sparse.coalesce().indices()
+        values = self.X_sparse.coalesce().values()
+        X_dense[indices[0, :], indices[1, :], indices[2, :]] = values.float()
+
+        nanmask = torch.isnan(X_dense)
+        # TODO: this process will "delete" variables that only take on one value (e.g. meds that are only ever 1)
+        # Right now this is the reason we can't use the antibiotics table
+        X_dense[nanmask] = float("nan")
+
+        X_dense = torch.nan_to_num(X_dense, -1.0)
+
+        return X_dense.permute(0, 2, 1).float()
+
     def get_snapshot(self):
         X_dense = self.get_dense_normalized()
 
