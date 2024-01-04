@@ -109,6 +109,7 @@ def plot_groupped_importances(path: str, tst_attribs: torch.Tensor, tabnet_attri
     plottable = plottable.groupby(["Feature", "Model"], as_index=False).agg(
         {"Importance": "mean"}
     )
+    print(plottable)
     sns.set(rc={"figure.figsize": (10, 10)})
     sns.set_theme()
     ax = sns.barplot(

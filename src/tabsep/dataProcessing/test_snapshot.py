@@ -6,7 +6,7 @@ from tqdm import tqdm
 from tabsep.dataProcessing import LabeledSparseTensor
 
 if __name__ == "__main__":
-    path = "cache/sparse_labeled.pkl"
+    path = "cache/sparse_labeled_sav.pkl"
 
     if len(sys.argv) == 2:
         path = sys.argv[1]
