@@ -10,11 +10,7 @@ import pandas as pd
 from matplotlib.colors import ListedColormap
 
 if __name__ == "__main__":
-    if not os.path.exists("cache/attribs_cached.pt"):
-        tst_attribs = build_attributions("TST", 3, 10)
-        torch.save(tst_attribs, "cache/attribs_cached.pt")
-    else:
-        tst_attribs = torch.load("cache/attribs_cached.pt")
+    tst_attribs = build_attributions("TST", 3, 10)
 
     tst_attribs = tst_attribs.to("cpu")
 

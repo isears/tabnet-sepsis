@@ -16,6 +16,7 @@ from tabsep.dataProcessing import LabeledSparseTensor
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+import os
 
 # Indices of features by source mimic table
 featuregroup_indices = {
@@ -29,6 +30,9 @@ featuregroup_indices = {
 
 
 def build_attributions(model_name: str, window: int, batch_size: int = 8):
+    if os.path.exists(f"cache/{model_name}/attribs_{window}.pkl"):
+        return torch.load(f"cache/{model_name}/attribs_{window}.pkl")
+
     print(f"[*] Attributing {model_name}.{window}...")
     with open(f"cache/{model_name}/sparse_labeled_{window}_model.pkl", "rb") as f:
         trained_model = pickle.load(f)
@@ -56,6 +60,7 @@ def build_attributions(model_name: str, window: int, batch_size: int = 8):
 
     assert attributions.shape == X.shape
 
+    torch.save(attributions, f"cache/{model_name}/attribs_{window}.pkl")
     return attributions
 
 
