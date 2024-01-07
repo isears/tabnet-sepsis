@@ -109,8 +109,8 @@ class LabeledSparseTensor:
 
         return X_most_recent
 
-    def get_snapshot_los(self):
-        X_dense = self.get_dense_normalized()
+    @classmethod
+    def get_snapshot_los_util(cls, X_dense):
         # Divide by 5 b/c max LOS is 5 days
         los = (AutoPadmaskingTST.autopadmask(X_dense).sum(dim=1) - 1) / (5.0 * 24)
 
@@ -125,6 +125,10 @@ class LabeledSparseTensor:
         X_with_los = torch.concat([X_most_recent, los.unsqueeze(-1)], dim=1)
 
         return X_with_los
+
+    def get_snapshot_los(self):
+        X_dense = self.get_dense_normalized()
+        return self.get_snapshot_los_util(X_dense)
 
     def get_labels(self):
         return self.y.float()
