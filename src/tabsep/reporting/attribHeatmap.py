@@ -1,4 +1,7 @@
-from tabsep.reporting.featureImportance import build_attributions, featuregroup_indices
+from tabsep.reporting.featureImportance import (
+    build_attributions,
+    featuregroup_indices,
+)
 from tabsep.modeling.skorchTST import AutoPadmaskingTST
 from tabsep.dataProcessing import LabeledSparseTensor
 import seaborn as sns
@@ -8,6 +11,30 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from matplotlib.colors import ListedColormap
+
+
+def plot_groupped_importances(path: str, attribs):
+    plottable = pd.DataFrame(
+        data={"Importance": attribs.sum(axis=0) / attribs.shape[0]}
+    )
+
+    for name, idx in featuregroup_indices.items():
+        plottable.loc[idx, "Feature"] = name
+
+    assert not plottable["Feature"].isna().any()
+
+    plottable = plottable.groupby(["Feature"], as_index=False).agg(
+        {"Importance": "mean"}
+    )
+    print(plottable)
+    sns.set(rc={"figure.figsize": (10, 10)})
+    sns.set_theme()
+    ax = sns.barplot(x="Feature", y="Importance", data=plottable, color="b")
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.savefig(path)
+    plt.clf()
+
 
 if __name__ == "__main__":
     tst_attribs = build_attributions("TST", 3, 10)
@@ -33,9 +60,16 @@ if __name__ == "__main__":
     assert sample_idx != 0, "[-] Sampling criteria too specific"
 
     print(f"Analyzing local importance of idx {sample_idx}")
+
     sample_case_attrs_values = tst_attribs[sample_idx].detach().numpy()
+
     # Simplify for poster presentation
     sample_case_attrs_values = np.abs(sample_case_attrs_values)
+
+    plot_groupped_importances(
+        "results/local_importance_bar.png", sample_case_attrs_values
+    )
+
     sample_case_attrs = pd.DataFrame(sample_case_attrs_values)
     sample_case_values = pd.DataFrame(X[sample_idx, :, :].numpy())
 
