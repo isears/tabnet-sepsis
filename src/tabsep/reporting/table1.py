@@ -13,8 +13,11 @@ class Table1Generator(object):
         self.stay_ids = stay_ids
         self.table1 = pd.DataFrame(columns=["Item", "Value"])
 
-        self.all_df = pd.read_csv("mimiciv/icu/icustays.csv")
+        self.all_df = pd.read_parquet("mimiciv_derived/icustay_detail.parquet")
         self.all_df = self.all_df[self.all_df["stay_id"].isin(self.stay_ids)]
+
+        assert len(self.all_df) == len(self.stay_ids)
+
         self.total_stays = len(self.all_df.index)
 
         # Create df with all demographic data
@@ -22,16 +25,6 @@ class Table1Generator(object):
             pd.read_parquet("mimiciv_derived/sepsis3.parquet"),
             how="left",
             on=["stay_id", "subject_id"],
-        )
-
-        self.all_df = self.all_df.merge(
-            pd.read_csv("mimiciv/core/patients.csv"), how="left", on=["subject_id"]
-        )
-
-        self.all_df = self.all_df.merge(
-            pd.read_csv("mimiciv/core/admissions.csv"),
-            how="left",
-            on=["hadm_id", "subject_id"],
         )
 
         diagnoses_icd = pd.read_csv("mimiciv/hosp/diagnoses_icd.csv")
@@ -49,24 +42,6 @@ class Table1Generator(object):
         self.all_df["icd_code"] = self.all_df["icd_code"].apply(
             lambda x: [] if type(x) != list else x
         )
-
-        time_columns = [
-            "intime",
-            "outtime",
-            "sofa_time",
-            "culture_time",
-            "antibiotic_time",
-            "suspected_infection_time",
-            "dod",
-            "admittime",
-            "dischtime",
-            "deathtime",
-            "edregtime",
-            "edouttime",
-        ]
-
-        for tc in time_columns:
-            self.all_df[tc] = pd.to_datetime(self.all_df[tc])
 
         # Make sure there's only one stay id per entry so we can confidently calculate statistics
         assert len(self.all_df["stay_id"]) == self.all_df["stay_id"].nunique()
@@ -99,8 +74,8 @@ class Table1Generator(object):
         )
 
         sepsis_only["sepsis_percent_los"] = (
-            sepsis_only["sepsis_time"] - sepsis_only["intime"]
-        ) / (sepsis_only["outtime"] - sepsis_only["intime"])
+            sepsis_only["sepsis_time"] - sepsis_only["icu_intime"]
+        ) / (sepsis_only["icu_outtime"] - sepsis_only["icu_intime"])
 
         self._add_table_row(
             item="Average % of Length of Stay of Sepsis Onset",
@@ -108,7 +83,7 @@ class Table1Generator(object):
         )
 
         sepsis_only["sepsis_timedelta_hours"] = sepsis_only.apply(
-            lambda row: (row["sepsis_time"] - row["intime"]).total_seconds()
+            lambda row: (row["sepsis_time"] - row["icu_intime"]).total_seconds()
             / (60 * 60),
             axis=1,
         )
@@ -129,11 +104,7 @@ class Table1Generator(object):
     def _tablegen_general_demographics(self) -> None:
         for demographic_name in [
             "gender",
-            "ethnicity",
-            "marital_status",
-            "insurance",
-            "admission_type",
-            "language",
+            "race",
             "hospital_expire_flag",
         ]:
             for key, value in (
@@ -144,16 +115,9 @@ class Table1Generator(object):
                 )
 
     def _tablegen_age(self) -> None:
-        self.all_df["age_at_intime"] = self.all_df.apply(
-            lambda row: (
-                ((row["intime"].year) - row["anchor_year"]) + row["anchor_age"]
-            ),
-            axis=1,
-        )
-
         self._add_table_row(
             item="Average Age at ICU Admission",
-            value=self._pprint_mean(self.all_df["age_at_intime"]),
+            value=self._pprint_mean(self.all_df["admission_age"]),
         )
 
     def _tablegen_comorbidities(self) -> None:
@@ -216,12 +180,9 @@ class Table1Generator(object):
         )
 
     def _tablegen_LOS(self) -> None:
-        self.all_df["los"] = self.all_df.apply(
-            lambda x: (x["outtime"] - x["intime"]).total_seconds() / (60 * 60), axis=1
-        )
         self._add_table_row(
             item="Average Length of ICU Stay (hrs)",
-            value=self._pprint_mean(self.all_df["los"]),
+            value=self._pprint_mean((self.all_df["los_icu"] * 24).astype(float)),
         )
 
     def populate(self) -> pd.DataFrame:
@@ -238,6 +199,7 @@ class Table1Generator(object):
 if __name__ == "__main__":
     data = LabeledSparseTensor.load_from_pickle("cache/sparse_labeled_3.pkl")
     sids = [int(s) for s in data.stay_ids]
+    print(len(sids))
     t1generator = Table1Generator(sids)
     t1 = t1generator.populate()
 

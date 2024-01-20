@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 import torch
-from sklearn.metrics import precision_recall_curve
+from sklearn.metrics import precision_recall_curve, average_precision_score
 from sklearn.metrics import auc
 
 import scipy.stats
@@ -25,11 +25,11 @@ def bootstrapping_auprc(y_test, preds):
         group_labels = y_test[this_group_indices]
         group_preds = preds[this_group_indices]
 
-        precision, recall, thresholds = precision_recall_curve(
-            group_labels, group_preds
-        )
-        auprc = auc(recall, precision)
-        auprcs.append(auprc)
+        # precision, recall, thresholds = precision_recall_curve(
+        #     group_labels, group_preds
+        # )
+        # auprc = auc(recall, precision)
+        auprcs.append(average_precision_score(group_labels, group_preds))
 
     return auprcs
 
