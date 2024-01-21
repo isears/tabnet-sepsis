@@ -106,6 +106,7 @@ if __name__ == "__main__":
     )
     sns.move_legend(ax, "upper right", title="Legend")
     # plt.legend(title="Legend")
+    ax.axhline(y=0.07, color="black", linestyle="--")
 
     plt.savefig("results/performanceVsTime.png")
 

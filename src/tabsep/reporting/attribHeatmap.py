@@ -29,8 +29,18 @@ def plot_groupped_importances(path: str, attribs):
     print(plottable)
 
     sns.set_theme(style="whitegrid", font_scale=1.5, rc={"figure.figsize": (10, 10)})
-    ax = sns.barplot(y="Feature", x="Importance", data=plottable, color="b", orient="h")
+    plottable.rename(
+        columns={"Importance": "Importance (arbitrary units)"}, inplace=True
+    )
+    ax = sns.barplot(
+        y="Feature",
+        x="Importance (arbitrary units)",
+        data=plottable,
+        color="b",
+        orient="h",
+    )
     # plt.xticks(rotation=45)
+    ax.set(xticklabels=[])
     plt.tight_layout()
     plt.savefig(path)
     plt.clf()
@@ -94,7 +104,7 @@ if __name__ == "__main__":
     sample_case_attrs.index = sample_case_attrs.index.astype(int)
     # sample_case_attrs = sample_case_attrs.rename(columns=pretty_features)
 
-    sns.set(font_scale=2)
+    sns.set(font_scale=3)
     fig, ax = plt.subplots(figsize=(30, 12))
     sns.heatmap(
         sample_case_attrs.transpose(),
@@ -111,7 +121,7 @@ if __name__ == "__main__":
     cbar.set_label("Attribution Value", labelpad=20)
     ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
     ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
-    ax.set_ylabel("Variable")
+    ax.set_ylabel("Feature")
     # ax.set_title(
     #     f"Validation set idx {sample_idx} prediction {preds[sample_idx]:.2f} actual {y[sample_idx]:.2f}"
     # )
