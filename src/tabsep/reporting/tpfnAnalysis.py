@@ -11,6 +11,39 @@ from tabsep.reporting.featureImportance import build_attributions
 import numpy as np
 from scipy.stats import ttest_ind_from_stats
 import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+
+def plotdiff(tst_better, other, feats):
+    feature_labels = LabeledSparseTensor.load_from_pickle(
+        "cache/sparse_labeled_3.pkl"
+    ).features + ["los"]
+
+    df_a = pd.DataFrame(data=tst_better, columns=feature_labels)
+    df_b = pd.DataFrame(data=other, columns=feature_labels)
+
+    df_a["Legend"] = "TST true positive | TabNet false negative"
+    df_b["Legend"] = "Others"
+
+    df = pd.concat([df_a, df_b])
+    df = df[feats + ["Legend"]]
+    df.drop(columns=["AbsoluteEosinophilCount", "NucleatedRedCells"], inplace=True)
+    plottable = df.melt(id_vars="Legend", var_name="Variable (normalized)")
+
+    ax = sns.boxplot(
+        data=plottable,
+        y="Variable (normalized)",
+        x="value",
+        hue="Legend",
+        orient="h",
+        showfliers=False,
+    )
+    ax.legend(loc="lower right", bbox_to_anchor=(1, 1))
+    plt.tight_layout()
+    plt.savefig("results/boxplot.png")
+
+    print("Created graph")
 
 
 def compare(a, b):
@@ -99,41 +132,47 @@ if __name__ == "__main__":
     feature_comparison = compare(X_tst_better, X_other)
     print(feature_comparison.nsmallest(20, columns="p_adj"))
 
+    plotdiff(
+        X_tst_better,
+        X_other,
+        feature_comparison[feature_comparison["p_adj"] < 0.05].feature.to_list(),
+    )
+
     # What features were most important in this subgroup?
-    attribs_tst = build_attributions("TST", 3, 10).abs().sum(dim=1)
-    attribs_tst = (
-        attribs_tst[y == 1][
-            torch.logical_and(
-                preds_tst_pos > opt_threshold, preds_tabnet_pos < opt_threshold
-            )
-        ]
-        .detach()
-        .cpu()
-        .numpy()
-    )
+    # attribs_tst = build_attributions("TST", 3, 10).abs().sum(dim=1)
+    # attribs_tst = (
+    #     attribs_tst[y == 1][
+    #         torch.logical_and(
+    #             preds_tst_pos > opt_threshold, preds_tabnet_pos < opt_threshold
+    #         )
+    #     ]
+    #     .detach()
+    #     .cpu()
+    #     .numpy()
+    # )
 
-    attribs_tst = attribs_tst / attribs_tst.sum()
+    # attribs_tst = attribs_tst / attribs_tst.sum()
 
-    attribs_tabnet = build_attributions("Tabnet", 3, 256).abs()
-    attribs_tabnet = (
-        attribs_tabnet[y == 1][
-            torch.logical_and(
-                preds_tst_pos > opt_threshold, preds_tabnet_pos < opt_threshold
-            )
-        ]
-        .detach()
-        .cpu()
-        .numpy()
-    )
+    # attribs_tabnet = build_attributions("Tabnet", 3, 256).abs()
+    # attribs_tabnet = (
+    #     attribs_tabnet[y == 1][
+    #         torch.logical_and(
+    #             preds_tst_pos > opt_threshold, preds_tabnet_pos < opt_threshold
+    #         )
+    #     ]
+    #     .detach()
+    #     .cpu()
+    #     .numpy()
+    # )
 
-    attribs_tabnet = attribs_tabnet / attribs_tabnet.sum()
+    # attribs_tabnet = attribs_tabnet / attribs_tabnet.sum()
 
-    # Add one feature onto TST (LOS)
-    importance_comparison = compare(
-        np.hstack([attribs_tst, np.zeros((attribs_tst.shape[0], 1))]),
-        attribs_tabnet,
-    )
+    # # Add one feature onto TST (LOS)
+    # importance_comparison = compare(
+    #     np.hstack([attribs_tst, np.zeros((attribs_tst.shape[0], 1))]),
+    #     attribs_tabnet,
+    # )
 
-    print("=" * 10)
+    # print("=" * 10)
 
-    print(importance_comparison.nsmallest(20, columns="p_adj"))
+    # print(importance_comparison.nsmallest(20, columns="p_adj"))
