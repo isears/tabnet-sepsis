@@ -27,6 +27,12 @@ class Table1Generator(object):
             on=["stay_id", "subject_id"],
         )
 
+        self.all_df = self.all_df.merge(
+            pd.read_csv("mimiciv/core/admissions.csv")[["hadm_id", "ethnicity"]],
+            how="left",
+            on="hadm_id",
+        )
+
         diagnoses_icd = pd.read_csv("mimiciv/hosp/diagnoses_icd.csv")
         diagnoses_icd = (
             diagnoses_icd[["hadm_id", "icd_code"]]
@@ -104,11 +110,14 @@ class Table1Generator(object):
     def _tablegen_general_demographics(self) -> None:
         for demographic_name in [
             "gender",
-            "race",
+            "ethnicity",
             "hospital_expire_flag",
         ]:
             for key, value in (
-                self.all_df[demographic_name].value_counts().to_dict().items()
+                self.all_df[demographic_name]
+                .value_counts(dropna=False)
+                .to_dict()
+                .items()
             ):
                 self._add_table_row(
                     f"[{demographic_name}] {key}", self._pprint_percent(value)

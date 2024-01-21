@@ -27,10 +27,10 @@ def plot_groupped_importances(path: str, attribs):
         {"Importance": "mean"}
     )
     print(plottable)
-    sns.set(rc={"figure.figsize": (10, 10)})
-    sns.set_theme()
-    ax = sns.barplot(x="Feature", y="Importance", data=plottable, color="b")
-    plt.xticks(rotation=45)
+
+    sns.set_theme(style="whitegrid", font_scale=1.5, rc={"figure.figsize": (10, 10)})
+    ax = sns.barplot(y="Feature", x="Importance", data=plottable, color="b", orient="h")
+    # plt.xticks(rotation=45)
     plt.tight_layout()
     plt.savefig(path)
     plt.clf()

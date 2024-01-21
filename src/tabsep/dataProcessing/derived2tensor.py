@@ -284,7 +284,7 @@ if __name__ == "__main__":
     pd.set_option("mode.chained_assignment", None)
 
     if len(sys.argv) < 2:
-        lookahead_hrs = 0
+        lookahead_hrs = 3
     else:
         lookahead_hrs = int(sys.argv[1])
 

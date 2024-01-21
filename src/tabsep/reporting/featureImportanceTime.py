@@ -63,8 +63,7 @@ if __name__ == "__main__":
         value_name="Average Absolute Attribution",
     )
 
-    sns.set(rc={"figure.figsize": (10, 10)})
-    sns.set_theme()
+    sns.set_theme(style="whitegrid", font_scale=1.75, rc={"figure.figsize": (10, 10)})
     ax = sns.lineplot(
         data=plottable,
         x="Hours to Sepsis Prediction",
@@ -73,6 +72,7 @@ if __name__ == "__main__":
     )
     ax.invert_xaxis()
     # plt.xticks(rotation=45)
+    plt.legend(title="Legend")
     plt.tight_layout()
     plt.savefig("results/importanceTime.png")
     plt.clf()

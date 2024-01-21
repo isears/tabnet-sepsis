@@ -37,8 +37,8 @@ def bootstrapping_auprc(y_test, preds):
 if __name__ == "__main__":
     plottable = {
         "Model": list(),
-        "AUPRC Scores": list(),
-        "Prediction Window (Hrs.)": list(),
+        "Area Under the Precision-Recall Curve (AUPRC)": list(),
+        "Prediction Window (Hours)": list(),
     }
     pretty_model_names = {
         "TST": "Time Series Transformer",
@@ -56,8 +56,10 @@ if __name__ == "__main__":
             bootstrapped_auprcs = bootstrapping_auprc(y_test, preds)
 
             plottable["Model"] += [pretty_model_names[model]] * len(bootstrapped_auprcs)
-            plottable["AUPRC Scores"] += bootstrapped_auprcs
-            plottable["Prediction Window (Hrs.)"] += [window_idx] * len(
+            plottable[
+                "Area Under the Precision-Recall Curve (AUPRC)"
+            ] += bootstrapped_auprcs
+            plottable["Prediction Window (Hours)"] += [window_idx] * len(
                 bootstrapped_auprcs
             )
 
@@ -85,12 +87,12 @@ if __name__ == "__main__":
 
     plottable = pd.DataFrame(data=plottable)
 
-    sns.set(rc={"figure.figsize": (11.7, 8.27)})
+    sns.set_theme(style="whitegrid", font_scale=1.75, rc={"figure.figsize": (10, 12)})
 
-    sns.barplot(
+    ax = sns.barplot(
         data=plottable,
-        x="Prediction Window (Hrs.)",
-        y="AUPRC Scores",
+        x="Prediction Window (Hours)",
+        y="Area Under the Precision-Recall Curve (AUPRC)",
         hue="Model",
         hue_order=pretty_model_names.values(),
         errorbar=(
@@ -102,6 +104,8 @@ if __name__ == "__main__":
         ),
         capsize=0.1,
     )
+    sns.move_legend(ax, "upper right", title="Legend")
+    # plt.legend(title="Legend")
 
     plt.savefig("results/performanceVsTime.png")
 

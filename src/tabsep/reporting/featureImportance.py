@@ -115,16 +115,18 @@ def plot_groupped_importances(path: str, tst_attribs: torch.Tensor, tabnet_attri
         {"Importance": "mean"}
     )
     print(plottable)
-    sns.set(rc={"figure.figsize": (10, 10)})
-    sns.set_theme()
+    sns.set_theme(style="whitegrid", font_scale=1.75, rc={"figure.figsize": (20, 10)})
     ax = sns.barplot(
-        x="Feature",
-        y="Importance",
+        y="Feature",
+        x="Importance",
         data=plottable,
         hue="Model",
         hue_order=["Time Series Transformer", "TabNet"],
+        orient="h",
     )
-    plt.xticks(rotation=45)
+    # sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
+    plt.legend(title="Legend")
+    plt.xticks(rotation=270)
     plt.tight_layout()
     plt.savefig(path)
     plt.clf()
