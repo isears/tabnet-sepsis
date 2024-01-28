@@ -14,6 +14,22 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+PRETTY_NAME_MAP = {
+    "aado2": "Alveolar-arterial Oxygen Gradient",
+    "fibrinogen": "Fibrinogen",
+    "ReticulocyteCountAutomated": "Automated Reticulocyte Count",
+    "ReticulocyteCountAbsolute": "Absolute Reticulocyte Count",
+    "AbsoluteEosinophilCount": "Absolute Eosinophil Count",
+    "NucleatedRedCells": "Nucleated Red Cells",
+    "heart_rate": "Heart Rate",
+    "systolic_bp": "Systolic BP",
+    "diastolic_bp": "Diastolic BP",
+    "resp_rate": "Respiration Rate",
+    "creatinine": "Creatinine",
+    "PlateletCount": "Platelet Count",
+    "los": "Length of Stay",
+}
+
 
 def plotdiff(tst_better, other, feats):
     feature_labels = LabeledSparseTensor.load_from_pickle(
@@ -28,13 +44,16 @@ def plotdiff(tst_better, other, feats):
 
     df = pd.concat([df_a, df_b])
     df = df[feats + ["Legend"]]
-    df.drop(columns=["AbsoluteEosinophilCount", "NucleatedRedCells"], inplace=True)
-    plottable = df.melt(id_vars="Legend", var_name="Variable (normalized)")
+    # df.drop(columns=["AbsoluteEosinophilCount", "NucleatedRedCells"], inplace=True)
+    df.rename(columns=PRETTY_NAME_MAP, inplace=True)
+    plottable = df.melt(
+        id_vars="Legend", var_name="Variable", value_name="Value (normalized)"
+    )
 
     ax = sns.boxplot(
         data=plottable,
-        y="Variable (normalized)",
-        x="value",
+        y="Variable",
+        x="Value (normalized)",
         hue="Legend",
         orient="h",
         showfliers=False,
@@ -49,17 +68,19 @@ def plotdiff(tst_better, other, feats):
 def compare(a, b):
     m_a = np.nanmean(a, axis=0)
     std_a = np.nanstd(a, axis=0)
+    count_a = np.count_nonzero(~np.isnan(a), axis=0)
 
     m_b = np.nanmean(b, axis=0)
     std_b = np.nanstd(b, axis=0)
+    count_b = np.count_nonzero(~np.isnan(b), axis=0)
 
     stat, p = ttest_ind_from_stats(
         m_a,
         std_a,
-        a.shape[0],
+        count_a,
         m_b,
         std_b,
-        b.shape[0],
+        count_b,
     )
 
     feature_labels = LabeledSparseTensor.load_from_pickle(
@@ -72,10 +93,17 @@ def compare(a, b):
             "mean_tst_better": m_a,
             "mean_other": m_b,
             "p": p,
+            "count_a": count_a,
+            "count_b": count_b,
         }
     )
 
-    sig_df["p_adj"] = sig_df["p"] * len(sig_df)
+    # Drop all features with 1 obs or less as p-vals will be invalid
+    sig_df = sig_df[(sig_df["count_a"] > 1) & (sig_df["count_b"] > 1)]
+    sig_df.drop(columns=["count_a", "count_b"], inplace=True)
+    sig_df["ratio"] = sig_df["mean_tst_better"] / sig_df["mean_other"]
+
+    sig_df = sig_df[sig_df["p"] < 0.05]
 
     return sig_df
 
@@ -130,12 +158,15 @@ if __name__ == "__main__":
     ].numpy()
 
     feature_comparison = compare(X_tst_better, X_other)
-    print(feature_comparison.nsmallest(20, columns="p_adj"))
+    print(feature_comparison.nsmallest(20, columns="p"))
+    feature_comparison["difference"] = (
+        feature_comparison["mean_tst_better"] - feature_comparison["mean_other"]
+    ).abs()
 
     plotdiff(
         X_tst_better,
         X_other,
-        feature_comparison[feature_comparison["p_adj"] < 0.05].feature.to_list(),
+        feature_comparison.nlargest(n=5, columns="difference").feature.to_list(),
     )
 
     # What features were most important in this subgroup?
