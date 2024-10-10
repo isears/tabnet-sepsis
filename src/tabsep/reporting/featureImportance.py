@@ -31,14 +31,18 @@ featuregroup_indices = {
 
 def build_attributions(model_name: str, window: int, batch_size: int = 8):
     if os.path.exists(f"cache/{model_name}/attribs_{window}.pkl"):
-        return torch.load(f"cache/{model_name}/attribs_{window}.pkl")
+        return torch.load(f"cache/{model_name}/attribs_{window}.pkl", weights_only=True)
 
     print(f"[*] Attributing {model_name}.{window}...")
     with open(f"cache/{model_name}/sparse_labeled_{window}_model.pkl", "rb") as f:
         trained_model = pickle.load(f)
 
-    X = torch.load(f"cache/{model_name}/sparse_labeled_{window}_X_test.pt").to("cuda")
-    y = torch.load(f"cache/{model_name}/sparse_labeled_{window}_y_test.pt")
+    X = torch.load(
+        f"cache/{model_name}/sparse_labeled_{window}_X_test.pt", weights_only=True
+    ).to("cuda")
+    y = torch.load(
+        f"cache/{model_name}/sparse_labeled_{window}_y_test.pt", weights_only=True
+    )
 
     if model_name == "TST":
         trained_model.module_.eval()
@@ -46,6 +50,8 @@ def build_attributions(model_name: str, window: int, batch_size: int = 8):
     elif model_name == "Tabnet":
         trained_model.network.eval()
         m = trained_model
+    else:
+        raise ValueError(f"No model {model_name}")
 
     X.requires_grad = True
 
@@ -136,6 +142,37 @@ def plot_groupped_importances(path: str, tst_attribs: torch.Tensor, tabnet_attri
     plt.clf()
 
 
+def plot_ungrouped_importances(path, attribs):
+    plottable = pd.DataFrame(data={"Importance": attribs.cpu().detach().numpy()})
+
+    for name, idx in featuregroup_indices.items():
+        plottable.loc[idx, "Feature"] = name
+
+    # Tabnet has no ts_length feature
+    plottable = plottable[~plottable["Feature"].isna()]
+
+    plottable = plottable.groupby("Feature", as_index=False).agg({"Importance": "mean"})
+    print(plottable)
+    plottable.rename(
+        columns={"Importance": "Importance (arbitrary units)"}, inplace=True
+    )
+    sns.set_theme(style="whitegrid", font_scale=2.7, rc={"figure.figsize": (20, 10)})
+    ax = sns.barplot(
+        y="Feature",
+        x="Importance (arbitrary units)",
+        data=plottable.sort_values("Importance (arbitrary units)", ascending=False),
+        orient="h",
+        color="b",
+    )
+    # plt.legend(title="Legend")
+    # sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1), title="Legend")
+    # plt.xticks(rotation=270)
+    ax.set(xticklabels=[])
+    plt.tight_layout()
+    plt.savefig(path)
+    plt.clf()
+
+
 if __name__ == "__main__":
     for window in [3, 24]:
         tabnet_atts = build_attributions("Tabnet", window, 256)
@@ -148,8 +185,10 @@ if __name__ == "__main__":
         tst_normal = tst_absolute / torch.sum(tst_absolute)
         tabnet_normal = tabnet_absolute / torch.sum(tabnet_absolute)
 
-        plot_groupped_importances(
-            f"results/importances_{window}.png", tst_normal, tabnet_normal
+        plot_ungrouped_importances(f"results/importances_TST_{window}.png", tst_normal)
+
+        plot_ungrouped_importances(
+            f"results/importances_Tabnet_{window}.png", tabnet_normal
         )
 
     print("[+] Done")

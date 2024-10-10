@@ -1,0 +1,311 @@
+,Legend,Variable,Importance
+0,TST Importances,Bands,0.0010667421331744017
+1,TST Importances,Bands,0.001143359475878203
+2,TST Importances,Bands,0.0013343417866039358
+3,TST Importances,Bands,0.0009356126548153595
+4,TST Importances,Bands,0.0010750858774837345
+5,TST Importances,Bands,0.0010577910582465159
+6,TST Importances,Bands,0.0011727744189196003
+7,TST Importances,Bands,0.0010216059503759937
+8,TST Importances,Bands,0.001154003340520036
+9,TST Importances,Bands,0.0011364822164777206
+10,TST Importances,Bands,0.0011957270224147195
+11,TST Importances,Bands,0.0011181299372612962
+12,TST Importances,Bands,0.00118927381837836
+13,TST Importances,Bands,0.0010288025545223804
+14,TST Importances,Bands,0.0010837506773881448
+15,TST Importances,Bands,0.0009388529872656263
+16,TST Importances,Bands,0.0011487679511627648
+17,TST Importances,Bands,0.0009183724723495155
+18,TST Importances,Bands,0.0011527957389728255
+19,TST Importances,Bands,0.0009616912759134035
+20,TST Importances,Bands,0.0010341782972838399
+21,TST Importances,Bands,0.000539151231448771
+22,TST Importances,Bands,0.0011687156769558242
+23,TST Importances,Bands,0.0010329121778846705
+24,TST Importances,Bands,0.0011933036345443482
+25,TST Importances,Bands,0.001066504146616657
+26,TST Importances,Bands,0.0011008331759315496
+27,TST Importances,Bands,0.0011459140939787894
+28,TST Importances,Bands,0.0011270977746649993
+29,TST Importances,Bands,0.0011250984235723872
+30,TST Importances,Bands,0.0009212009359784514
+31,TabNet Importances,Bands,0.00014209581600544685
+32,TabNet Importances,Bands,2.747311670292549e-05
+33,TabNet Importances,Bands,9.562342153413123e-06
+34,TabNet Importances,Bands,7.841184451463841e-06
+35,TabNet Importances,Bands,1.7275191280208096e-05
+36,TabNet Importances,Bands,3.621032409159807e-05
+37,TabNet Importances,Bands,6.205000137942268e-05
+38,TabNet Importances,Bands,1.0789084964385258e-06
+39,TabNet Importances,Bands,0.00017221539731179924
+40,TabNet Importances,Bands,2.2282612876550723e-05
+41,TabNet Importances,Bands,0.00016064751296256225
+42,TabNet Importances,Bands,2.044617466950177e-05
+43,TabNet Importances,Bands,1.9837259663366892e-05
+44,TabNet Importances,Bands,0.0001801652105156682
+45,TabNet Importances,Bands,2.269752044274468e-06
+46,TabNet Importances,Bands,7.802736920220782e-06
+47,TabNet Importances,Bands,0.00010912334345922087
+48,TabNet Importances,Bands,7.883149209229617e-05
+49,TabNet Importances,Bands,1.7559166011788686e-05
+50,TabNet Importances,Bands,4.071659759307219e-06
+51,TabNet Importances,Bands,-0.0001543443648353401
+52,TabNet Importances,Bands,0.00015608577685821673
+53,TabNet Importances,Bands,6.3301303416868484e-06
+54,TabNet Importances,Bands,-0.00034078705669513465
+55,TabNet Importances,Bands,1.869310283145094e-06
+56,TabNet Importances,Bands,7.050601590477949e-06
+57,TabNet Importances,Bands,0.0003807546762075421
+58,TabNet Importances,Bands,1.7663221412218946e-05
+59,TabNet Importances,Bands,4.9928483334064876e-05
+60,TabNet Importances,Bands,2.879277453401998e-05
+61,TabNet Importances,Bands,0.00015078086480808464
+62,TST Importances,Nucleated Red Cells,0.00033738077115718306
+63,TST Importances,Nucleated Red Cells,0.0003947268801624584
+64,TST Importances,Nucleated Red Cells,0.0004984089197858789
+65,TST Importances,Nucleated Red Cells,0.0003031231608306772
+66,TST Importances,Nucleated Red Cells,0.0003574479175304392
+67,TST Importances,Nucleated Red Cells,0.0003936811530654135
+68,TST Importances,Nucleated Red Cells,0.00040571676230386064
+69,TST Importances,Nucleated Red Cells,0.0003745012131616437
+70,TST Importances,Nucleated Red Cells,0.000360383158375808
+71,TST Importances,Nucleated Red Cells,0.00037633221018240767
+72,TST Importances,Nucleated Red Cells,0.00040147997785768864
+73,TST Importances,Nucleated Red Cells,0.00033236797237186507
+74,TST Importances,Nucleated Red Cells,0.00042651065909182133
+75,TST Importances,Nucleated Red Cells,0.0003057237528396418
+76,TST Importances,Nucleated Red Cells,0.00035998436327664476
+77,TST Importances,Nucleated Red Cells,0.00033119642256236934
+78,TST Importances,Nucleated Red Cells,0.00038628271327683365
+79,TST Importances,Nucleated Red Cells,0.00030682115838761247
+80,TST Importances,Nucleated Red Cells,0.00043146527919720064
+81,TST Importances,Nucleated Red Cells,0.0003401376650774773
+82,TST Importances,Nucleated Red Cells,0.000355380331182167
+83,TST Importances,Nucleated Red Cells,0.0002337383255644229
+84,TST Importances,Nucleated Red Cells,0.0003588636951120618
+85,TST Importances,Nucleated Red Cells,0.0003184083133807328
+86,TST Importances,Nucleated Red Cells,0.00040769300192279964
+87,TST Importances,Nucleated Red Cells,0.0004009314777957687
+88,TST Importances,Nucleated Red Cells,0.0003776069610767869
+89,TST Importances,Nucleated Red Cells,0.00039907487038107333
+90,TST Importances,Nucleated Red Cells,0.00040596140350054264
+91,TST Importances,Nucleated Red Cells,0.00037616292922108905
+92,TST Importances,Nucleated Red Cells,0.0003007328674493473
+93,TabNet Importances,Nucleated Red Cells,9.41995029216205e-06
+94,TabNet Importances,Nucleated Red Cells,-2.4623790580464207e-05
+95,TabNet Importances,Nucleated Red Cells,-3.248788498687615e-05
+96,TabNet Importances,Nucleated Red Cells,-2.3591083502333837e-05
+97,TabNet Importances,Nucleated Red Cells,-1.1120312925438566e-05
+98,TabNet Importances,Nucleated Red Cells,-2.9523048066773606e-05
+99,TabNet Importances,Nucleated Red Cells,-5.3506555895007894e-05
+100,TabNet Importances,Nucleated Red Cells,-1.0968689871297008e-05
+101,TabNet Importances,Nucleated Red Cells,-0.0001417322196764864
+102,TabNet Importances,Nucleated Red Cells,5.155030673242741e-07
+103,TabNet Importances,Nucleated Red Cells,-0.00014393640852716644
+104,TabNet Importances,Nucleated Red Cells,4.287370114384573e-06
+105,TabNet Importances,Nucleated Red Cells,-2.129738655197325e-05
+106,TabNet Importances,Nucleated Red Cells,-0.00012575267036586324
+107,TabNet Importances,Nucleated Red Cells,4.9069632603815374e-06
+108,TabNet Importances,Nucleated Red Cells,-1.428605724017404e-05
+109,TabNet Importances,Nucleated Red Cells,-9.152113350898297e-05
+110,TabNet Importances,Nucleated Red Cells,-6.897406688887105e-05
+111,TabNet Importances,Nucleated Red Cells,-1.622266729526435e-05
+112,TabNet Importances,Nucleated Red Cells,-6.547258865647832e-06
+113,TabNet Importances,Nucleated Red Cells,-1.6780526530665075e-05
+114,TabNet Importances,Nucleated Red Cells,-0.00014981674794038117
+115,TabNet Importances,Nucleated Red Cells,-1.0175816610517734e-05
+116,TabNet Importances,Nucleated Red Cells,1.8254990594119358e-05
+117,TabNet Importances,Nucleated Red Cells,-2.8108506061194898e-05
+118,TabNet Importances,Nucleated Red Cells,-6.867015368402048e-06
+119,TabNet Importances,Nucleated Red Cells,-0.00011857373784027513
+120,TabNet Importances,Nucleated Red Cells,-1.3532662364857842e-05
+121,TabNet Importances,Nucleated Red Cells,-4.459651808478537e-05
+122,TabNet Importances,Nucleated Red Cells,-2.2643871490284438e-05
+123,TabNet Importances,Nucleated Red Cells,-0.00015042787895164933
+124,TST Importances,peep,-0.0006805551935077376
+125,TST Importances,peep,-0.0007276025965315785
+126,TST Importances,peep,-0.0008257508078467613
+127,TST Importances,peep,-0.000536180407204347
+128,TST Importances,peep,-0.0008375369955276247
+129,TST Importances,peep,-0.0008174803271138505
+130,TST Importances,peep,-0.0007211191794152315
+131,TST Importances,peep,-0.0006439761334019581
+132,TST Importances,peep,-0.0008892213229637722
+133,TST Importances,peep,-0.0007579200355457116
+134,TST Importances,peep,-0.0007787970045405678
+135,TST Importances,peep,-0.0010397082958763853
+136,TST Importances,peep,-0.0007265002094658829
+137,TST Importances,peep,-0.000590963474107433
+138,TST Importances,peep,-0.0008334433941740133
+139,TST Importances,peep,-0.0005704631498001438
+140,TST Importances,peep,-0.000647452338721391
+141,TST Importances,peep,-0.0006470036150051907
+142,TST Importances,peep,-0.0007860336238591342
+143,TST Importances,peep,-0.0007214445495338025
+144,TST Importances,peep,-0.0005704429663322127
+145,TST Importances,peep,-0.0004136694273539012
+146,TST Importances,peep,-0.0006059893945677548
+147,TST Importances,peep,-0.0006629640767027487
+148,TST Importances,peep,-0.0007826535056131775
+149,TST Importances,peep,-0.0007004039334863581
+150,TST Importances,peep,-0.0006280182500543225
+151,TST Importances,peep,-0.0007414813964175203
+152,TST Importances,peep,-0.0007935121531472104
+153,TST Importances,peep,-0.0007626127319811814
+154,TST Importances,peep,-0.0004841507816723026
+155,TabNet Importances,peep,-7.290776972417449e-05
+156,TabNet Importances,peep,1.0466063665506022e-06
+157,TabNet Importances,peep,1.076654476455474e-06
+158,TabNet Importances,peep,1.8007467388212864e-06
+159,TabNet Importances,peep,8.681189268812138e-07
+160,TabNet Importances,peep,3.543100965809705e-06
+161,TabNet Importances,peep,2.9144084918983907e-06
+162,TabNet Importances,peep,-4.216679482679853e-08
+163,TabNet Importances,peep,-0.00013893121698866265
+164,TabNet Importances,peep,7.453599739039489e-07
+165,TabNet Importances,peep,6.481025867954007e-06
+166,TabNet Importances,peep,1.8091611706583125e-06
+167,TabNet Importances,peep,8.02264912140183e-07
+168,TabNet Importances,peep,-0.00013873639367756272
+169,TabNet Importances,peep,1.0454920443836745e-06
+170,TabNet Importances,peep,-4.2042549506622175e-07
+171,TabNet Importances,peep,6.217874827140577e-06
+172,TabNet Importances,peep,3.80922092621951e-06
+173,TabNet Importances,peep,7.098476816219144e-07
+174,TabNet Importances,peep,4.349911352212946e-08
+175,TabNet Importances,peep,9.146611876823863e-06
+176,TabNet Importances,peep,6.051301246171769e-06
+177,TabNet Importances,peep,-2.9717512507403043e-07
+178,TabNet Importances,peep,1.7978285467680652e-05
+179,TabNet Importances,peep,7.973004078030303e-07
+180,TabNet Importances,peep,-3.145225809169567e-08
+181,TabNet Importances,peep,2.5076141682675417e-05
+182,TabNet Importances,peep,6.849250137660455e-07
+183,TabNet Importances,peep,2.008570392300358e-06
+184,TabNet Importances,peep,1.0428297797549333e-06
+185,TabNet Importances,peep,-0.00011994262564009553
+186,TST Importances,Lymphocytes,-0.0006386850913199667
+187,TST Importances,Lymphocytes,-0.00042691883938969597
+188,TST Importances,Lymphocytes,-0.0005137473734623198
+189,TST Importances,Lymphocytes,-0.0006065155718758327
+190,TST Importances,Lymphocytes,-0.00038657998768782076
+191,TST Importances,Lymphocytes,-0.0003787996166308466
+192,TST Importances,Lymphocytes,-0.00044210233996736566
+193,TST Importances,Lymphocytes,-0.0004494502534228116
+194,TST Importances,Lymphocytes,-0.0005264196134604002
+195,TST Importances,Lymphocytes,-0.00044184921493118837
+196,TST Importances,Lymphocytes,-0.0004610849900933123
+197,TST Importances,Lymphocytes,-0.0003622406164524775
+198,TST Importances,Lymphocytes,-0.0005735103153661445
+199,TST Importances,Lymphocytes,-0.0006061126475006342
+200,TST Importances,Lymphocytes,-0.0003992796735973002
+201,TST Importances,Lymphocytes,-0.0004519947881179676
+202,TST Importances,Lymphocytes,-0.0005340945948007371
+203,TST Importances,Lymphocytes,-0.0003860171006960154
+204,TST Importances,Lymphocytes,-0.0004074112182874782
+205,TST Importances,Lymphocytes,-0.00038329471408366227
+206,TST Importances,Lymphocytes,-0.000688915362759199
+207,TST Importances,Lymphocytes,-0.00035011890620397087
+208,TST Importances,Lymphocytes,-0.0004472243448043327
+209,TST Importances,Lymphocytes,-0.0006132384661994139
+210,TST Importances,Lymphocytes,-0.00041325597736503527
+211,TST Importances,Lymphocytes,-0.0005240255541960599
+212,TST Importances,Lymphocytes,-0.0004194997814475351
+213,TST Importances,Lymphocytes,-0.00047247798690685177
+214,TST Importances,Lymphocytes,-0.00045833269691211064
+215,TST Importances,Lymphocytes,-0.00039145396436660257
+216,TST Importances,Lymphocytes,-0.0006533051910774849
+217,TabNet Importances,Lymphocytes,-2.3092629451102408e-05
+218,TabNet Importances,Lymphocytes,3.47863328663359e-07
+219,TabNet Importances,Lymphocytes,8.247397617341553e-06
+220,TabNet Importances,Lymphocytes,7.32049962466992e-07
+221,TabNet Importances,Lymphocytes,-2.388659779046287e-06
+222,TabNet Importances,Lymphocytes,-4.148915958258867e-06
+223,TabNet Importances,Lymphocytes,-4.88853755132034e-06
+224,TabNet Importances,Lymphocytes,-3.855268399748487e-08
+225,TabNet Importances,Lymphocytes,-1.2645202809987659e-05
+226,TabNet Importances,Lymphocytes,-8.167851077913628e-07
+227,TabNet Importances,Lymphocytes,-1.3752792823084383e-05
+228,TabNet Importances,Lymphocytes,5.99989536701693e-07
+229,TabNet Importances,Lymphocytes,6.048141128104845e-08
+230,TabNet Importances,Lymphocytes,1.0736284994475806e-07
+231,TabNet Importances,Lymphocytes,-4.136010147987163e-06
+232,TabNet Importances,Lymphocytes,-5.727543534533333e-08
+233,TabNet Importances,Lymphocytes,-1.1979686551003987e-05
+234,TabNet Importances,Lymphocytes,4.895992332452565e-07
+235,TabNet Importances,Lymphocytes,-1.2356196688602656e-06
+236,TabNet Importances,Lymphocytes,-2.3388631203635872e-08
+237,TabNet Importances,Lymphocytes,5.0232399550120755e-05
+238,TabNet Importances,Lymphocytes,5.74905452571874e-07
+239,TabNet Importances,Lymphocytes,-2.7847665399355965e-08
+240,TabNet Importances,Lymphocytes,1.6879189574292478e-05
+241,TabNet Importances,Lymphocytes,2.4393370424450675e-06
+242,TabNet Importances,Lymphocytes,2.7843361151649406e-08
+243,TabNet Importances,Lymphocytes,-6.721588240449889e-05
+244,TabNet Importances,Lymphocytes,-3.0690172469542845e-06
+245,TabNet Importances,Lymphocytes,-4.200149454962724e-06
+246,TabNet Importances,Lymphocytes,-2.692283080918421e-06
+247,TabNet Importances,Lymphocytes,-1.0737992535239348e-05
+248,TST Importances,albumin,-0.0005051646321809857
+249,TST Importances,albumin,-0.0006270486374576227
+250,TST Importances,albumin,-0.0007115674560381907
+251,TST Importances,albumin,-0.0004369027166968052
+252,TST Importances,albumin,-0.0006805513380709688
+253,TST Importances,albumin,-0.0006742430322143241
+254,TST Importances,albumin,-0.0006607527403258666
+255,TST Importances,albumin,-0.0005504725379163281
+256,TST Importances,albumin,-0.0006820474623314674
+257,TST Importances,albumin,-0.0006792363179660689
+258,TST Importances,albumin,-0.0006676279471895966
+259,TST Importances,albumin,-0.0007704555707315634
+260,TST Importances,albumin,-0.0005979552780592097
+261,TST Importances,albumin,-0.0004817775221893207
+262,TST Importances,albumin,-0.0006761493284604621
+263,TST Importances,albumin,-0.0005034994337973239
+264,TST Importances,albumin,-0.000620183771972043
+265,TST Importances,albumin,-0.0005119581658246394
+266,TST Importances,albumin,-0.0005244527596323081
+267,TST Importances,albumin,-0.0005491314450513535
+268,TST Importances,albumin,-0.00043268307664082173
+269,TST Importances,albumin,-0.0001997745970360564
+270,TST Importances,albumin,-0.0007222552515084103
+271,TST Importances,albumin,-0.0004382638492743486
+272,TST Importances,albumin,-0.0007814654952834724
+273,TST Importances,albumin,-0.0005973935790417933
+274,TST Importances,albumin,-0.0006137611441255535
+275,TST Importances,albumin,-0.000647830934268565
+276,TST Importances,albumin,-0.0006405591615590037
+277,TST Importances,albumin,-0.0006826896320848401
+278,TST Importances,albumin,-0.0003306513366535984
+279,TabNet Importances,albumin,5.701019655471976e-05
+280,TabNet Importances,albumin,-1.079452420022559e-07
+281,TabNet Importances,albumin,7.400748540911041e-06
+282,TabNet Importances,albumin,4.261304319881724e-06
+283,TabNet Importances,albumin,2.0266999279860457e-06
+284,TabNet Importances,albumin,-4.94333221401232e-07
+285,TabNet Importances,albumin,-8.028851445430238e-07
+286,TabNet Importances,albumin,-1.6067722995506519e-06
+287,TabNet Importances,albumin,1.695208010938856e-05
+288,TabNet Importances,albumin,-3.055216692407261e-06
+289,TabNet Importances,albumin,-3.424561938990746e-06
+290,TabNet Importances,albumin,8.145683328066676e-06
+291,TabNet Importances,albumin,7.116066912765045e-07
+292,TabNet Importances,albumin,-4.750808014096513e-06
+293,TabNet Importances,albumin,-2.408959135982085e-06
+294,TabNet Importances,albumin,-1.9757112102333624e-06
+295,TabNet Importances,albumin,7.851145293462669e-06
+296,TabNet Importances,albumin,6.26537552038348e-06
+297,TabNet Importances,albumin,6.758698441571608e-07
+298,TabNet Importances,albumin,-7.815185116823874e-07
+299,TabNet Importances,albumin,-0.0001882565355042571
+300,TabNet Importances,albumin,8.223459401895485e-06
+301,TabNet Importances,albumin,-1.163319823901639e-06
+302,TabNet Importances,albumin,8.700008190739095e-05
+303,TabNet Importances,albumin,-9.733410388027842e-07
+304,TabNet Importances,albumin,2.9554603269664656e-08
+305,TabNet Importances,albumin,0.00011311825575839841
+306,TabNet Importances,albumin,-1.272221063497151e-06
+307,TabNet Importances,albumin,-7.969997519590145e-07
+308,TabNet Importances,albumin,-5.957327701168202e-07
+309,TabNet Importances,albumin,-2.199670730588488e-07

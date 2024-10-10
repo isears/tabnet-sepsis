@@ -2,7 +2,11 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 import torch
-from sklearn.metrics import precision_recall_curve, average_precision_score
+from sklearn.metrics import (
+    precision_recall_curve,
+    average_precision_score,
+    roc_auc_score,
+)
 from sklearn.metrics import auc
 
 import scipy.stats
@@ -50,8 +54,13 @@ if __name__ == "__main__":
         saved_distrib = {}
 
         for model in pretty_model_names.keys():
-            y_test = torch.load(f"cache/{model}/sparse_labeled_{window_idx}_y_test.pt")
-            preds = torch.load(f"cache/{model}/sparse_labeled_{window_idx}_preds.pt")
+            y_test = torch.load(
+                f"cache/{model}/sparse_labeled_{window_idx}_y_test.pt",
+                weights_only=True,
+            )
+            preds = torch.load(
+                f"cache/{model}/sparse_labeled_{window_idx}_preds.pt", weights_only=True
+            )
 
             bootstrapped_auprcs = bootstrapping_auprc(y_test, preds)
 
@@ -71,7 +80,7 @@ if __name__ == "__main__":
             )
             s, p = scipy.stats.normaltest(bootstrapped_auprcs)
             print(
-                f"{model[0]} window {window_idx:02d}: AUPRC {avg_auprc:.5f} +/- {avg_auprc - lower_ci:.5f} (normtest {p:.3f})"
+                f"{model[0]} window {window_idx:02d}: AUPRC {avg_auprc:.2f} ({lower_ci:.2f}-{upper_ci:.2f}) (normtest {p:.3f})"
             )
 
             saved_distrib[model] = bootstrapped_auprcs
@@ -87,12 +96,12 @@ if __name__ == "__main__":
 
     plottable = pd.DataFrame(data=plottable)
 
-    sns.set_theme(style="whitegrid", font_scale=1.75, rc={"figure.figsize": (10, 12)})
+    sns.set_theme(style="whitegrid", font_scale=1.75, rc={"figure.figsize": (15, 12)})
 
     ax = sns.barplot(
         data=plottable,
-        x="Prediction Window (Hours)",
-        y="Area Under the Precision-Recall Curve (AUPRC)",
+        x="Area Under the Precision-Recall Curve (AUPRC)",
+        y="Prediction Window (Hours)",
         hue="Model",
         hue_order=pretty_model_names.values(),
         errorbar=(
@@ -102,11 +111,19 @@ if __name__ == "__main__":
                 scale=scipy.stats.sem(x),
             )
         ),
+        orient="h",
         capsize=0.1,
     )
-    sns.move_legend(ax, "upper right", title="Legend")
+
+    plottable.to_csv("results/performanceVsTime.csv", index=False)
+
+    ax.set_xlim(0.3, 0.5)
+    ax.set_xticks([0.3, 0.35, 0.4, 0.45, 0.5])
+    sns.move_legend(ax, "upper left", title="Legend", bbox_to_anchor=(1, 1))
     # plt.legend(title="Legend")
-    ax.axhline(y=0.07, color="black", linestyle="--")
+    # ax.axhline(y=0.07, color="black", linestyle="--")
+
+    plt.tight_layout()
 
     plt.savefig("results/performanceVsTime.png")
 

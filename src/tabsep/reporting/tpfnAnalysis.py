@@ -5,6 +5,7 @@ Compare this group with the group of patients that were true-positives for both 
 
 Threshold set to maximize differences
 """
+
 import torch
 from tabsep.dataProcessing import LabeledSparseTensor
 from tabsep.reporting.featureImportance import build_attributions
@@ -28,6 +29,24 @@ PRETTY_NAME_MAP = {
     "creatinine": "Creatinine",
     "PlateletCount": "Platelet Count",
     "los": "Length of Stay",
+    "peep": "Positive End-Expiratory Pressure",
+    "albumin": "Albumin",
+    "glucose": "Glucose",
+    "rbc": "Red Blood Cells",
+    "rdw": "Red Cell Distribution Width",
+    "tidal_volume_observed": "Observed Tidal Volume",
+    "hematocrit": "Hematocrit",
+    "total_protein": "Total Protein",
+    "aado2_calc": "Alveolar-arterial Oxygen Gradient (calculated)",
+    "ptt": "PTT",
+    "mchc": "Mean Corpuscular Hemoglobin Concentration",
+    "pao2fio2ratio": "PaO2 / FiO2",
+    "EosinophilCount": "Eosinophil Count",
+    "AtypicalLymphocytes": "Atypical Lymphocytes",
+    "AbsoluteNeutrophilCount": "Absolute Neutrophil Count",
+    "spo2": "SpO2",
+    "LymphocytesPercent": "Lymphocytes Percent",
+    "respiratory_rate_spontaneous": "Spontaneous Respiratory Rate",
 }
 
 
@@ -85,7 +104,7 @@ def compare(a, b):
 
     feature_labels = LabeledSparseTensor.load_from_pickle(
         "cache/sparse_labeled_3.pkl"
-    ).features + ["los"]
+    ).features
 
     sig_df = pd.DataFrame(
         data={
@@ -145,65 +164,125 @@ if __name__ == "__main__":
 
     print(f"[*] Calibrated models at threshold value of {opt_threshold}")
 
-    X_tst_better = X_pos[
-        torch.logical_and(
-            preds_tst_pos > opt_threshold, preds_tabnet_pos < opt_threshold
-        )
-    ].numpy()
+    X_tst_better = X_pos[preds_tst_pos > preds_tabnet_pos].numpy()
 
-    X_other = X_pos[
-        ~torch.logical_and(
-            preds_tst_pos > opt_threshold, preds_tabnet_pos < opt_threshold
-        )
-    ].numpy()
+    X_other = X_pos[~(preds_tst_pos > preds_tabnet_pos)].numpy()
 
-    feature_comparison = compare(X_tst_better, X_other)
-    print(feature_comparison.nsmallest(20, columns="p"))
-    feature_comparison["difference"] = (
-        feature_comparison["mean_tst_better"] - feature_comparison["mean_other"]
-    ).abs()
+    # feature_comparison = compare(X_tst_better, X_other)
+    # print(feature_comparison.nsmallest(20, columns="p"))
+    # feature_comparison["difference"] = (
+    #     feature_comparison["mean_tst_better"] - feature_comparison["mean_other"]
+    # ).abs()
 
-    plotdiff(
-        X_tst_better,
-        X_other,
-        feature_comparison.nlargest(n=5, columns="difference").feature.to_list(),
-    )
+    # plotdiff(
+    #     X_tst_better,
+    #     X_other,
+    #     feature_comparison.nlargest(n=5, columns="difference").feature.to_list(),
+    # )
 
     # What features were most important in this subgroup?
-    # attribs_tst = build_attributions("TST", 3, 10).abs().sum(dim=1)
-    # attribs_tst = (
-    #     attribs_tst[y == 1][
-    #         torch.logical_and(
-    #             preds_tst_pos > opt_threshold, preds_tabnet_pos < opt_threshold
-    #         )
-    #     ]
-    #     .detach()
-    #     .cpu()
-    #     .numpy()
-    # )
+    attribs_tst = build_attributions("TST", 3, 10).sum(dim=1)
+    attribs_tst = (
+        attribs_tst[y == 1][
+            torch.logical_and(
+                preds_tst_pos > opt_threshold, preds_tabnet_pos < opt_threshold
+            )
+        ]
+        .detach()
+        .cpu()
+        .numpy()
+    )
 
-    # attribs_tst = attribs_tst / attribs_tst.sum()
+    attribs_tst = attribs_tst / np.abs(attribs_tst).sum()
 
-    # attribs_tabnet = build_attributions("Tabnet", 3, 256).abs()
-    # attribs_tabnet = (
-    #     attribs_tabnet[y == 1][
-    #         torch.logical_and(
-    #             preds_tst_pos > opt_threshold, preds_tabnet_pos < opt_threshold
-    #         )
-    #     ]
-    #     .detach()
-    #     .cpu()
-    #     .numpy()
-    # )
+    attribs_tabnet = build_attributions("Tabnet", 3, 256)
+    attribs_tabnet = (
+        attribs_tabnet[y == 1][
+            torch.logical_and(
+                preds_tst_pos > opt_threshold, preds_tabnet_pos < opt_threshold
+            )
+        ]
+        .detach()
+        .cpu()
+        .numpy()
+    )[
+        :, :-1
+    ]  # Not considering LOS b/c can't be compared with TST
 
-    # attribs_tabnet = attribs_tabnet / attribs_tabnet.sum()
+    attribs_tabnet = attribs_tabnet / np.abs(attribs_tabnet).sum()
 
-    # # Add one feature onto TST (LOS)
+    # Add one feature onto TST (LOS)
     # importance_comparison = compare(
-    #     np.hstack([attribs_tst, np.zeros((attribs_tst.shape[0], 1))]),
+    #     attribs_tst,
     #     attribs_tabnet,
     # )
+    feature_labels = LabeledSparseTensor.load_from_pickle(
+        "cache/sparse_labeled_3.pkl"
+    ).features
 
-    # print("=" * 10)
+    importance_comparison = pd.DataFrame(
+        data={
+            "Feature": feature_labels,
+            "TST Importance": attribs_tst.mean(axis=0),
+            "TabNet Importance": attribs_tabnet.mean(axis=0),
+            "p": ttest_ind_from_stats(
+                attribs_tst.mean(axis=0),
+                attribs_tst.std(axis=0),
+                attribs_tst.shape[0],
+                attribs_tabnet.mean(axis=0),
+                attribs_tabnet.std(axis=0),
+                attribs_tabnet.shape[0],
+            )[1],
+        }
+    )
 
-    # print(importance_comparison.nsmallest(20, columns="p_adj"))
+    # Consider features that were most helpful to TST correct prediction
+    importance_comparison["p_adj"] = importance_comparison["p"] * len(
+        importance_comparison
+    )
+    top_feats = (
+        importance_comparison[
+            (
+                importance_comparison["TST Importance"]
+                > importance_comparison["TabNet Importance"]
+            )
+            & (importance_comparison["p_adj"] < 0.01)
+        ]
+        .sort_values(by="p_adj", ascending=True)
+        .Feature.to_list()
+    )
+
+    print(importance_comparison.nsmallest(20, columns="p"))
+
+    df_a = pd.DataFrame(data=attribs_tst, columns=feature_labels)
+    df_b = pd.DataFrame(data=attribs_tabnet, columns=feature_labels)
+
+    df_a["Legend"] = "TST Importances"
+    df_b["Legend"] = "TabNet Importances"
+
+    df = pd.concat([df_a, df_b])
+    df = df[top_feats + ["Legend"]]
+    df.rename(columns=PRETTY_NAME_MAP, inplace=True)
+    plottable = df.melt(
+        id_vars="Legend", var_name="Variable", value_name="Importance (arbitrary units)"
+    )
+
+    ax = sns.stripplot(
+        data=plottable,
+        y="Variable",
+        x="Importance (arbitrary units)",
+        hue="Legend",
+        orient="h",
+        # split=False,
+        # fliers=False,
+        edgecolor="black",
+        alpha=0.5,
+        s=7,
+        linewidth=2.0,
+    )
+    ax.legend(loc="lower right", bbox_to_anchor=(1, 1))
+    ax.set(xlim=(-0.001, 0.002))
+    ax.set(xticklabels=[])
+    ax.tick_params(bottom=False)
+    plt.tight_layout()
+    plt.savefig("results/swarmplot.png")
