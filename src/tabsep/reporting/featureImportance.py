@@ -156,13 +156,15 @@ def plot_ungrouped_importances(path, attribs):
     plottable.rename(
         columns={"Importance": "Importance (arbitrary units)"}, inplace=True
     )
-    sns.set_theme(style="whitegrid", font_scale=2.7, rc={"figure.figsize": (20, 10)})
+    sns.set_theme(style="whitegrid", font_scale=0.85, rc={"figure.figsize": (7.5, 3.5)})
     ax = sns.barplot(
         y="Feature",
         x="Importance (arbitrary units)",
         data=plottable.sort_values("Importance (arbitrary units)", ascending=False),
         orient="h",
         color="b",
+        width=0.55,
+        dodge=False,
     )
     # plt.legend(title="Legend")
     # sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1), title="Legend")

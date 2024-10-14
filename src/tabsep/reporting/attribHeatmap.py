@@ -28,16 +28,17 @@ def plot_groupped_importances(path: str, attribs):
     )
     print(plottable)
 
-    sns.set_theme(style="whitegrid", font_scale=1.5, rc={"figure.figsize": (10, 10)})
+    sns.set_theme(style="whitegrid", font_scale=0.85, rc={"figure.figsize": (7.5, 3.5)})
     plottable.rename(
         columns={"Importance": "Importance (arbitrary units)"}, inplace=True
     )
     ax = sns.barplot(
         y="Feature",
         x="Importance (arbitrary units)",
-        data=plottable,
+        data=plottable.sort_values("Importance (arbitrary units)", ascending=False),
         color="b",
         orient="h",
+        width=0.55,
     )
     # plt.xticks(rotation=45)
     ax.set(xticklabels=[])

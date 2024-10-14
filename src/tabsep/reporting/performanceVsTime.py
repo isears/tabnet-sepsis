@@ -113,6 +113,8 @@ if __name__ == "__main__":
         ),
         orient="h",
         capsize=0.1,
+        # width=2.0,
+        # dodge=False,
     )
 
     plottable.to_csv("results/performanceVsTime.csv", index=False)
