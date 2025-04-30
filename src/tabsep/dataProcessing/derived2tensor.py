@@ -302,7 +302,7 @@ if __name__ == "__main__":
         "bg": reader.load_bg_table,
         "chemistry": reader.load_measurement_table,
         "coagulation": reader.load_measurement_table,
-        "differential_detailed": reader.load_measurement_table,
+        "blood_differential": reader.load_measurement_table,
         "complete_blood_count": reader.load_measurement_table,
         "ventilator_setting": reader.load_measurement_table,
         # "enzyme": reader.load_measurement_table,

@@ -15,6 +15,8 @@ from sklearn.metrics import (
     make_scorer,
     roc_auc_score,
     roc_curve,
+    precision_recall_curve,
+    confusion_matrix,
 )
 
 from tabsep import config
@@ -149,6 +151,10 @@ class SingleCVResult:
     thresholds: np.ndarray
     auc: float
     avg_precision: float
+    sensitivity: float
+    specificity: float
+    ppv: float
+    npv: float
 
 
 class CVResults:
@@ -168,34 +174,67 @@ class CVResults:
         fpr, tpr, thresholds = roc_curve(y_true, y_score)
         auc = roc_auc_score(y_true, y_score)
         avg_precision = average_precision_score(y_true, y_score)
-        self.results.append(SingleCVResult(fpr, tpr, thresholds, auc, avg_precision))
+
+        # Calibrated results
+        youden_index = tpr - fpr
+        calibration_threshold = thresholds[np.argmax(youden_index)]
+        preds_calibrated = y_score > calibration_threshold
+        tn, fp, fn, tp = confusion_matrix(y_true, preds_calibrated).ravel()
+        sensitivity = tp / (tp + fn)
+        specificity = tn / (tn + fp)
+        ppv = tp / (tp + fp)
+        npv = tn / (tn + tn)
+
+        self.results.append(
+            SingleCVResult(
+                fpr,
+                tpr,
+                thresholds,
+                float(auc),
+                float(avg_precision),
+                sensitivity,
+                specificity,
+                ppv,
+                npv,
+            )
+        )
 
     def print_report(self) -> None:
-        aucs = np.array([res.auc for res in self.results])
-        precisions = np.array([res.avg_precision for res in self.results])
+        for metric in ["auc", "avg_precision", "sensitivity", "specificity"]:
+            scores = np.array([getattr(res, metric) for res in self.results])
+            intervals = st.t.interval(
+                confidence=0.95,
+                df=len(scores) - 1,
+                loc=scores.mean(),
+                scale=st.sem(scores),
+            )
+            print(f"{metric}: {scores.mean()} {intervals}")
 
-        auc_interval = st.t.interval(
-            alpha=0.95, df=len(aucs) - 1, loc=aucs.mean(), scale=st.sem(aucs)
-        )
-        precision_interval = st.t.interval(
-            alpha=0.95,
-            df=len(precisions) - 1,
-            loc=precisions.mean(),
-            scale=st.sem(precisions),
-        )
-        print(f"AUROC: {aucs.mean()} {auc_interval}")
-        print(f"Avg Precision: {precisions.mean()} {precision_interval}")
+        # aucs = np.array([res.auc for res in self.results])
+        # precisions = np.array([res.avg_precision for res in self.results])
+
+        # auc_interval = st.t.interval(
+        #     confidence=0.95, df=len(aucs) - 1, loc=aucs.mean(), scale=st.sem(aucs)
+        # )
+        # precision_interval = st.t.interval(
+        #     confidence=0.95,
+        #     df=len(precisions) - 1,
+        #     loc=precisions.mean(),
+        #     scale=st.sem(precisions),
+        # )
+        # print(f"AUROC: {aucs.mean()} {auc_interval}")
+        # print(f"Avg Precision: {precisions.mean()} {precision_interval}")
 
     def get_precisions(self) -> list:
         return [res.avg_precision for res in self.results]
 
     def get_precision_avg(self) -> float:
         precisions = np.array([res.avg_precision for res in self.results])
-        return np.mean(precisions)
+        return precisions.mean()
 
     def get_precision_std(self) -> float:
         precisions = np.array([res.avg_precision for res in self.results])
-        return np.std(precisions)
+        return precisions.std()
 
     def save_report(self, path) -> None:
         with open(path, "wb") as f:

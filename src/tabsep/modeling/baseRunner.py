@@ -3,9 +3,14 @@ import pickle
 import sys
 
 import torch
-from sklearn.metrics import average_precision_score, roc_auc_score
+from sklearn.metrics import (
+    average_precision_score,
+    roc_auc_score,
+    precision_recall_curve,
+    confusion_matrix,
+)
 from sklearn.model_selection import StratifiedKFold, train_test_split
-
+import numpy as np
 from tabsep.modeling import CVResults
 
 
