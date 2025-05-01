@@ -183,7 +183,7 @@ class CVResults:
         sensitivity = tp / (tp + fn)
         specificity = tn / (tn + fp)
         ppv = tp / (tp + fp)
-        npv = tn / (tn + tn)
+        npv = tn / (tn + fn)
 
         self.results.append(
             SingleCVResult(
@@ -200,7 +200,14 @@ class CVResults:
         )
 
     def print_report(self) -> None:
-        for metric in ["auc", "avg_precision", "sensitivity", "specificity"]:
+        for metric in [
+            "auc",
+            "avg_precision",
+            "sensitivity",
+            "specificity",
+            "ppv",
+            "npv",
+        ]:
             scores = np.array([getattr(res, metric) for res in self.results])
             intervals = st.t.interval(
                 confidence=0.95,
