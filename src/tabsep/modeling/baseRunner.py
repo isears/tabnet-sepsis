@@ -12,17 +12,20 @@ from sklearn.metrics import (
 from sklearn.model_selection import StratifiedKFold, train_test_split
 import numpy as np
 from tabsep.modeling import CVResults
+from sklearn.impute import KNNImputer
+from typing import Callable
 
 
 class BaseModelRunner:
     save_dir: str
     name: str
-    configured_model_factory: callable
+    configured_model_factory: Callable
 
-    def __init__(self, default_cmd="cv") -> None:
+    def __init__(self, default_cmd="cv", impute=True) -> None:
         os.makedirs(self.save_dir, exist_ok=True)
         self.default_cmd = default_cmd
         self.data_src = "cache/sparse_labeled_12.pkl"
+        self.impute = impute
 
         if len(sys.argv) == 1:
             cmd = self.default_cmd
@@ -55,14 +58,35 @@ class BaseModelRunner:
         res = CVResults()
 
         for fold_idx, (train_idx, test_idx) in enumerate(skf.split(X, y)):
+            X_train = X[train_idx]
+            y_train = y[train_idx]
+
+            X_test = X[test_idx]
+            y_test = y[test_idx]
+
             model = self.configured_model_factory()
+
+            if self.impute:
+                print(f"[CrossValidation] Imputing fold {fold_idx}")
+                imputer = KNNImputer(keep_empty_features=True)
+
+                # Reset -1 holders to nan
+                X_train[X_train == -1] = torch.nan
+                X_test[X_test == -1] = torch.nan
+
+                X_train = torch.Tensor(imputer.fit_transform(X_train))
+                X_test = torch.Tensor(imputer.transform(X_test))
+
+                # Values that cannot be imputed remain -1
+                X_train[X_train.isnan()] = -1.0
+                X_test[X_test.isnan()] = -1.0
 
             print(f"[CrossValidation] Starting fold {fold_idx}")
 
-            model.fit(X[train_idx], y[train_idx])
-            preds = model.predict_proba(X[test_idx])[:, 1]
+            model.fit(X_train, y_train)
+            preds = model.predict_proba(X_test)[:, 1]
 
-            res.add_result(y[test_idx], preds)
+            res.add_result(y_test, preds)
 
         res.print_report()
         res.save_report(f"{self.save_dir}/{self.data_src_label}_cvresult.pkl")

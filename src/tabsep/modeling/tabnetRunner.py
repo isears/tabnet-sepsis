@@ -39,7 +39,7 @@ class TabnetRunner(BaseModelRunner):
     }
 
     def __init__(self, default_cmd="cv") -> None:
-        super().__init__(default_cmd)
+        super().__init__(default_cmd, impute=True)
         self.configured_model_factory = lambda: CompatibleTabnet(**self.tuning_params)
 
     def _load_data(self):

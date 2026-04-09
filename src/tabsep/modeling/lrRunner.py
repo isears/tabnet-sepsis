@@ -12,7 +12,7 @@ class LogisticRegressionRunner(BaseModelRunner):
 
     def __init__(self, default_cmd="cv") -> None:
         self.configured_model_factory = lambda: LogisticRegression(max_iter=1000)
-        super().__init__(default_cmd)
+        super().__init__(default_cmd, impute=True)
 
     def _load_data(self):
         d = LabeledSparseTensor.load_from_pickle(self.data_src)

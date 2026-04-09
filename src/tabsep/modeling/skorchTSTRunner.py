@@ -29,7 +29,7 @@ class TSTRunner(BaseModelRunner):
     }
 
     def __init__(self, default_cmd="cv") -> None:
-        super().__init__(default_cmd)
+        super().__init__(default_cmd, impute=False)
         conf = TSTConfig(
             save_path="cache/models/skorchCvTst",
             **self.tuning_params,
